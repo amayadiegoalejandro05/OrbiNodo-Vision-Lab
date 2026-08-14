@@ -10,8 +10,19 @@ async function migrate(): Promise<void> {
   for (const version of completed) console.log('Migración aplicada: ' + version);
 }
 
-migrate().catch(() => {
+migrate().catch((error: unknown) => {
   // El comando no imprime trazas, consultas ni detalles que puedan incluir secretos.
-  console.error('No fue posible aplicar las migraciones. Revisa PostgreSQL y el entorno local.');
+  const code = typeof error === 'object' && error !== null && 'code' in error
+    && typeof error.code === 'string' && /^[A-Z0-9_]{2,40}$/.test(error.code)
+    ? error.code : 'MIGRATION_FAILED';
+  const detail = error instanceof Error
+    ? error.message
+      .replace(/postgres(?:ql)?:\/\/\S+/gi, '[DATABASE_URL_OCULTA]')
+      .replace(/password\s*[=:]\s*\S+/gi, 'password=[OCULTA]')
+    : 'Error desconocido';
+  console.error(
+    'No fue posible aplicar las migraciones. Código seguro: ' + code
+    + '. Detalle seguro: ' + detail,
+  );
   process.exitCode = 1;
 });
