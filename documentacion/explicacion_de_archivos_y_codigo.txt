@@ -13,6 +13,11 @@ Actualiza únicamente cinco campos autorizados y crea una fila append-only por c
 valor modificado antes del COMMIT. backend/routes/camera-routes.ts valida sesión,
 rol, fechas y longitudes antes de invocar esa transacción.
 
+src/api/camera-api.ts valida las respuestas GET/PATCH. main.ts mantiene las cámaras
+solo en memoria y actualiza mapa y visor con la respuesta confirmada. Al recuperar
+el foco consulta nuevamente PostgreSQL. panorama-viewer.ts espera el PATCH antes de
+mostrar éxito y bloquea envíos dobles mientras la solicitud está en curso.
+
 ACTUALIZACIÓN: backend/routes/auth-routes.ts y postgres-auth-service.ts implementan
 login, /me y logout. La cookie recibe el token HttpOnly y PostgreSQL guarda solo
 su huella SHA-256, usando la hora del servidor para expirar sesiones.

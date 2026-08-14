@@ -9,8 +9,9 @@ import '../styles/security-cameras.css';
 import type { DemoSession } from '../auth/demo-auth';
 import { getRolePermissions } from '../auth/role-permissions';
 import type { PanoramaLocation, TourConfig } from '../domain/tour.types';
-import type { SecurityCameraRecord } from '../domain/security-camera.types';
-import { getCameraRecords, saveCameraOperationalUpdate, type CameraOperationalUpdate } from '../persistence/demo-operations-store';
+import type {
+  CameraOperationalUpdate, CameraUpdateResult, SecurityCameraRecord,
+} from '../domain/security-camera.types';
 import { assertValidTour, getPanoramaLocation, listPanoramas } from '../domain/validate-tour';
 import { buildSecurityCameraMarker } from './security-camera-markers';
 
@@ -28,11 +29,16 @@ export interface PanoramaViewerApi {
   retry: () => Promise<void>;
   goTo: (panoramaId: string) => Promise<void>;
   goToCamera: (cameraId: string) => Promise<void>;
+  refreshCameras: (cameras: SecurityCameraRecord[]) => void;
   destroy: () => void;
 }
 
 export interface PanoramaViewerOptions {
   session: DemoSession;
+  cameras: SecurityCameraRecord[];
+  saveCameraOperations: (
+    cameraId: string, update: CameraOperationalUpdate,
+  ) => Promise<CameraUpdateResult>;
   onCameraUpdated?: (camera: SecurityCameraRecord) => void;
 }
 
@@ -77,7 +83,7 @@ export function createPanoramaViewer(
 ): PanoramaViewerApi {
   assertValidTour(tour);
   const permissions = getRolePermissions(options.session.role);
-  const cameraRecordsById = new Map(getCameraRecords().map((camera) => [camera.id, camera]));
+  const cameraRecordsById = new Map(options.cameras.map((camera) => [camera.id, camera]));
   const camerasByPanorama = new Map([...cameraRecordsById.values()].map((camera) => [camera.panoramaId, camera]));
   const panoramasById = new Map(listPanoramas(tour).map((panorama) => [panorama.id, panorama]));
   onStatus({ kind: 'loading', message: 'Cargando el recorrido de demostración…' });
@@ -139,11 +145,24 @@ export function createPanoramaViewer(
     markers.updateMarker(buildSecurityCameraMarker(camera, { editable: permissions.editCameraOperations }));
   }
 
-  function handleCameraEdit(event: SubmitEvent): void {
+  function refreshCameras(cameras: SecurityCameraRecord[]): void {
+    cameraRecordsById.clear();
+    camerasByPanorama.clear();
+    for (const camera of cameras) {
+      cameraRecordsById.set(camera.id, camera);
+      camerasByPanorama.set(camera.panoramaId, camera);
+    }
+    const currentId = virtualTour.getCurrentNode()?.id;
+    if (currentId) refreshCurrentCameraMarker(currentId);
+  }
+
+  async function handleCameraEdit(event: SubmitEvent): Promise<void> {
     const form = event.target;
     if (!(form instanceof HTMLFormElement) || !form.matches('[data-camera-edit-form]')) return;
     event.preventDefault();
     const statusElement = form.querySelector<HTMLElement>('.camera-edit-status');
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (submit) submit.disabled = true;
     try {
       const formData = new FormData(form);
       const update: CameraOperationalUpdate = {
@@ -153,13 +172,15 @@ export function createPanoramaViewer(
         responsibleArea: readRequiredFormValue(formData, 'responsibleArea'),
         notes: readRequiredFormValue(formData, 'notes'),
       };
-      const result = saveCameraOperationalUpdate(form.dataset.cameraId ?? '', update, options.session);
+      const result = await options.saveCameraOperations(
+        form.dataset.cameraId ?? '', update,
+      );
       cameraRecordsById.set(result.camera.id, result.camera);
       camerasByPanorama.set(result.camera.panoramaId, result.camera);
       markers.updateMarker(buildSecurityCameraMarker(result.camera, { editable: true }));
       markers.showMarkerPanel(result.camera.id);
       const refreshedStatus = container.querySelector<HTMLElement>('.camera-edit-status');
-      if (refreshedStatus) refreshedStatus.textContent = result.historyEntry
+      if (refreshedStatus) refreshedStatus.textContent = result.changedFields.length > 0
         ? 'Cambios guardados y añadidos al historial del Jefe.'
         : 'No había cambios nuevos para guardar.';
       options.onCameraUpdated?.(result.camera);
@@ -168,6 +189,8 @@ export function createPanoramaViewer(
         statusElement.dataset.state = 'error';
         statusElement.textContent = error instanceof Error ? error.message : 'No fue posible guardar los cambios.';
       }
+    } finally {
+      if (submit?.isConnected) submit.disabled = false;
     }
   }
   container.addEventListener('submit', handleCameraEdit);
@@ -209,6 +232,7 @@ export function createPanoramaViewer(
   return {
     goTo,
     goToCamera,
+    refreshCameras,
     retry: async () => {
       const currentId = virtualTour.getCurrentNode()?.id ?? tour.startPanoramaId;
       try { await goTo(currentId, true); }

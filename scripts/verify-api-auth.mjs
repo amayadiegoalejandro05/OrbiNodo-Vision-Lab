@@ -105,8 +105,23 @@ try {
   if (columns.join('|') !== expected.join('|')) {
     throw new Error('La vista legible no tiene las columnas esperadas.');
   }
+  const cameraState = await database.query({
+    text: `SELECT o.notes,
+      array_agg(DISTINCT h.actor_username) AS actors
+      FROM camera_operational_state o
+      JOIN camera_change_history h ON h.camera_id = o.camera_id
+      WHERE o.camera_id = $1 GROUP BY o.notes`,
+    values: ['camera-03'],
+  });
+  const persisted = cameraState.rows[0];
+  if (!persisted?.notes.includes('Ingeniero 2')
+      || !persisted.actors.includes('Ingeniero 1')
+      || !persisted.actors.includes('Ingeniero 2')) {
+    throw new Error('Los cambios de cámaras no quedaron persistidos y auditados.');
+  }
   console.log('Autenticación PostgreSQL verificada con dos sesiones independientes.');
   console.log('Vista legible del historial de accesos verificada.');
+  console.log('Cambios operativos y autores verificados en PostgreSQL.');
 } finally {
   api.kill();
   await database.end();

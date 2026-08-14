@@ -23,3 +23,13 @@ export interface SecurityCameraRecord {
   responsibleArea: string;
   notes: string;
 }
+
+export type CameraOperationalUpdate = Pick<
+  SecurityCameraRecord,
+  'status' | 'lastMaintenanceOn' | 'nextMaintenanceOn' | 'responsibleArea' | 'notes'
+>;
+
+export interface CameraUpdateResult {
+  camera: SecurityCameraRecord;
+  changedFields: Array<keyof CameraOperationalUpdate>;
+}

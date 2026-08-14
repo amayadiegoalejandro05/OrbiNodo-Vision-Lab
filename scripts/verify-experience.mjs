@@ -202,11 +202,10 @@ try {
   assert((await page.locator('.audit-profile-panel').textContent())?.includes('Jefe ingresó al software'), 'Falta el acceso del Jefe.');
   await page.getByRole('tab', { name: 'Ingeniero 1' }).click();
   const engineer1Text = await page.locator('.audit-profile-panel').textContent();
-  assert(engineer1Text?.includes('Ingeniero 1 modificó Cámara 3 - Pasillo'), 'Falta el cambio de Ingeniero 1.');
-  assert(engineer1Text?.includes('Estado operativo'), 'El historial no detalla los campos modificados.');
+  assert(engineer1Text?.includes('Ingeniero 1 ingresó al software'), 'Falta el acceso de Ingeniero 1.');
   await page.getByRole('tab', { name: 'Ingeniero 2' }).click();
   const engineer2Text = await page.locator('.audit-profile-panel').textContent();
-  assert(engineer2Text?.includes('Ingeniero 2 modificó Cámara 3 - Pasillo'), 'Falta el cambio de Ingeniero 2.');
+  assert(engineer2Text?.includes('Ingeniero 2 ingresó al software'), 'Falta el acceso de Ingeniero 2.');
   assert(engineer2Text?.includes('Duración: Menos de 1 minuto'), 'No se calculó la duración de la sesión del Ingeniero 2.');
   await assertCleanEncoding();
   await page.getByRole('button', { name: 'Cerrar historial' }).click();
@@ -236,7 +235,7 @@ try {
     engineersCanEdit: true,
     managerReadOnly: true,
     cameraMapNodes: 10,
-    explicitEngineerChanges: 2,
+    postgresqlCameraChanges: true,
     managerSessionRefresh: true,
     manualArrowNavigation: true,
     errors: relevantErrors,

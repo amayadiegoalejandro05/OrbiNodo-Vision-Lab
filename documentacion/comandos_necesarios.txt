@@ -4,6 +4,25 @@ ESTADO ACTUAL LOCAL: las instrucciones históricas sobre auth:hash y variables
 VITE_DEMO_* ya no aplican. Se conservan solo como registro de fases anteriores.
 Para trabajar ahora, inicia la API con npm run api:dev y Vite con npm run dev.
 
+INICIO LOCAL ACTUAL
+-------------------
+Get-Service postgresql-x64-18
+Finalidad: confirmar que PostgreSQL está Running. Si está detenido, abre PowerShell
+como administrador y ejecuta Start-Service postgresql-x64-18.
+
+npm run db:migrate
+Finalidad: aplicar únicamente migraciones pendientes. Es seguro repetirlo.
+
+npm run db:seed
+Finalidad: carga inicial de usuarios y cámaras; requiere las variables privadas.
+No es necesario repetirlo para iniciar un día normal.
+
+npm run api:dev
+Finalidad: iniciar Fastify en 127.0.0.1:3001. Déjalo abierto en una terminal.
+
+npm run dev
+Finalidad: iniciar Vite. Ejecútalo en otra terminal y abre la URL localhost indicada.
+
 SELECT * FROM vista_historial_accesos;
 Lugar: Query Tool de orbinodo_demo en pgAdmin.
 Finalidad: mostrar el historial con fechas de Bogotá, estados en español y duración.

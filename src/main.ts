@@ -5,6 +5,7 @@ import './styles/experience.css';
 import './styles/calibration.css';
 import './styles/minimap.css';
 import './styles/operational-tools.css';
+import { getCamerasFromApi, updateCameraOperations } from './api/camera-api';
 import {
   endApiSession, getActiveApiSession, type DemoSession,
 } from './auth/demo-auth';
@@ -12,7 +13,8 @@ import { createLoginView } from './auth/login-view';
 import { getRolePermissions } from './auth/role-permissions';
 import { demoTour } from './data/demo-tour';
 import type { PanoramaLocation } from './domain/tour.types';
-import { getCameraRecords, recordSuccessfulLogin, recordSuccessfulLogout } from './persistence/demo-operations-store';
+import type { SecurityCameraRecord } from './domain/security-camera.types';
+import { recordSuccessfulLogin, recordSuccessfulLogout } from './persistence/demo-operations-store';
 import { createCameraMap, type CameraMapApi } from './ui/camera-map';
 import { createCoordinateCalibrator } from './ui/coordinate-calibrator';
 import { createLocationMenu, type LocationMenuApi } from './ui/location-menu';
@@ -54,6 +56,7 @@ let panoramaViewer: PanoramaViewerApi | undefined;
 let locationMenu: LocationMenuApi | undefined;
 let tourMinimap: TourMinimapApi | undefined;
 let cameraMap: CameraMapApi | undefined;
+let cameraRecords: SecurityCameraRecord[] = [];
 let mountVersion = 0;
 
 function renderStatus(status: PanoramaViewerStatus): void {
@@ -111,6 +114,17 @@ async function mountTour(session: DemoSession): Promise<void> {
   app.dataset.role = session.role;
   loginView.hide();
   app.hidden = false;
+  renderStatus({ kind: 'loading', message: 'Consultando cámaras en PostgreSQL…' });
+  try {
+    cameraRecords = await getCamerasFromApi();
+  } catch (error) {
+    renderStatus({
+      kind: 'error',
+      message: error instanceof Error ? error.message : 'La API local no está disponible.',
+    });
+    return;
+  }
+  if (currentMount !== mountVersion || app.hidden) return;
   renderStatus({ kind: 'loading', message: 'Descargando el visor 360°…' });
   const { createPanoramaViewer } = await import('./viewer/panorama-viewer');
   if (currentMount !== mountVersion || app.hidden) return;
@@ -119,7 +133,7 @@ async function mountTour(session: DemoSession): Promise<void> {
   locationMenu = createLocationMenu(menuContainer, demoTour, (id) => void navigateTo(id));
   tourMinimap = createTourMinimap(minimapContainer, demoTour, (id) => void navigateTo(id));
   if (permissions.cameraMap) {
-    cameraMap = createCameraMap(mapsDashboard, demoTour, getCameraRecords(), (id) => void navigateToCamera(id));
+    cameraMap = createCameraMap(mapsDashboard, demoTour, cameraRecords, (id) => void navigateToCamera(id));
   }
   panoramaViewer = createPanoramaViewer(
     container,
@@ -129,7 +143,14 @@ async function mountTour(session: DemoSession): Promise<void> {
     (position) => calibrator.update(position),
     {
       session,
-      onCameraUpdated: () => cameraMap?.refresh(getCameraRecords()),
+      cameras: cameraRecords,
+      saveCameraOperations: updateCameraOperations,
+      onCameraUpdated: (updated) => {
+        cameraRecords = cameraRecords.map((camera) =>
+          camera.id === updated.id ? updated : camera,
+        );
+        cameraMap?.refresh(cameraRecords);
+      },
     },
   );
   app.dataset.ready = 'true';
@@ -155,6 +176,24 @@ function unmountTour(): void {
   delete app.dataset.role;
   closeMobileMenu();
   app.hidden = true;
+}
+
+let refreshingCameras = false;
+async function refreshCamerasFromApi(): Promise<void> {
+  if (!panoramaViewer || refreshingCameras) return;
+  refreshingCameras = true;
+  try {
+    cameraRecords = await getCamerasFromApi();
+    cameraMap?.refresh(cameraRecords);
+    panoramaViewer.refreshCameras(cameraRecords);
+  } catch (error) {
+    renderStatus({
+      kind: 'error',
+      message: error instanceof Error ? error.message : 'La API local no está disponible.',
+    });
+  } finally {
+    refreshingCameras = false;
+  }
 }
 
 const loginView = createLoginView(loginScreen, (session) => {
@@ -196,4 +235,5 @@ async function restoreSession(): Promise<void> {
 }
 
 void restoreSession();
+window.addEventListener('focus', () => void refreshCamerasFromApi());
 window.addEventListener('beforeunload', unmountTour, { once: true });

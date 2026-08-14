@@ -5,7 +5,8 @@ import { createPostgresCameraService } from './postgres-camera-service';
 const row = {
   id: 'camera-01', asset_code: 'CCTV-001', name: 'Cámara 1',
   panorama_id: 'sotano-01', location: 'Sótano', brand: 'Demo', model: 'X1',
-  camera_type: '360°', yaw: 10, pitch: 5, installed_on: '2025-01-01',
+  camera_type: '360°', yaw: 10, pitch: 5,
+  installed_on: new Date('2025-01-01T00:00:00.000Z'),
   coverage: 'Acceso', recording_mode: 'Continua', retention: '30 días',
   status: 'Operativa', last_maintenance_on: '2026-01-01',
   next_maintenance_on: '2026-06-01', responsible_area: 'Seguridad', notes: 'Inicial',
@@ -46,6 +47,7 @@ describe('transacción operativa PostgreSQL', () => {
       .toHaveLength(2);
     expect(result?.changedFields).toEqual(['status', 'notes']);
     expect(result?.camera.status).toBe('En mantenimiento');
+    expect(result?.camera.installedOn).toBe('2025-01-01');
     expect(release).toHaveBeenCalledOnce();
   });
 });

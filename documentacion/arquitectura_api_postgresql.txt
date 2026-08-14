@@ -35,5 +35,6 @@ Fuente de verdad
 La autenticación del frontend ya usa la API. GET /api/cameras lee inventario y estado
 operativo desde PostgreSQL. PATCH /api/cameras/:id/operations revalida que el autor
 sea Ingeniero 1 o 2, bloquea la fila y guarda estado e historial en una transacción.
-El frontend todavía consumirá localStorage hasta el siguiente bloque; después se
-retirará sin implementar un modo alternativo cuando la API esté ausente.
+El frontend ya carga y edita cámaras mediante esos endpoints. Conserva una copia
+solo en memoria para renderizar y vuelve a consultar al recuperar el foco. Si la API
+falla muestra el error: no usa localStorage como fuente alternativa de cámaras.

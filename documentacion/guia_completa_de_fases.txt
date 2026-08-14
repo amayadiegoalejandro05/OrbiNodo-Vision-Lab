@@ -10,6 +10,9 @@ usuario, entrada, salida, estado y duración sin repetir SQL técnico.
 La API ya ofrece GET /api/cameras y PATCH /api/cameras/:id/operations. El segundo
 solo acepta Ingenieros y confirma estado más auditoría dentro de una transacción.
 
+El frontend ya consume ambos endpoints. Mapa, fichas y marcadores se construyen con
+PostgreSQL; después de editar o recuperar el foco se refrescan sin usar localStorage.
+
 ACTUALIZACIÓN DEL BACKEND: ya existen sesiones reales en PostgreSQL para login,
 /me y logout. La política local permite contraseñas de 10 caracteres con Argon2id.
 En HTTPS, ORBINODO_COOKIE_SECURE debe configurarse como true.

@@ -16,13 +16,13 @@ interface CameraRow {
   camera_type: '360°' | 'Fija';
   yaw: number;
   pitch: number;
-  installed_on: string;
+  installed_on: string | Date;
   coverage: string;
   recording_mode: string;
   retention: string;
   status: CameraOperationsUpdate['status'];
-  last_maintenance_on: string;
-  next_maintenance_on: string;
+  last_maintenance_on: string | Date;
+  next_maintenance_on: string | Date;
   responsible_area: string;
   notes: string;
 }
@@ -34,15 +34,21 @@ const CAMERA_SELECT = `SELECT c.id, c.asset_code, c.name, c.panorama_id,
   o.responsible_area, o.notes
   FROM cameras c JOIN camera_operational_state o ON o.camera_id = c.id`;
 
+function dateOnly(value: string | Date): string {
+  return value instanceof Date
+    ? value.toISOString().slice(0, 10)
+    : value.slice(0, 10);
+}
+
 function cameraRecord(row: CameraRow): CameraRecord {
   return {
     id: row.id, assetCode: row.asset_code, name: row.name,
     panoramaId: row.panorama_id, location: row.location, brand: row.brand,
     model: row.model, type: row.camera_type, yaw: row.yaw, pitch: row.pitch,
-    installedOn: row.installed_on, coverage: row.coverage,
+    installedOn: dateOnly(row.installed_on), coverage: row.coverage,
     recordingMode: row.recording_mode, retention: row.retention,
-    status: row.status, lastMaintenanceOn: row.last_maintenance_on,
-    nextMaintenanceOn: row.next_maintenance_on,
+    status: row.status, lastMaintenanceOn: dateOnly(row.last_maintenance_on),
+    nextMaintenanceOn: dateOnly(row.next_maintenance_on),
     responsibleArea: row.responsible_area, notes: row.notes,
   };
 }

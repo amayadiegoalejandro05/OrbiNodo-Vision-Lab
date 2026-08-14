@@ -14,6 +14,10 @@ Respuesta: No. PATCH vuelve a validar sesión y rol en el backend y responde 403
 Pregunta: ¿Qué ocurre si falla el historial durante una actualización?
 Respuesta: PostgreSQL ejecuta ROLLBACK; tampoco queda guardado el estado operativo.
 
+Pregunta: ¿Por qué ahora sí cambian las tablas al guardar desde el visor?
+Respuesta: El formulario usa PATCH y espera el COMMIT. La cámara devuelta actualiza
+la ficha y el mapa; al volver a la ventana se ejecuta otro GET contra PostgreSQL.
+
 Pregunta: ¿La contraseña de 10 caracteres sigue siendo válida?
 Respuesta: Sí. Se deriva con Argon2id; las sesiones usan tokens aleatorios y la
 base de datos conserva solamente SHA-256 del token, nunca de la contraseña.
