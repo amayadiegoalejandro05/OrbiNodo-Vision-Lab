@@ -34,6 +34,7 @@ export interface CameraUpdateResult {
 
 export interface CameraService {
   listCameras(): Promise<CameraRecord[]>;
+  getCamera(cameraId: string): Promise<CameraRecord | null>;
   updateOperations(
     cameraId: string,
     actor: AuthUser,

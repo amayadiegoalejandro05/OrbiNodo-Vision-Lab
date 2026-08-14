@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import { apiError } from '../api-error.js';
 import type { AuthService } from '../domain/auth-service';
 
 export interface AuthRouteOptions {
@@ -14,7 +15,7 @@ const loginBody = z.object({
   password: z.string().min(1).max(128),
 }).strict();
 
-const unauthorized = { message: 'Usuario o contraseña incorrectos.' };
+const unauthorized = apiError('INVALID_CREDENTIALS', 'Usuario o contraseña incorrectos.');
 
 export const authRoutes: FastifyPluginAsync<AuthRouteOptions> = async (app, options) => {
   const cookieOptions = {
@@ -24,7 +25,9 @@ export const authRoutes: FastifyPluginAsync<AuthRouteOptions> = async (app, opti
 
   app.post('/login', async (request, reply) => {
     const parsed = loginBody.safeParse(request.body);
-    if (!parsed.success) return reply.code(401).send(unauthorized);
+    if (!parsed.success) {
+      return reply.code(400).send(apiError('VALIDATION_ERROR', 'Los datos de acceso no son válidos.'));
+    }
     const result = await options.authService.login(
       parsed.data.username, parsed.data.password,
     );
@@ -39,7 +42,9 @@ export const authRoutes: FastifyPluginAsync<AuthRouteOptions> = async (app, opti
   app.get('/me', async (request, reply) => {
     const token = request.cookies[options.cookieName];
     const user = token ? await options.authService.getSession(token) : null;
-    if (!user) return reply.code(401).send({ message: 'Sesión no válida.' });
+    if (!user) {
+      return reply.code(401).send(apiError('SESSION_REQUIRED', 'Se requiere una sesión válida.'));
+    }
     return { user };
   });
 

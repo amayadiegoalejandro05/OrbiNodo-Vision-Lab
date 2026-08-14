@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { apiError } from '../api-error.js';
 import type { AuthService } from '../domain/auth-service';
 import type { CameraService } from '../domain/camera-service';
 import { CameraActorNotAllowedError } from '../domain/camera-service.js';
@@ -39,32 +40,42 @@ export const cameraRoutes: FastifyPluginAsync<CameraRouteOptions> = async (app, 
 
   app.get('/', async (request, reply) => {
     const user = await currentUser(request);
-    if (!user) return reply.code(401).send({ message: 'Sesión no válida.' });
+    if (!user) return reply.code(401).send(apiError('SESSION_REQUIRED', 'Se requiere una sesión válida.'));
     return { cameras: await options.cameraService.listCameras() };
+  });
+
+  app.get('/:id', async (request, reply) => {
+    const user = await currentUser(request);
+    if (!user) return reply.code(401).send(apiError('SESSION_REQUIRED', 'Se requiere una sesión válida.'));
+    const params = routeParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send(apiError('VALIDATION_ERROR', 'El identificador de cámara no es válido.'));
+    const camera = await options.cameraService.getCamera(params.data.id);
+    if (!camera) return reply.code(404).send(apiError('CAMERA_NOT_FOUND', 'La cámara solicitada no existe.'));
+    return { camera };
   });
 
   app.patch('/:id/operations', async (request, reply) => {
     const user = await currentUser(request);
-    if (!user) return reply.code(401).send({ message: 'Sesión no válida.' });
+    if (!user) return reply.code(401).send(apiError('SESSION_REQUIRED', 'Se requiere una sesión válida.'));
     if (user.role !== 'engineer1' && user.role !== 'engineer2') {
-      return reply.code(403).send({ message: 'Este perfil no puede editar cámaras.' });
+      return reply.code(403).send(apiError('FORBIDDEN_ROLE', 'Este perfil no puede editar cámaras.'));
     }
     const params = routeParams.safeParse(request.params);
     const body = operationsBody.safeParse(request.body);
     if (!params.success || !body.success) {
-      return reply.code(400).send({ message: 'Los datos operativos no son válidos.' });
+      return reply.code(400).send(apiError('VALIDATION_ERROR', 'Los datos operativos no son válidos.'));
     }
     try {
       const result = await options.cameraService.updateOperations(
         params.data.id, user, body.data,
       );
       if (!result) {
-        return reply.code(404).send({ message: 'La cámara no existe.' });
+        return reply.code(404).send(apiError('CAMERA_NOT_FOUND', 'La cámara solicitada no existe.'));
       }
       return result;
     } catch (error) {
       if (error instanceof CameraActorNotAllowedError) {
-        return reply.code(403).send({ message: 'Este perfil no puede editar cámaras.' });
+        return reply.code(403).send(apiError('FORBIDDEN_ROLE', 'Este perfil no puede editar cámaras.'));
       }
       throw error;
     }

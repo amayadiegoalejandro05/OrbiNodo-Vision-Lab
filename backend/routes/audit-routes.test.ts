@@ -16,7 +16,10 @@ function buildApp(user: AuthUser | null) {
       login: async () => null, getSession: async () => user, logout: async () => undefined,
     },
     auditService: { listAccessSessions, listCameraChanges },
-    cameraService: { listCameras: async () => [], updateOperations: async () => null },
+    cameraService: {
+      listCameras: async () => [], getCamera: async () => null,
+      updateOperations: async () => null,
+    },
     healthProbe: { readServerTime: async () => new Date() },
     cookieName: 'orbinodo_session', cookieSecure: false, sessionHours: 8,
   });

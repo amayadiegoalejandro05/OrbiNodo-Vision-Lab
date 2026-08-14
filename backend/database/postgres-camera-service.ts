@@ -75,6 +75,14 @@ export function createPostgresCameraService(pool: Pool): CameraService {
     return result.rows.map(cameraRecord);
   }
 
+  async function getCamera(cameraId: string): Promise<CameraRecord | null> {
+    const result = await pool.query<CameraRow>({
+      text: CAMERA_SELECT + ' WHERE c.id = $1',
+      values: [cameraId],
+    });
+    return result.rows[0] ? cameraRecord(result.rows[0]) : null;
+  }
+
   async function updateOperations(
     cameraId: string,
     actor: Parameters<CameraService['updateOperations']>[1],
@@ -136,5 +144,5 @@ export function createPostgresCameraService(pool: Pool): CameraService {
     }
   }
 
-  return { listCameras, updateOperations };
+  return { listCameras, getCamera, updateOperations };
 }

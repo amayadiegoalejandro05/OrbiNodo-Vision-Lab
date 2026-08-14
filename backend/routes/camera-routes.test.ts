@@ -37,6 +37,7 @@ function buildApp(user: AuthUser | null, cameraService: CameraService) {
 function service(overrides: Partial<CameraService> = {}): CameraService {
   return {
     listCameras: async () => [camera],
+    getCamera: async () => camera,
     updateOperations: async () => null,
     ...overrides,
   };
@@ -55,6 +56,33 @@ describe('rutas de cámaras', () => {
     });
     expect(allowed.statusCode).toBe(200);
     expect(allowed.json()).toEqual({ cameras: [camera] });
+  });
+
+  it('consulta una cámara individual autenticada', async () => {
+    const response = await buildApp(engineer, service()).inject({
+      method: 'GET', url: '/api/cameras/camera-01', headers: cookie,
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ camera });
+  });
+
+  it('responde 404 estable para una cámara inexistente', async () => {
+    const app = buildApp(engineer, service({ getCamera: async () => null }));
+    const response = await app.inject({
+      method: 'GET', url: '/api/cameras/camera-99', headers: cookie,
+    });
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({
+      error: 'CAMERA_NOT_FOUND', message: 'La cámara solicitada no existe.',
+    });
+  });
+
+  it('responde 400 para un identificador mal formado', async () => {
+    const response = await buildApp(engineer, service()).inject({
+      method: 'GET', url: '/api/cameras/%20', headers: cookie,
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error).toBe('VALIDATION_ERROR');
   });
 
   it('rechaza PATCH del Jefe antes de llamar al servicio', async () => {

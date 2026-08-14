@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
+import { apiError } from '../api-error.js';
 import type { AuditService } from '../domain/audit-service';
 import type { AuthService } from '../domain/auth-service';
 
@@ -7,6 +8,9 @@ export interface AuditRouteOptions {
   auditService: AuditService;
   cookieName: string;
 }
+
+const sessionRequired = apiError('SESSION_REQUIRED', 'Se requiere una sesión válida.');
+const managerRequired = apiError('FORBIDDEN_ROLE', 'Solo el Jefe puede consultar la auditoría.');
 
 export const auditRoutes: FastifyPluginAsync<AuditRouteOptions> = async (app, options) => {
   async function managerSession(request: FastifyRequest) {
@@ -19,18 +23,18 @@ export const auditRoutes: FastifyPluginAsync<AuditRouteOptions> = async (app, op
 
   app.get('/access-sessions', async (request, reply) => {
     const status = await managerSession(request);
-    if (status === 401) return reply.code(401).send({ message: 'Sesión no válida.' });
+    if (status === 401) return reply.code(401).send(sessionRequired);
     if (status === 403) {
-      return reply.code(403).send({ message: 'Solo el Jefe puede consultar la auditoría.' });
+      return reply.code(403).send(managerRequired);
     }
     return { accessSessions: await options.auditService.listAccessSessions() };
   });
 
   app.get('/camera-changes', async (request, reply) => {
     const status = await managerSession(request);
-    if (status === 401) return reply.code(401).send({ message: 'Sesión no válida.' });
+    if (status === 401) return reply.code(401).send(sessionRequired);
     if (status === 403) {
-      return reply.code(403).send({ message: 'Solo el Jefe puede consultar la auditoría.' });
+      return reply.code(403).send(managerRequired);
     }
     return { cameraChanges: await options.auditService.listCameraChanges() };
   });

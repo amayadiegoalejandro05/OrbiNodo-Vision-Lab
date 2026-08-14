@@ -62,3 +62,14 @@ DATABASE_URL o POSTGRES_URL y normaliza SSL administrado a verify-full.
 La Function nunca usa 127.0.0.1 para producción. La producción activa usa Neon,
 contiene tres migraciones, cuatro usuarios, diez cámaras y cookies Secure. La URL
 https://orbinodo-demo.vercel.app fue verificada mediante API y navegador real.
+
+Contrato HTTP cerrado en auditoría
+----------------------------------
+
+GET /api/cameras/:id devuelve una cámara autenticada y distingue identificador
+inválido (400) de cámara inexistente (404). api/cameras/[id].ts expone esta ruta en
+Vercel sin duplicar la aplicación Fastify.
+
+Los errores usan { error, message } con códigos estables para 400, 401, 403, 404,
+409, 500 y 503. Los endpoints administrativos no forman parte de v1.0 mientras no
+exista un rol administrador y un flujo aprobado; db:reset nunca se publica por HTTP.

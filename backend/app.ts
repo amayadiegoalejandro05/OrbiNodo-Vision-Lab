@@ -1,5 +1,6 @@
 import cookie from '@fastify/cookie';
 import Fastify from 'fastify';
+import { apiError } from './api-error.js';
 import type { AuditService } from './domain/audit-service.js';
 import type { AuthService } from './domain/auth-service.js';
 import type { CameraService } from './domain/camera-service.js';
@@ -60,19 +61,28 @@ export function createApiApp(options: ApiAppOptions) {
         serverTime: serverTime.toISOString(),
       };
     } catch {
-      return reply.code(503).send({
-        status: 'error',
-        database: 'unavailable',
-        message: 'La base de datos no está disponible.',
-      });
+      return reply.code(503).send(apiError(
+        'DATABASE_UNAVAILABLE', 'La base de datos no está disponible.',
+      ));
     }
   });
 
+  app.setNotFoundHandler((_request, reply) => reply.code(404).send(
+    apiError('ROUTE_NOT_FOUND', 'La ruta solicitada no existe.'),
+  ));
+
   // Los errores inesperados no revelan rutas, consultas ni trazas internas.
-  app.setErrorHandler((_error, _request, reply) => reply.code(500).send({
-    status: 'error',
-    message: 'No fue posible procesar la solicitud.',
-  }));
+  app.setErrorHandler((error, _request, reply) => {
+    const errorCode = error && typeof error === 'object' && 'code' in error
+      ? error.code : undefined;
+    if (errorCode === 'FST_ERR_CTP_INVALID_JSON_BODY') {
+      return reply.code(400).send(apiError('INVALID_JSON', 'El cuerpo JSON no es válido.'));
+    }
+    if (errorCode === '23505') {
+      return reply.code(409).send(apiError('RESOURCE_CONFLICT', 'El recurso entra en conflicto con datos existentes.'));
+    }
+    return reply.code(500).send(apiError('INTERNAL_ERROR', 'No fue posible procesar la solicitud.'));
+  });
 
   return app;
 }

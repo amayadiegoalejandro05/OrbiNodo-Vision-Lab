@@ -17,6 +17,14 @@ const actor = {
 };
 
 describe('transacción operativa PostgreSQL', () => {
+  it('consulta una cámara por identificador con parámetros', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [row] });
+    const service = createPostgresCameraService({ query } as unknown as Pool);
+    const result = await service.getCamera('camera-01');
+    expect(query.mock.calls[0]?.[0]).toMatchObject({ values: ['camera-01'] });
+    expect(result?.id).toBe('camera-01');
+  });
+
   it('guarda estado e historial antes de confirmar', async () => {
     const query = vi.fn()
       .mockResolvedValueOnce({ rows: [] })

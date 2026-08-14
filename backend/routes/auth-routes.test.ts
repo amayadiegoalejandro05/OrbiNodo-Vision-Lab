@@ -7,6 +7,7 @@ const apps: Array<ReturnType<typeof createApiApp>> = [];
 afterEach(async () => Promise.all(apps.splice(0).map((app) => app.close())));
 const unusedCameras: CameraService = {
   listCameras: async () => [],
+  getCamera: async () => null,
   updateOperations: async () => null,
 };
 
@@ -59,9 +60,19 @@ describe('autenticación HTTP', () => {
     });
     expect(response.statusCode).toBe(401);
     expect(response.json()).toEqual({
+      error: 'INVALID_CREDENTIALS',
       message: 'Usuario o contraseña incorrectos.',
     });
   });
+
+  it('distingue un cuerpo inválido de credenciales incorrectas', async () => {
+    const response = await buildApp(fakeService()).inject({
+      method: 'POST', url: '/api/auth/login', payload: { username: '' },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error).toBe('VALIDATION_ERROR');
+  });
+
   it('consulta y cierra una sesión usando la cookie', async () => {
     const logout = vi.fn(async () => undefined);
     const service = fakeService({ getSession: async () => user, logout });

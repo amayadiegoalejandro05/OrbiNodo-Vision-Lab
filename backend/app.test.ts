@@ -9,8 +9,13 @@ const unusedAuth: AuthService = {
   getSession: async () => null,
   logout: async () => undefined,
 };
+const managerAuth: AuthService = {
+  ...unusedAuth,
+  getSession: async () => ({ username: 'Jefe', displayName: 'Jefe', role: 'manager' }),
+};
 const unusedCameras: CameraService = {
   listCameras: async () => [],
+  getCamera: async () => null,
   updateOperations: async () => null,
 };
 const authOptions = {
@@ -21,6 +26,9 @@ const authOptions = {
   cookieSecure: false,
   sessionHours: 8,
 };
+function failingCameras(error: Error): CameraService {
+  return { ...unusedCameras, listCameras: async () => { throw error; } };
+}
 
 afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
@@ -59,10 +67,48 @@ describe('estado de la API de Orbinodo', () => {
 
     expect(response.statusCode).toBe(503);
     expect(response.json()).toEqual({
-      status: 'error',
-      database: 'unavailable',
+      error: 'DATABASE_UNAVAILABLE',
       message: 'La base de datos no está disponible.',
     });
     expect(response.body).not.toContain('detalle interno');
+  });
+
+  it('normaliza JSON inválido y rutas inexistentes', async () => {
+    const app = createApiApp({
+      ...authOptions, healthProbe: { readServerTime: async () => new Date() },
+    });
+    apps.push(app);
+    const invalid = await app.inject({
+      method: 'POST', url: '/api/auth/login',
+      headers: { 'content-type': 'application/json' }, payload: '{',
+    });
+    expect(invalid.statusCode).toBe(400);
+    expect(invalid.json().error).toBe('INVALID_JSON');
+    const missing = await app.inject({ method: 'GET', url: '/api/no-existe' });
+    expect(missing.statusCode).toBe(404);
+    expect(missing.json().error).toBe('ROUTE_NOT_FOUND');
+  });
+
+  it('normaliza conflictos PostgreSQL como 409', async () => {
+    const conflict = Object.assign(new Error('detalle interno'), { code: '23505' });
+    const app = createApiApp({ ...authOptions, authService: managerAuth,
+      cameraService: failingCameras(conflict), healthProbe: { readServerTime: async () => new Date() } });
+    apps.push(app);
+    const response = await app.inject({ method: 'GET', url: '/api/cameras',
+      headers: { cookie: 'orbinodo_session=x' } });
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error).toBe('RESOURCE_CONFLICT');
+  });
+
+  it('sanitiza errores inesperados como 500', async () => {
+    const app = createApiApp({ ...authOptions, authService: managerAuth,
+      cameraService: failingCameras(new Error('secreto interno')),
+      healthProbe: { readServerTime: async () => new Date() } });
+    apps.push(app);
+    const response = await app.inject({ method: 'GET', url: '/api/cameras',
+      headers: { cookie: 'orbinodo_session=x' } });
+    expect(response.statusCode).toBe(500);
+    expect(response.json().error).toBe('INTERNAL_ERROR');
+    expect(response.body).not.toContain('secreto interno');
   });
 });

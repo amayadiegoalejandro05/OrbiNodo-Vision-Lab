@@ -28,6 +28,12 @@ async function readJson(response: Response): Promise<unknown> {
   catch { return null; }
 }
 
+function apiMessage(value: unknown, fallback: string): string {
+  if (!value || typeof value !== 'object') return fallback;
+  const message = (value as { message?: unknown }).message;
+  return typeof message === 'string' ? message : fallback;
+}
+
 export async function authenticateWithApi(
   username: string,
   password: string,
@@ -38,9 +44,10 @@ export async function authenticateWithApi(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ username: username.trim(), password }),
   });
+  const value = await readJson(response);
   if (response.status === 401) return null;
-  if (!response.ok) throw new Error('La API local no está disponible.');
-  const session = readSession(await readJson(response));
+  if (!response.ok) throw new Error(apiMessage(value, 'La API local no está disponible.'));
+  const session = readSession(value);
   if (!session) throw new Error('La API devolvió un perfil no válido.');
   return session;
 }
