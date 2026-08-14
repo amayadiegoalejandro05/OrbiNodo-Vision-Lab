@@ -5,7 +5,9 @@ import './styles/experience.css';
 import './styles/calibration.css';
 import './styles/minimap.css';
 import './styles/operational-tools.css';
-import { endDemoSession, getActiveDemoSession, readDemoAccounts, startDemoSession, type DemoSession } from './auth/demo-auth';
+import {
+  endApiSession, getActiveApiSession, type DemoSession,
+} from './auth/demo-auth';
 import { createLoginView } from './auth/login-view';
 import { getRolePermissions } from './auth/role-permissions';
 import { demoTour } from './data/demo-tour';
@@ -155,9 +157,8 @@ function unmountTour(): void {
   app.hidden = true;
 }
 
-const loginView = createLoginView(loginScreen, readDemoAccounts(), (session) => {
+const loginView = createLoginView(loginScreen, (session) => {
   recordSuccessfulLogin(session);
-  startDemoSession(session);
   void mountTour(session);
 });
 homeButton.addEventListener('click', () => void navigateTo(demoTour.startPanoramaId));
@@ -168,14 +169,31 @@ menuButton.addEventListener('click', () => {
   menuButton.setAttribute('aria-expanded', String(willOpen));
   menuButton.textContent = willOpen ? 'Ocultar ubicaciones' : 'Mostrar ubicaciones';
 });
-logoutButton.addEventListener('click', () => {
-  // La duración se cierra antes de borrar la sesión activa.
-  recordSuccessfulLogout();
-  endDemoSession();
-  unmountTour();
-  loginView.show();
+logoutButton.addEventListener('click', async () => {
+  logoutButton.disabled = true;
+  try {
+    await endApiSession();
+    recordSuccessfulLogout();
+    unmountTour();
+    loginView.show();
+  } catch {
+    renderStatus({
+      kind: 'error', message: 'No fue posible cerrar la sesión en la API local.',
+    });
+  } finally {
+    logoutButton.disabled = false;
+  }
 });
-const storedSession = getActiveDemoSession();
-if (storedSession) void mountTour(storedSession);
-else loginView.show();
+
+async function restoreSession(): Promise<void> {
+  try {
+    const session = await getActiveApiSession();
+    if (session) await mountTour(session);
+    else loginView.show();
+  } catch {
+    loginView.show();
+  }
+}
+
+void restoreSession();
 window.addEventListener('beforeunload', unmountTour, { once: true });

@@ -1,40 +1,54 @@
-import { describe, expect, it } from 'vitest';
-import { authenticateDemo, hasDemoAccounts, isConfiguredDemoAccount, sha256, type DemoAccount } from './demo-auth';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  authenticateWithApi, endApiSession, getActiveApiSession,
+} from './demo-auth';
 import { getRolePermissions } from './role-permissions';
 
-describe('acceso básico de la demo por roles', () => {
-  it('genera el SHA-256 esperado', async () => {
-    expect(await sha256('OrbinodoDemo2026!')).toBe(
-      'a1468e3aa173f7a86f3798cce1c40cfb72788601b9c40104bdee0c2309fcdaf2',
-    );
+afterEach(() => vi.unstubAllGlobals());
+
+const user = {
+  role: 'engineer1', displayName: 'Ingeniero 1', username: 'Ingeniero 1',
+};
+
+describe('autenticación mediante API local', () => {
+  it('envía credenciales al backend y acepta el perfil validado', async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      JSON.stringify({ user }), { status: 200 },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(authenticateWithApi(' Ingeniero 1 ', '1234567890'))
+      .resolves.toEqual(user);
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({
+      method: 'POST', credentials: 'include',
+    }));
   });
 
-  it('rechaza cuentas incompletas y credenciales incorrectas', async () => {
-    const incomplete: DemoAccount = { role: 'programmer', displayName: 'Orbinodo', username: '', passwordHash: '' };
-    expect(isConfiguredDemoAccount(incomplete)).toBe(false);
-    expect(hasDemoAccounts([incomplete])).toBe(false);
-    const account: DemoAccount = {
-      role: 'programmer', displayName: 'Orbinodo', username: 'Orbinodo',
-      passwordHash: await sha256('OrbinodoDemo2026!'),
-    };
-    await expect(authenticateDemo('otro', 'OrbinodoDemo2026!', [account])).resolves.toBeNull();
-    await expect(authenticateDemo('Orbinodo', 'incorrecta', [account])).resolves.toBeNull();
+  it('trata 401 como credenciales o sesión inválida', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 401 })));
+    await expect(authenticateWithApi('nadie', 'incorrecta0')).resolves.toBeNull();
+    await expect(getActiveApiSession()).resolves.toBeNull();
   });
 
-  it('devuelve una sesión con nombre y rol', async () => {
-    const account: DemoAccount = {
-      role: 'engineer1', displayName: 'Ingeniero 1', username: 'Ingeniero 1',
-      passwordHash: await sha256('OrbinodoDemo2026!'),
-    };
-    await expect(authenticateDemo('Ingeniero 1', 'OrbinodoDemo2026!', [account])).resolves.toEqual({
-      role: 'engineer1', displayName: 'Ingeniero 1', username: 'Ingeniero 1',
+  it('restaura el perfil y solicita logout con la cookie', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ user }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(getActiveApiSession()).resolves.toEqual(user);
+    await expect(endApiSession()).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/auth/logout', {
+      method: 'POST', credentials: 'include',
     });
   });
 
-  it('aplica permisos distintos a los cuatro perfiles', () => {
-    expect(getRolePermissions('programmer')).toMatchObject({ calibrator: true, editCameraOperations: false, viewAuditHistory: false });
-    expect(getRolePermissions('manager')).toMatchObject({ calibrator: false, editCameraOperations: false, viewAuditHistory: true });
-    expect(getRolePermissions('engineer1')).toMatchObject({ calibrator: false, editCameraOperations: true, viewAuditHistory: false });
-    expect(getRolePermissions('engineer2')).toMatchObject({ calibrator: false, editCameraOperations: true, viewAuditHistory: false });
+  it('conserva permisos distintos para los cuatro perfiles', () => {
+    expect(getRolePermissions('programmer')).toMatchObject({
+      calibrator: true, editCameraOperations: false, viewAuditHistory: false,
+    });
+    expect(getRolePermissions('manager')).toMatchObject({
+      calibrator: false, editCameraOperations: false, viewAuditHistory: true,
+    });
+    expect(getRolePermissions('engineer1').editCameraOperations).toBe(true);
+    expect(getRolePermissions('engineer2').editCameraOperations).toBe(true);
   });
 });

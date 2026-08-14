@@ -15,8 +15,7 @@
     "preview": "vite preview",
     "check": "npm run lint && npm run test && npm run build && npm run verify:browser",
     "test": "vitest run",
-    "verify:browser": "node scripts/verify-browser.mjs",
-    "auth:hash": "node scripts/hash-demo-password.mjs"
+    "verify:browser": "node scripts/verify-browser.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

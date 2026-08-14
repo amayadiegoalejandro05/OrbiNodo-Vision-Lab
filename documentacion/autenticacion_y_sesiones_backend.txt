@@ -34,3 +34,10 @@ npm run verify:browser
 El último comando conserva la prueba visual y también inicia una API temporal,
 abre sesiones reales de Jefe e Ingeniero 1, consulta /me, ejecuta logout y confirma
 que ambas cookies quedan invalidadas. No imprime contraseñas ni tokens.
+
+Frontend local
+--------------
+El formulario usa /api/auth/login; al recargar consulta /api/auth/me y el botón
+Cerrar sesión llama /api/auth/logout. La identidad ya no vive en sessionStorage y
+el navegador no calcula SHA-256. vite.config.ts reenvía /api exclusivamente a
+http://127.0.0.1:3001 durante desarrollo. Este bloque no configura Vercel.

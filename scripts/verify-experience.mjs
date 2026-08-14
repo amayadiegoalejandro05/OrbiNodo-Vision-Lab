@@ -1,26 +1,58 @@
-/* global console, process, document, sessionStorage, getComputedStyle */
-import { createHash, randomBytes } from 'node:crypto';
+/* global console, process, document, getComputedStyle, setTimeout */
+import { spawn } from 'node:child_process';
+import { createServer as createNetServer } from 'node:net';
+import { resolve } from 'node:path';
+import { config as loadDotenv } from 'dotenv';
 import { chromium } from 'playwright-core';
 import { createServer } from 'vite';
 
-function temporaryAccount(prefix) {
-  const username = prefix + '-' + randomBytes(4).toString('hex');
-  const password = randomBytes(18).toString('base64url');
-  return { username, password, hash: createHash('sha256').update(password).digest('hex') };
+async function freePort() {
+  const socket = createNetServer();
+  await new Promise((ok) => socket.listen(0, '127.0.0.1', ok));
+  const address = socket.address();
+  if (!address || typeof address === 'string') throw new Error('No hay puerto libre.');
+  await new Promise((ok) => socket.close(ok));
+  return address.port;
 }
 
-const programmer = temporaryAccount('orbinodo-test');
-const manager = temporaryAccount('jefe-test');
-const engineer1 = temporaryAccount('ingeniero1-test');
-const engineer2 = temporaryAccount('ingeniero2-test');
-process.env.VITE_DEMO_USERNAME = programmer.username;
-process.env.VITE_DEMO_PASSWORD_SHA256 = programmer.hash;
-process.env.VITE_DEMO_MANAGER_USERNAME = manager.username;
-process.env.VITE_DEMO_MANAGER_PASSWORD_SHA256 = manager.hash;
-process.env.VITE_DEMO_ENGINEER_1_USERNAME = engineer1.username;
-process.env.VITE_DEMO_ENGINEER_1_PASSWORD_SHA256 = engineer1.hash;
-process.env.VITE_DEMO_ENGINEER_2_USERNAME = engineer2.username;
-process.env.VITE_DEMO_ENGINEER_2_PASSWORD_SHA256 = engineer2.hash;
+loadDotenv({ path: resolve('.env.backend.local'), quiet: true });
+const programmer = {
+  username: 'Orbinodo', password: process.env.ORBINODO_SEED_PROGRAMMER_PASSWORD,
+};
+const manager = {
+  username: 'Jefe', password: process.env.ORBINODO_SEED_MANAGER_PASSWORD,
+};
+const engineer1 = {
+  username: 'Ingeniero 1', password: process.env.ORBINODO_SEED_ENGINEER1_PASSWORD,
+};
+const engineer2 = {
+  username: 'Ingeniero 2', password: process.env.ORBINODO_SEED_ENGINEER2_PASSWORD,
+};
+if ([programmer, manager, engineer1, engineer2].some(({ password }) => !password)) {
+  throw new Error('Faltan credenciales locales para verificar el frontend.');
+}
+
+const apiPort = await freePort();
+const apiUrl = `http://127.0.0.1:${apiPort}`;
+process.env.ORBINODO_API_TARGET = apiUrl;
+const api = spawn(process.execPath, [
+  resolve('node_modules/tsx/dist/cli.mjs'), resolve('backend/server.ts'),
+], {
+  env: { ...process.env, ORBINODO_API_PORT: String(apiPort) }, stdio: 'ignore',
+});
+
+async function waitForApi() {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    try {
+      const response = await fetch(`${apiUrl}/api/health`);
+      if (response.ok) return;
+    } catch { /* Fastify todavía está iniciando */ }
+    await new Promise((ok) => setTimeout(ok, 100));
+  }
+  throw new Error('La API temporal no inició correctamente.');
+}
+
+await waitForApi();
 
 const server = await createServer({ server: { host: '127.0.0.1', port: 4176, strictPort: true } });
 await server.listen();
@@ -48,6 +80,7 @@ async function login(account, expectedRole) {
 
 async function logout() {
   await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+  await page.waitForSelector('#login-screen:not([hidden])');
   assert(await page.locator('#login-screen').isVisible(), 'Cerrar sesión no mostró el formulario.');
 }
 
@@ -184,9 +217,12 @@ try {
   assert(await page.locator('#app').getAttribute('data-role') === 'manager', 'La sesión del Jefe no sobrevivió la recarga.');
   assert(await page.locator('.calibration-toolbar').isHidden(), 'El calibrador apareció al recargar como Jefe.');
   await logout();
-  const storedSession = await page.evaluate(() => sessionStorage.getItem('orbinodo-demo-session'));
+  const meStatus = await page.evaluate(async () => {
+    const response = await fetch('/api/auth/me', { credentials: 'include' });
+    return response.status;
+  });
   const relevantErrors = errors.filter((error) => !error.includes('ERR_ABORTED'));
-  assert(storedSession === null, 'Cerrar sesión no eliminó la sesión.');
+  assert(meStatus === 401, 'Cerrar sesión no invalidó la cookie del backend.');
   assert(relevantErrors.length === 0, 'Errores de navegador: ' + relevantErrors.join(' | '));
   console.log(JSON.stringify({
     roles: ['programmer', 'manager', 'engineer1', 'engineer2'],
@@ -208,4 +244,5 @@ try {
 } finally {
   await browser.close();
   await server.close();
+  api.kill();
 }

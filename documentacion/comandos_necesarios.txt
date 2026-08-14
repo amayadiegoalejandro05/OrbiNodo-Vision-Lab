@@ -1,5 +1,9 @@
 COMANDOS NECESARIOS Y SU UTILIDAD
 
+ESTADO ACTUAL LOCAL: las instrucciones históricas sobre auth:hash y variables
+VITE_DEMO_* ya no aplican. Se conservan solo como registro de fases anteriores.
+Para trabajar ahora, inicia la API con npm run api:dev y Vite con npm run dev.
+
 NUEVO: npm run verify:browser también valida login, /me y logout reales contra
 PostgreSQL con dos perfiles, sin mostrar contraseñas, hashes ni cookies.
 

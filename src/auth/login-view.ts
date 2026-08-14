@@ -1,5 +1,5 @@
-import type { DemoAccount, DemoSession } from './demo-auth';
-import { authenticateDemo, hasDemoAccounts } from './demo-auth';
+import type { DemoSession } from './demo-auth';
+import { authenticateWithApi } from './demo-auth';
 
 export interface LoginViewApi {
   show: () => void;
@@ -14,7 +14,6 @@ function requiredInside<T extends HTMLElement>(container: HTMLElement, selector:
 
 export function createLoginView(
   container: HTMLElement,
-  accounts: DemoAccount[],
   onAuthenticated: (session: DemoSession) => void,
 ): LoginViewApi {
   const form = requiredInside<HTMLFormElement>(container, '#login-form');
@@ -27,12 +26,14 @@ export function createLoginView(
     event.preventDefault();
     submit.disabled = true;
     message.textContent = 'Verificando acceso...';
-    if (!hasDemoAccounts(accounts)) {
-      message.textContent = 'Falta configurar el usuario o el hash en .env.local.';
+    let session: DemoSession | null;
+    try {
+      session = await authenticateWithApi(username.value, password.value);
+    } catch {
+      message.textContent = 'No fue posible conectar con la API local.';
       submit.disabled = false;
       return;
     }
-    const session = await authenticateDemo(username.value, password.value, accounts);
     password.value = '';
     submit.disabled = false;
     if (!session) {

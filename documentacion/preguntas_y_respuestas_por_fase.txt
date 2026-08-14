@@ -1,5 +1,9 @@
 BANCO DE PREGUNTAS Y RESPUESTAS POR FASE
 
+Pregunta: ¿El frontend sigue usando hashes VITE o sessionStorage para autenticarse?
+Respuesta: No. Ahora usa login, /me y logout del backend local con cookie HttpOnly.
+Las menciones posteriores a VITE_DEMO_* corresponden a fases históricas.
+
 Pregunta: ¿La contraseña de 10 caracteres sigue siendo válida?
 Respuesta: Sí. Se deriva con Argon2id; las sesiones usan tokens aleatorios y la
 base de datos conserva solamente SHA-256 del token, nunca de la contraseña.
