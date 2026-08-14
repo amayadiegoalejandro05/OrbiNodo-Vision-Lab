@@ -18,7 +18,8 @@
     "preview": "vite preview",
     "check": "npm run lint && npm run test && npm run build && npm run verify:browser",
     "test": "vitest run",
-    "verify:browser": "node scripts/verify-browser.mjs"
+    "verify:browser": "node scripts/verify-browser.mjs",
+    "verify:production": "node --env-file=.env.backend.local scripts/verify-production.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

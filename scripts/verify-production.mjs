@@ -1,0 +1,57 @@
+const baseUrl = (process.argv[2] || 'https://orbinodo-demo.vercel.app').replace(/\/$/, '');
+
+function ensure(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+async function request(path, options = {}, cookie = '') {
+  const headers = new Headers(options.headers);
+  if (options.body) headers.set('content-type', 'application/json');
+  if (cookie) headers.set('cookie', cookie);
+  const response = await fetch(baseUrl + path, { ...options, headers });
+  const text = response.status === 204 ? '' : await response.text();
+  let body = null;
+  if (text) {
+    try { body = JSON.parse(text); } catch { body = null; }
+  }
+  return { response, body };
+}
+
+async function verifyProfile(username, password, expectedRole, auditStatus) {
+  ensure(password, 'Falta la contraseña local de ' + username + '.');
+  const login = await request('/api/auth/login', {
+    method: 'POST', body: JSON.stringify({ username, password }),
+  });
+  ensure(login.response.status === 200, 'Falló el acceso de ' + username + ' (HTTP ' + login.response.status + ').');
+  ensure(login.body, 'El acceso no devolvió JSON para ' + username + '.');
+  ensure(login.body.user.role === expectedRole, 'Rol inesperado para ' + username + '.');
+  const cookie = (login.response.headers.get('set-cookie') || '').split(';')[0];
+  ensure(cookie, 'La API no entregó cookie de sesión para ' + username + '.');
+
+  const me = await request('/api/auth/me', {}, cookie);
+  ensure(me.response.status === 200, 'La sesión no quedó activa para ' + username + '.');
+
+  const cameras = await request('/api/cameras', {}, cookie);
+  ensure(cameras.response.status === 200, 'No se pudieron leer cámaras con ' + username + '.');
+  ensure(cameras.body.cameras.length === 10, 'Producción no contiene las 10 cámaras.');
+
+  const audit = await request('/api/audit/access-sessions', {}, cookie);
+  ensure(audit.response.status === auditStatus, 'Permiso de auditoría incorrecto para ' + username + '.');
+
+  const logout = await request('/api/auth/logout', { method: 'POST' }, cookie);
+  ensure(logout.response.status === 204, 'Falló el cierre de sesión de ' + username + '.');
+  const afterLogout = await request('/api/auth/me', {}, cookie);
+  ensure(afterLogout.response.status === 401, 'La sesión siguió válida tras salir: ' + username + '.');
+}
+
+try {
+  const health = await request('/api/health');
+  ensure(health.response.status === 200, 'La salud de producción no responde 200.');
+  ensure(health.body.database === 'available', 'Neon no está disponible.');
+  await verifyProfile('Jefe', process.env.ORBINODO_SEED_MANAGER_PASSWORD, 'manager', 200);
+  await verifyProfile('Ingeniero 1', process.env.ORBINODO_SEED_ENGINEER1_PASSWORD, 'engineer1', 403);
+  console.log('Producción verificada: salud, Neon, 10 cámaras, sesiones y permisos.');
+} catch (error) {
+  console.error(error instanceof Error ? error.message : 'Falló la verificación de producción.');
+  process.exitCode = 1;
+}
