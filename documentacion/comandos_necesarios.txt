@@ -306,3 +306,26 @@ SELECT * FROM vista_historial_cambios ORDER BY "Fecha" DESC;
 SELECT * FROM vista_historial_accesos;
 Lugar: pgAdmin 4 -> orbinodo_demo -> Query Tool
 Finalidad: ver entradas, salidas, estado y duración de las sesiones.
+
+REINICIO LIMPIO DE LA DEMOSTRACIÓN
+----------------------------------
+
+npm run db:reset -- --confirm-clean-baseline
+Lugar: D:\01_ORBINODO
+Finalidad: borrar permanentemente access_sessions y camera_change_history y devolver
+los diez estados operativos a demo-cameras.ts. Conserva migraciones, cuatro usuarios
+y diez cámaras. La confirmación escrita evita ejecutarlo por accidente.
+
+PREPARACIÓN PARA VERCEL
+-----------------------
+
+La producción necesita DATABASE_URL o POSTGRES_URL de un PostgreSQL administrado.
+La base instalada en 127.0.0.1 solo sirve al computador local y Vercel no puede
+conectarse a ella. ORBINODO_COOKIE_SECURE debe valer true en Production y Preview.
+
+npx vercel env ls production
+Muestra únicamente los nombres y destinos de variables configuradas, no sus valores.
+
+npx vercel --prod
+Solo debe ejecutarse después de crear, migrar y sembrar la base administrada y de
+configurar las variables secretas. Nunca publica la base local.

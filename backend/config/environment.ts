@@ -3,17 +3,26 @@ import { config as loadDotenv } from 'dotenv';
 import { z } from 'zod';
 
 const environmentSchema = z.object({
+  DATABASE_URL: z.string().regex(/^postgres(?:ql)?:\/\//).optional(),
+  POSTGRES_URL: z.string().regex(/^postgres(?:ql)?:\/\//).optional(),
   ORBINODO_API_HOST: z.string().min(1).default('127.0.0.1'),
   ORBINODO_API_PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   ORBINODO_DATABASE_HOST: z.string().min(1).default('127.0.0.1'),
   ORBINODO_DATABASE_PORT: z.coerce.number().int().min(1).max(65535).default(5432),
   ORBINODO_DATABASE_NAME: z.string().min(1).default('orbinodo_demo'),
   ORBINODO_DATABASE_USER: z.string().min(1).default('orbinodo_api'),
-  ORBINODO_DATABASE_PASSWORD: z.string().min(1),
+  ORBINODO_DATABASE_PASSWORD: z.string().min(1).optional(),
   ORBINODO_DATABASE_SSL: z.enum(['true', 'false']).default('false'),
   ORBINODO_SESSION_HOURS: z.coerce.number().int().min(1).max(168).default(8),
   ORBINODO_COOKIE_NAME: z.string().regex(/^[A-Za-z0-9_-]+$/).default('orbinodo_session'),
   ORBINODO_COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
+}).superRefine((value, context) => {
+  if (!value.DATABASE_URL && !value.POSTGRES_URL && !value.ORBINODO_DATABASE_PASSWORD) {
+    context.addIssue({
+      code: 'custom', path: ['ORBINODO_DATABASE_PASSWORD'],
+      message: 'Falta DATABASE_URL o la contraseña de PostgreSQL local.',
+    });
+  }
 });
 
 export type BackendEnvironment = z.infer<typeof environmentSchema>;

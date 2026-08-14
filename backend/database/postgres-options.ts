@@ -4,6 +4,15 @@ import type { BackendEnvironment } from '../config/environment';
 // Centralizar estas opciones evita que salud, migraciones y rutas construyan
 // conexiones distintas o impriman una URL que contenga la contraseña.
 export function createPostgresOptions(env: BackendEnvironment): PoolConfig {
+  const connectionString = env.DATABASE_URL ?? env.POSTGRES_URL;
+  if (connectionString) {
+    return {
+      connectionString,
+      max: 5,
+      connectionTimeoutMillis: 5_000,
+      idleTimeoutMillis: 30_000,
+    };
+  }
   return {
     host: env.ORBINODO_DATABASE_HOST,
     port: env.ORBINODO_DATABASE_PORT,

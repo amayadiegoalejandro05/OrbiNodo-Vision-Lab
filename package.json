@@ -9,6 +9,7 @@
     "api:start": "tsx backend/server.ts",
     "db:migrate": "tsx backend/database/migrate.ts",
     "db:seed": "tsx backend/database/seed.ts",
+    "db:reset": "tsx scripts/reset-local-database.ts",
     "sessions:close": "tsx scripts/close-active-sessions.ts",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.backend.json",
     "lint": "eslint src eslint.config.js",

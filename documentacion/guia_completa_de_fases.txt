@@ -923,3 +923,14 @@ anterior, valor nuevo, autor y hora calculada por el servidor.
 La migración 0003 agrega vista_historial_cambios para consultar esa información en
 pgAdmin sin escribir una consulta larga. Las verificaciones comprueban 401 sin
 sesión, 403 para Ingenieros, acceso del Jefe y visibilidad de cambios de ambos autores.
+
+Paso 5: línea base limpia y preparación de publicación
+------------------------------------------------------
+
+db:reset exige --confirm-clean-baseline, enumera los objetivos y ejecuta todo dentro
+de una transacción. Deja cuatro usuarios, diez cámaras, diez estados iniciales, cero
+sesiones y cero cambios. Los registros borrados no se recuperan desde la base local.
+
+La API ya dispone de una entrada serverless para Vercel y admite DATABASE_URL. El
+despliegue final queda condicionado a conectar un PostgreSQL administrado, porque
+Vercel no puede acceder al servicio PostgreSQL instalado en el computador local.

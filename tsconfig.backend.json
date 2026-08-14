@@ -4,5 +4,5 @@
     "lib": ["ES2022"],
     "types": ["node"]
   },
-  "include": ["backend/**/*.ts"]
+  "include": ["backend/**/*.ts", "api/**/*.ts", "scripts/**/*.ts"]
 }

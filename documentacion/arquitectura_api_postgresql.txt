@@ -50,3 +50,14 @@ consulta las dos rutas cada vez que se abre y agrupa los campos de un mismo guar
 La vista vista_historial_cambios permite revisar en pgAdmin el Ingeniero, cámara,
 código, campo, valor anterior, valor nuevo y fecha local. localStorage ya no participa
 en la auditoría usada por la aplicación.
+
+Ejecución en Vercel
+-------------------
+
+api/[...path].ts adapta la misma aplicación Fastify a una Vercel Function y mantiene
+las rutas /api en el mismo origen del frontend. El pool acepta DATABASE_URL o
+POSTGRES_URL cuando existe y conserva los parámetros separados para desarrollo local.
+
+La Function nunca usa 127.0.0.1 para producción. Antes de publicar se debe conectar
+un PostgreSQL administrado, aplicar las tres migraciones, ejecutar el seed inicial y
+activar cookies Secure. Sin esos pasos el despliegue no se considera funcional.

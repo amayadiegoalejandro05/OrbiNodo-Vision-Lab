@@ -580,3 +580,15 @@ SELECT * FROM vista_historial_cambios;
 Pregunta: ¿Cerrar una sesión activa borra su registro?
 Respuesta: No. npm run sessions:close -- Nombre marca la sesión como logged_out y
 registra logout_at; la fila permanece disponible para auditoría.
+
+Pregunta: ¿Qué significa dejar la base en ceros antes de publicar?
+Respuesta: Conservar estructura, cuentas y cámaras necesarias para operar, restaurar
+los estados ficticios iniciales y dejar access_sessions y camera_change_history en cero.
+
+Pregunta: ¿Vercel puede usar PostgreSQL instalado en C:\Program Files?
+Respuesta: No. Ese servidor escucha en el computador local. Producción necesita una
+base administrada accesible mediante DATABASE_URL o POSTGRES_URL cifrada.
+
+Pregunta: ¿Por qué no se publica antes de conectar la base administrada?
+Respuesta: Porque el frontend abriría, pero login, cámaras y auditoría fallarían. Un
+despliegue se considera terminado solo si /api/health y los perfiles funcionan.
