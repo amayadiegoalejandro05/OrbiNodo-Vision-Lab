@@ -1,0 +1,790 @@
+EXPLICACIÓN DE ARCHIVOS Y CÓDIGO
+=================================
+
+PROPÓSITO
+
+Este documento explica qué hace cada archivo generado, quién lo utiliza, qué se puede
+modificar y qué fallaría si se cambia incorrectamente. Los comentarios dentro del
+código ofrecen contexto inmediato; este TXT funciona como mapa general acumulativo.
+
+-------------------------------------------------------------------------------
+ARCHIVO: .gitignore
+-------------------------------------------------------------------------------
+
+Propósito:
+Indica a Git qué archivos no deben incluirse en el historial.
+
+Reglas:
+- node_modules/ excluye dependencias descargadas porque npm puede reconstruirlas.
+- dist/ excluye la construcción, que además podría contener fotografías privadas.
+- *.log excluye registros temporales.
+- .env y .env.* reservan configuraciones locales potencialmente sensibles.
+- !.env.example permitiría una plantilla futura sin secretos.
+- public/panoramas/private/* excluye todas las fotografías reales.
+- La excepción README.md conserva únicamente el aviso de privacidad.
+
+Qué modificar:
+Añadir nuevos patrones si aparecen secretos, copias fotográficas o archivos generados.
+
+Qué puede fallar:
+Una regla demasiado amplia puede ocultar código necesario. Una regla ausente puede
+permitir que una fotografía privada se prepare accidentalmente para un commit.
+
+-------------------------------------------------------------------------------
+ARCHIVO: package.json
+-------------------------------------------------------------------------------
+
+Propósito:
+Describe el paquete, sus comandos y sus dependencias directas. npm lo lee.
+
+Propiedades:
+- name es el nombre técnico, en minúsculas y sin espacios.
+- private impide publicar accidentalmente el proyecto como paquete npm.
+- version identifica la etapa del proyecto.
+- type: module habilita import y export modernos.
+
+Scripts:
+- dev ejecuta Vite durante desarrollo.
+- typecheck ejecuta TypeScript sin generar archivos.
+- lint analiza el proyecto con ESLint.
+- build comprueba tipos y después construye dist.
+- preview sirve localmente la construcción.
+- check ejecuta lint y build como verificación completa.
+
+Dependencies:
+@photo-sphere-viewer/core es código necesario en el navegador para mostrar el
+panorama. A través de esta dependencia también se instala Three.js.
+
+DevDependencies:
+Vite, TypeScript y ESLint se usan para desarrollar y construir, pero no son funciones
+visibles de la aplicación final.
+
+Por qué no tiene comentarios:
+package.json debe ser JSON estricto. JSON estándar no admite comentarios. Agregar
+// o /* */ invalidaría npm. Por eso su explicación está en este documento.
+
+Qué modificar:
+Los scripts solo deben cambiar si cambia el flujo de trabajo. Las dependencias deben
+instalarse con npm install para mantener sincronizado package-lock.json.
+
+-------------------------------------------------------------------------------
+ARCHIVO: package-lock.json
+-------------------------------------------------------------------------------
+
+Propósito:
+Registra versiones exactas, dependencias indirectas e integridad de cada paquete.
+
+Quién lo usa:
+npm install y npm ci.
+
+Qué aporta:
+Dos computadores que ejecuten npm ci obtienen el mismo árbol de versiones.
+
+Qué no hacer:
+No editarlo línea por línea. npm lo genera mecánicamente a partir de package.json.
+
+Qué puede fallar:
+Borrarlo permite que npm resuelva versiones nuevas dentro de los rangos declarados.
+Modificarlo manualmente puede producir errores de integridad o instalaciones distintas.
+
+-------------------------------------------------------------------------------
+ARCHIVO: tsconfig.json
+-------------------------------------------------------------------------------
+
+Propósito:
+Configura cómo TypeScript comprende y comprueba src.
+
+Bloques importantes:
+- target ES2022 define el nivel moderno de JavaScript.
+- module ESNext conserva import/export para que Vite los procese.
+- lib incluye JavaScript, DOM y APIs iterables del navegador.
+- moduleResolution Bundler adapta la resolución a Vite.
+- isolatedModules exige archivos transformables por separado.
+- noEmit evita que TypeScript genere archivos; Vite construye el resultado.
+- strict activa comprobaciones rigurosas.
+- noUnusedLocals y noUnusedParameters detectan código sobrante.
+- include limita la revisión a src.
+
+Relación:
+npm run typecheck ejecuta tsc y lee este archivo automáticamente.
+
+Qué puede fallar:
+Desactivar strict puede ocultar errores. Eliminar DOM haría que document, window y
+HTMLElement dejaran de ser conocidos por TypeScript.
+
+-------------------------------------------------------------------------------
+ARCHIVO: eslint.config.js
+-------------------------------------------------------------------------------
+
+Propósito:
+Configura las reglas de análisis estático.
+
+Imports:
+@eslint/js aporta reglas recomendadas de JavaScript.
+typescript-eslint permite analizar archivos .ts.
+
+Configuración:
+- ignores evita analizar node_modules y dist.
+- recommended incorpora reglas mantenidas por los proyectos oficiales.
+- files limita la regla adicional a src/**/*.ts.
+- consistent-type-imports separa imports ejecutables de imports utilizados solo como
+  tipos; por eso main.ts escribe "type PanoramaViewerStatus".
+
+Relación:
+npm run lint ejecuta ESLint, que encuentra este archivo automáticamente.
+
+Qué puede fallar:
+Eliminar el adaptador TypeScript hace que ESLint no interprete bien .ts. Analizar
+node_modules produciría ruido y retrasos innecesarios.
+
+-------------------------------------------------------------------------------
+ARCHIVO: index.html
+-------------------------------------------------------------------------------
+
+Propósito:
+Es el punto de entrada visual que el navegador y Vite abren primero.
+
+Estructura:
+- doctype activa HTML moderno.
+- html lang="es" declara el idioma.
+- meta charset UTF-8 conserva tildes y el símbolo 360°.
+- meta viewport adapta la página a teléfonos.
+- title define el nombre de la pestaña.
+- #app contiene toda la interfaz.
+- header muestra nombre y ubicación actual.
+- aside reserva el futuro menú por pisos.
+- section.viewer-panel contiene el visor y sus mensajes.
+- #panorama-viewer empieza vacío; la biblioteca inserta allí canvas y controles.
+- #app-status recibe progreso, éxito o error.
+- #retry-panorama aparece únicamente cuando el estado es error.
+- viewer-help explica los controles sin conocimientos técnicos.
+- noscript explica por qué la aplicación no funciona sin JavaScript.
+- script type="module" carga src/main.ts.
+
+Accesibilidad:
+aria-label describe ubicación y panorama. role=status anuncia cambios. La clase
+sr-only mantiene un título disponible para lectores de pantalla sin ocupar espacio.
+
+Relación:
+main.ts busca los ids. main.css utiliza las clases. Cambiar un id solo en HTML provoca
+un error explícito de elemento obligatorio.
+
+-------------------------------------------------------------------------------
+ARCHIVO: src/vite-env.d.ts
+-------------------------------------------------------------------------------
+
+Propósito:
+Carga declaraciones de tipos especiales proporcionadas por Vite.
+
+Línea de referencia:
+vite/client enseña a TypeScript a comprender importaciones CSS, import.meta.env y
+recursos estáticos.
+
+Qué puede fallar:
+Sin este archivo, TypeScript puede rechazar la importación de main.css o no reconocer
+BASE_URL.
+
+-------------------------------------------------------------------------------
+ARCHIVO: src/main.ts
+-------------------------------------------------------------------------------
+
+Propósito:
+Coordina la interfaz propia con el adaptador panorámico.
+
+Imports:
+- main.css incorpora estilos.
+- createPanoramaViewer inicia la biblioteca.
+- PanoramaViewerStatus solo existe durante la comprobación de tipos.
+
+getRequiredElement:
+Recibe un selector, busca el elemento y lanza un error descriptivo si no existe.
+El parámetro genérico conserva el tipo concreto del elemento retornado.
+
+Referencias:
+- app es el contenedor general.
+- viewerContainer recibe el canvas panorámico.
+- statusElement muestra el estado.
+- retryButton permite repetir una carga fallida.
+
+renderStatus:
+- Guarda loading, ready o error en data-state.
+- Cambia el texto visible.
+- Muestra el botón únicamente en error.
+CSS utiliza data-state para cambiar el color.
+
+Inicialización:
+Primero se muestra "Preparando". Después createPanoramaViewer recibe el contenedor y
+la función renderStatus. Así el adaptador no necesita conocer el HTML completo.
+
+Evento de reintento:
+El click llama retry. void indica conscientemente que el manejador no espera el valor
+de la promesa; retry administra internamente los errores.
+
+Cierre:
+beforeunload llama destroy una sola vez para liberar texturas, canvas y eventos.
+
+Qué puede fallar:
+Un selector incorrecto detiene el inicio con un mensaje claro. Omitir destroy puede
+dejar recursos activos durante recargas dentro de aplicaciones más grandes.
+
+-------------------------------------------------------------------------------
+ARCHIVO: src/viewer/panorama-viewer.ts
+-------------------------------------------------------------------------------
+
+Propósito:
+Aislar todos los detalles de Photo Sphere Viewer.
+
+Imports:
+Viewer es la clase principal. index.css contiene la barra, cargador y controles
+oficiales de la biblioteca.
+
+DEMO_PANORAMA_URL:
+Combina BASE_URL con la ruta pública. Esto sigue funcionando si la construcción se
+sirve desde una subcarpeta.
+
+PanoramaViewerStatus:
+Unión discriminada de loading, ready y error. Cada alternativa exige message.
+El campo kind permite a TypeScript y CSS saber qué estado se está representando.
+
+PanoramaViewerApi:
+Expone únicamente retry y destroy. main.ts no necesita conocer la clase Viewer.
+
+describeError:
+Acepta unknown porque JavaScript puede lanzar cualquier valor. Si es Error usa
+message; de lo contrario lo convierte de forma segura a texto.
+
+createPanoramaViewer:
+Recibe el contenedor y una función que informa estados. Devuelve la API reducida.
+
+Configuración de Viewer:
+- container indica dónde dibujar.
+- panorama es la imagen equirectangular.
+- caption aparece en la barra.
+- navbar incluye zoom, movimiento, título y pantalla completa.
+- defaultYaw y defaultPitch definen orientación inicial.
+- defaultZoomLvl inicia en un acercamiento intermedio.
+- minFov y maxFov limitan zoom extremo.
+- mousewheel y mousemove habilitan interacción.
+- keyboard habilita teclado en pantalla completa.
+- lang traduce carga y errores principales.
+
+try/catch de inicialización:
+Captura fallos inmediatos, por ejemplo WebGL no disponible. El usuario recibe un
+mensaje sencillo y la consola conserva el objeto técnico.
+
+Evento load-progress:
+Recibe progress, redondea el porcentaje e informa loading.
+
+Evento ready:
+Se escucha una sola vez. Indica que el primer panorama ya puede utilizarse.
+
+Evento panorama-error:
+Registra el detalle y muestra un mensaje con opción de reintento.
+
+retry:
+Vuelve a llamar setPanorama sin transición. Su propio try/catch evita una promesa
+rechazada sin controlar.
+
+destroy:
+Delega a la biblioteca la liberación de recursos WebGL y eventos.
+
+Qué modificar para reemplazar la imagen:
+Cambiar DEMO_PANORAMA_URL. En Fase 3 esta constante será reemplazada por datos de
+configuración y el plugin de recorrido.
+
+Qué puede fallar:
+Ruta inexistente produce panorama-error. Una imagen que no sea equirectangular se
+verá deformada. Un dispositivo sin WebGL no puede crear el Viewer.
+
+-------------------------------------------------------------------------------
+ARCHIVO: src/styles/main.css
+-------------------------------------------------------------------------------
+
+Propósito:
+Diseñar la interfaz propia y hacerla adaptable.
+
+Bloques:
+- :root define colores y fuentes locales, sin solicitudes externas.
+- box-sizing vuelve predecibles anchos y rellenos.
+- body define tamaño mínimo y fondo.
+- button diferencia controles activos y deshabilitados.
+- app-shell divide cabecera, contenido y pie.
+- topbar organiza título y ubicación.
+- workspace crea dos columnas en escritorio.
+- locations presenta el futuro menú.
+- viewer-panel organiza visor, estado y ayuda.
+- panorama-viewer fija altura, fondo y recorte redondeado.
+- viewer-feedback alinea estado y reintento.
+- data-state cambia color para carga y error.
+- sr-only oculta visualmente sin eliminar accesibilidad.
+- la media query de 700 px cambia a una columna.
+- prefers-reduced-motion respeta la preferencia de movimiento reducido.
+
+Relación:
+Las clases deben coincidir con index.html. Photo Sphere Viewer aporta otro CSS que
+se importa desde panorama-viewer.ts.
+
+Qué modificar:
+Colores, tamaños y breakpoint pueden ajustarse aquí sin cambiar TypeScript.
+
+-------------------------------------------------------------------------------
+ARCHIVO: public/panoramas/demo/parqueadero-demo-01.png
+-------------------------------------------------------------------------------
+
+Propósito:
+Panorama ficticio usado para comprobar la Fase 2.
+
+Características verificadas:
+1774 × 887 píxeles, proporción exacta 2:1 y tamaño aproximado de 2,1 MB.
+
+Origen:
+Generado específicamente para el proyecto. No representa la vivienda real y no
+contiene dirección ni ubicación geográfica.
+
+Qué hacer después:
+Se conservará como recurso de prueba incluso cuando lleguen las fotografías reales.
+
+-------------------------------------------------------------------------------
+ARCHIVO: public/panoramas/private/README.md
+-------------------------------------------------------------------------------
+
+Propósito:
+Advertir dónde colocar las copias optimizadas privadas y recordar que dist puede
+contenerlas.
+
+Importante:
+El README sí entra en Git; las futuras fotos de la misma carpeta no.
+
+-------------------------------------------------------------------------------
+ARCHIVO: README.md
+-------------------------------------------------------------------------------
+
+Propósito:
+Ofrecer una entrada rápida al proyecto: estado, comandos, documentación y privacidad.
+
+Público:
+Es útil para quien abre la carpeta por primera vez. No reemplaza la guía detallada.
+
+-------------------------------------------------------------------------------
+CARPETA: documentacion
+-------------------------------------------------------------------------------
+
+comandos_necesarios.txt:
+Lista operaciones de instalación, ejecución, verificación y Git con precauciones.
+
+guia_completa_de_fases.txt:
+Explica el recorrido completo desde análisis hasta presentación y sus herramientas.
+
+preguntas_y_respuestas_por_fase.txt:
+Acumula preguntas de defensa solo sobre capacidades analizadas o implementadas.
+
+explicacion_de_archivos_y_codigo.txt:
+Es este documento y se ampliará al crear nuevos archivos.
+
+-------------------------------------------------------------------------------
+CARPETAS GENERADAS
+-------------------------------------------------------------------------------
+
+node_modules:
+Código externo instalado por npm. No se edita, documenta línea por línea ni guarda
+en Git. Se reconstruye con npm ci.
+
+dist:
+Resultado optimizado de npm run build. No es código fuente. Debe revisarse antes de
+compartir porque Vite copia los recursos públicos, incluidas posibles fotografías.
+
+-------------------------------------------------------------------------------
+FLUJO ACTUAL DE LA FASE 2
+-------------------------------------------------------------------------------
+
+1. El navegador abre index.html.
+2. index.html carga src/main.ts.
+3. main.ts valida los elementos de la interfaz.
+4. main.ts llama createPanoramaViewer.
+5. El adaptador crea Photo Sphere Viewer.
+6. El visor solicita parqueadero-demo-01.png.
+7. load-progress actualiza el porcentaje.
+8. Three.js y WebGL dibujan la textura en una esfera.
+9. ready cambia el estado a panorama listo.
+10. El usuario arrastra, amplía o entra en pantalla completa.
+11. Si la imagen falla, panorama-error muestra reintento.
+12. Al cerrar la página, destroy libera los recursos.
+
+ACTUALIZACION FASE 3: scripts/verify-phase3.mjs abre Microsoft Edge con Playwright Core, inicia Vite temporalmente, pulsa las flechas en ambos sentidos, comprueba la ubicacion, detecta texto corrupto y guarda fase3-verificacion.png. package.json incorpora npm run verify:browser.
+
+ARCHIVOS Y CAMBIOS DE LA FASE 4
+src/ui/location-menu.ts genera pisos y ambientes, administra aria-current y mueve el foco con teclado. Consume TourConfig y no duplica rutas.
+tour.types.ts añade entryPanoramaId e identificadores. demo-tour.ts define las entradas. validate-tour.ts rechaza entradas ajenas.
+main.ts coordina menú, visor, ubicación e inicio. index.html contiene el nav accesible. main.css añade estados activo, foco y móvil.
+scripts/verify-tour.mjs prueba flechas, menú directo, teclado, inicio, móvil, errores y codificación.
+
+ARCHIVOS Y CAMBIOS DE LA FASE 5
+demo-tour.ts registra los dos pisos, ocho nodos, ángulos provisionales y conexiones de regreso.
+validate-tour.ts añade findUnreachablePanoramaIds, un recorrido en anchura que descubre sectores aislados desde el panorama inicial.
+validate-tour.test.ts comprueba ocho imágenes, dos pisos, archivos existentes, ramas de la escalera y detección de un sector aislado.
+scripts/verify-tour.mjs recorre en Edge el primer piso, las escaleras, la rama derecha, la rama izquierda, el estudio y todos sus regresos.
+tsconfig.json y @types/node permiten que TypeScript valide las pruebas que consultan el sistema de archivos.
+Los cinco PNG nuevos de public/panoramas/demo son panoramas ficticios 2:1; el código solo consume sus rutas locales.
+
+PLAN DE ARCHIVOS Y HERRAMIENTAS — NUEVA FASE 6
+
+Vercel:
+Alojará la aplicación Vite como sitio público HTTPS. No administrará los usuarios de
+la demo; solo construirá y publicará el proyecto.
+
+Web Crypto API:
+Calculará SHA-256 de la contraseña introducida. Evita guardar texto plano, pero el
+hash y la comprobación seguirán en el navegador y pueden eludirse.
+
+sessionStorage:
+Recordará el acceso únicamente dentro de la pestaña. Cerrar la pestaña o pulsar
+Cerrar sesión eliminará el estado de la demo.
+
+Archivos previstos; todavía no existen:
+- .env.example: VITE_DEMO_USERNAME y VITE_DEMO_PASSWORD_SHA256 sin valores.
+- .env.local: configuración local ignorada por Git.
+- src/auth/demo-auth.ts: comparación de credenciales y manejo de sesión.
+- src/auth/login-view.ts: formulario y mensajes accesibles.
+- scripts/hash-demo-password.mjs: generación local del hash.
+- vercel.json: reglas SPA y configuración pública.
+- index.html, main.ts y main.css: integración visual, montaje diferido y salida.
+
+No se instalará:
+- Supabase.
+- Base de datos.
+- Backend.
+- Storage privado.
+
+Limitación deliberada:
+El login es una barrera de presentación, no autenticación segura. Las panorámicas
+artificiales continúan públicas y no deben sustituirse por material sensible sin
+rediseñar la seguridad.
+
+
+ARCHIVOS Y CÓDIGO AÑADIDOS EN LA FASE 6
+
+src/auth/demo-auth.ts
+Centraliza la configuración de credenciales, calcula SHA-256 con Web Crypto, compara los datos ingresados y administra la marca de sesión en sessionStorage. Evita guardar una contraseña en texto dentro del código fuente.
+
+src/auth/login-view.ts
+Conecta el formulario HTML con la autenticación. Desactiva temporalmente el botón mientras calcula el hash, muestra errores accesibles y notifica a main.ts cuando el acceso es válido.
+
+src/main.ts
+Ahora controla dos estados: formulario o recorrido. mountTour crea el menú y WebGL después del acceso; unmountTour destruye ambos al cerrar sesión. Esto impide dejar el visor funcionando oculto.
+
+index.html
+Contiene el formulario semántico, campos con autocomplete apropiado, mensaje de error con aria-live y botón Cerrar sesión. El recorrido empieza oculto.
+
+src/styles/auth.css
+Define la tarjeta de acceso, los campos, el enfoque por teclado y la adaptación móvil. Se separó de main.css para que la responsabilidad de fase 6 sea fácil de localizar.
+
+scripts/hash-demo-password.mjs
+Utilidad local de Node que pide la contraseña y entrega el hash. No modifica .env.local automáticamente para evitar sobrescribir credenciales por accidente.
+
+scripts/verify-auth.mjs
+Inicia Vite temporalmente y controla Edge sin interfaz. Comprueba contraseña incorrecta, acceso correcto, recarga, cierre de sesión, sessionStorage, móvil, caracteres y errores de ejecución. Usa credenciales exclusivas de prueba.
+
+src/auth/demo-auth.test.ts
+Prueba el cálculo del hash y los casos de aceptación y rechazo sin abrir navegador.
+
+.env.example
+Plantilla segura que explica los nombres de variables. Sí puede estar en Git porque no contiene valores válidos.
+
+.env.local
+Configuración local ignorada por Git. Contiene el usuario y el hash, no la contraseña. Cada persona puede tener valores diferentes.
+
+vercel.json
+Indica a Vercel que el framework es Vite, que debe ejecutar npm run build y publicar la carpeta dist.
+
+package.json
+auth:hash ejecuta el generador; verify:browser ejecuta la validación de fase 6; check conserva la cadena completa de calidad.
+
+
+CÓDIGO DEL AVANCE 1 DE FASE 7
+
+src/main.ts
+Usa importación dinámica para panorama-viewer.ts, administra el estado de montaje para evitar crear WebGL después de cerrar sesión, actualiza el contador y controla la apertura del menú móvil.
+
+src/styles/experience.css
+Contiene únicamente los estilos de experiencia de fase 7: progreso, menú plegable, ayuda, indicador de carga y reducción de movimiento.
+
+index.html
+Añade el contador, el botón accesible Mostrar ubicaciones y la ayuda de uso. Los controles utilizan elementos nativos para conservar teclado y semántica.
+
+scripts/verify-experience.mjs
+Genera credenciales efímeras en memoria y comprueba que el módulo del visor no se solicite antes del acceso. También prueba menú móvil, contador, Estudio, recarga y cierre de sesión.
+
+scripts/verify-auth.mjs
+Quedó como entrada de compatibilidad hacia la prueba integral y ya no contiene una contraseña persistente.
+
+
+MINIMAPA INTERACTIVO POR NODOS
+
+src/ui/tour-minimap.ts
+Genera un nodo por cada panorama directamente desde TourConfig. Agrupa los nodos por Sótano, Primer piso, Segundo piso y Exterior. Cada nodo es un botón accesible que llama a la misma función de navegación utilizada por el menú y las flechas. setActivePanorama aplica aria-current y la clase naranja únicamente al panorama actual. destroy elimina el contenido cuando se cierra sesión.
+
+src/styles/minimap.css
+Dibuja carriles lógicos por grupo. Los nodos disponibles son cian y el nodo actual es naranja. El minimapa no representa medidas, orientación arquitectónica ni distancias reales; es una visualización simple de ubicaciones navegables.
+
+src/main.ts
+Crea el minimapa después de autenticar, sincroniza su nodo activo desde renderLocation y destruye sus elementos al cerrar sesión. El minimapa y el menú reutilizan navigateTo, por lo que ambos conservan manejo de errores y cierre automático del panel móvil.
+
+index.html
+Incluye la sección Minimapa de nodos, su leyenda y el contenedor generado dinámicamente. La ayuda explica que tocar un nodo transporta al panorama correspondiente.
+
+scripts/verify-experience.mjs
+Reutiliza la prueba existente para confirmar diez nodos, Parqueadero activo al iniciar, navegación al Jardín desde el minimapa, Jardín activo después del cambio y cero errores. No se aumentó el número de comandos de comprobación.
+
+
+ACTUALIZACIÓN DEL MINIMAPA Y DE LAS FLECHAS DIRECCIONALES
+=========================================================
+
+index.html
+----------
+
+La sección #tour-minimap se trasladó desde el panel lateral hasta .viewer-stage.
+El HTML sigue siendo accesible mediante título, leyenda y etiquetas de los
+botones. El texto de ayuda ahora explica que la flecha se encuentra girando
+hacia una entrada o zona de paso.
+
+src/styles/minimap.css
+----------------------
+
+Convierte .tour-minimap en una capa absoluta situada en la esquina inferior
+derecha del panorama. Define fondo translúcido, contraste, límite de altura,
+desplazamiento interno y medidas más compactas para computador y celular. El
+z-index lo mantiene sobre el panorama sin modificar los datos del recorrido.
+
+src/viewer/panorama-viewer.ts
+-----------------------------
+
+VirtualTourPlugin cambió renderMode de "3d" a "2d". En este complemento, el
+modo 2D proyecta el enlace en su yaw y pitch exactos dentro de la esfera y lo
+oculta cuando queda fuera de cámara. Esta es la razón técnica por la que ahora
+las flechas aparecen al mirar hacia el lugar calibrado.
+
+scripts/verify-experience.mjs
+-----------------------------
+
+Además de las comprobaciones anteriores, mide que el minimapa esté contenido y
+anclado a la parte inferior del recorrido. En el Parqueadero existen dos enlaces
+configurados, pero comprueba que solamente uno esté dentro de la mirada inicial.
+Así se protege automáticamente el comportamiento solicitado en cambios futuros.
+
+Preparación para un plano real
+------------------------------
+
+El componente src/ui/tour-minimap.ts seguirá siendo útil porque la acción de
+cada nodo ya navega mediante su panoramaId. Para agregar un plano será necesario
+ampliar los datos con una imagen por planta y coordenadas X/Y por nodo, dibujar
+los botones encima de esa imagen y filtrar la planta visible. Estas posiciones
+de mapa no deben confundirse con yaw y pitch, que pertenecen al panorama 360°.
+
+
+
+CORRECCIÓN TÉCNICA: RESTAURACIÓN DEL MAPA LATERAL Y FLECHAS 3D
+==============================================================
+
+index.html
+----------
+
+La sección .tour-minimap regresó desde .viewer-stage al elemento lateral
+.locations. Por ello deja de cubrir una parte del panorama. El texto de ayuda
+aclara que las flechas se encuentran sobre el suelo y aparecen al mirar hacia
+una zona de paso.
+
+src/styles/minimap.css
+----------------------
+
+Se retiraron la posición absoluta, el fondo superpuesto y las dimensiones de
+HUD. Se restauraron los estilos originales del minimapa lógico dentro del panel
+lateral. En celular forma parte del menú plegable de ubicaciones.
+
+src/viewer/panorama-viewer.ts
+-----------------------------
+
+VirtualTourPlugin volvió a usar renderMode "3d", responsable de dibujar las
+flechas recostadas sobre el suelo. Se añadió shortestYawDistance para calcular
+correctamente la separación entre dos direcciones, incluso al cruzar los límites
+de -180° y 180°.
+
+updateFloorArrowVisibility obtiene el yaw actual, convierte a radianes el yaw
+del enlace y utiliza la mitad del campo de visión horizontal como límite. Si el
+destino queda fuera de ese límite, aplica visibility hidden, desactiva eventos
+del puntero y lo marca como aria-hidden. Cuando el usuario gira hacia ese yaw,
+restaura automáticamente su visibilidad y capacidad de recibir clics.
+
+scripts/verify-experience.mjs
+-----------------------------
+
+Comprueba que el minimapa esté dentro del panel lateral y no dentro del visor.
+También comprueba que Parqueadero conserve dos flechas 3D, pero que únicamente
+una esté visible en la orientación inicial. El ancho de la flecha permite
+detectar si accidentalmente se vuelve al modo 2D en una modificación futura.
+
+
+
+CORRECCIÓN TÉCNICA DE CLICS EN LAS FLECHAS
+==========================================
+
+src/viewer/panorama-viewer.ts
+-----------------------------
+
+Dentro de updateFloorArrowVisibility, la flecha visible ahora recibe
+style.pointerEvents = "auto". La flecha fuera del campo visual conserva
+style.pointerEvents = "none". La propiedad visibility sigue controlando si se
+dibuja y aria-hidden sigue indicando si debe ser ignorada por tecnologías de
+asistencia.
+
+Era necesario asignar "auto" explícitamente porque .psv-virtual-tour-arrows, el
+contenedor 3D proporcionado por Photo Sphere Viewer, utiliza pointer-events none.
+Dejar una cadena vacía retiraba la regla local que permite interactuar con la
+flecha.
+
+scripts/verify-experience.mjs
+-----------------------------
+
+Comprueba mediante getComputedStyle que la flecha visible tenga pointer-events
+auto. Después ejecuta click() sin la opción force y espera que la ubicación
+cambie de Parqueadero a Pasillo. Esta prueba representa mejor la interacción de
+una persona que las comprobaciones anteriores basadas solamente en visibilidad.
+
+
+
+IMPLEMENTACIÓN DE LOS ROLES PROGRAMADOR Y JEFE
+==============================================
+
+src/auth/demo-auth.ts
+---------------------
+
+Define DemoRole como programmer o manager y DemoAccount como la combinación de
+rol, usuario y hash. readDemoAccounts crea ambas cuentas. authenticateDemo ya no
+devuelve solamente verdadero o falso: devuelve el rol correspondiente o null.
+La sesión guarda el rol en orbinodo-demo-role.
+
+src/auth/login-view.ts
+----------------------
+
+Recibe la lista de cuentas y entrega el rol autenticado a main.ts. El mensaje de
+error continúa siendo genérico para no indicar cuál usuario existe.
+
+src/main.ts
+-----------
+
+mountTour recibe el rol antes de mostrar #app. Si es programmer habilita el
+calibrador; si es manager lo deshabilita. También escribe data-role para mantener
+un estado de interfaz verificable. Al desmontar el recorrido elimina ese estado.
+
+src/ui/coordinate-calibrator.ts
+-------------------------------
+
+La API incorpora setAvailable. Cuando recibe false, oculta .calibration-toolbar,
+apaga el modo activo, oculta lecturas y mira y limpia los mensajes de copia.
+Cuando recibe true, muestra la barra en su estado inicial desactivado.
+
+src/auth/demo-auth.test.ts
+--------------------------
+
+Comprueba cuentas incompletas, credenciales incorrectas y la devolución separada
+de programmer y manager. También confirma que dos nombres diferentes pueden
+tener temporalmente el mismo hash sin perder la distinción de rol.
+
+scripts/verify-experience.mjs
+-----------------------------
+
+Crea en memoria dos cuentas aleatorias con contraseñas distintas. Primero entra
+como Programador y confirma que el calibrador sea visible. Después cierra sesión,
+entra como Jefe y comprueba que barra, botón y mira estén ocultos, incluso después
+de recargar. No utiliza las credenciales reales del proyecto.
+
+.env.example
+------------
+
+Documenta las dos variables existentes del Programador y las dos nuevas del
+Jefe. Contiene ejemplos, nunca contraseñas o hashes reales.
+
+scripts/hash-demo-password.mjs
+-------------------------------
+
+Ahora pregunta si el hash corresponde a programador o jefe. Según la respuesta,
+imprime el nombre correcto de la variable que debe copiarse a la configuración.
+
+
+
+ARCHIVOS DE LOS PUNTOS INTERACTIVOS CCTV
+========================================
+
+@photo-sphere-viewer/markers-plugin 5.15.0
+Complemento oficial instalado en dependencies. Usa la misma versión del núcleo y
+del recorrido virtual. Calcula posición y visibilidad de los puntos y administra
+la ficha lateral al seleccionarlos.
+
+src/domain/security-camera.types.ts
+Define SecurityCameraRecord y SecurityCameraType. Separa el inventario CCTV de la
+estructura general del recorrido.
+
+src/data/demo-cameras.ts
+Contiene diez registros ficticios y demoCameraByPanoramaId para localizar con
+rapidez la cámara asociada a cada panorama.
+
+src/viewer/security-camera-markers.ts
+Construye el icono HTML, tooltip y panel. Usa escapeHtml en todos los textos y no
+incluye yaw o pitch en buildCameraPanel.
+
+src/styles/security-cameras.css
+Presenta un punto CCTV amarillo que se diferencia de los nodos cian/naranja y de
+las flechas blancas. También diseña la ficha para computador y celular.
+
+src/viewer/panorama-viewer.ts
+Registra MarkersPlugin antes de VirtualTourPlugin. buildNodes asigna únicamente
+el marcador correspondiente al panorama actual, evitando puntos residuales al
+cambiar de habitación.
+
+src/data/demo-cameras.test.ts
+Comprueba cantidad, correspondencia con panoramas, unicidad, rangos de ángulos y
+la distribución solicitada de nueve cámaras 360° y una fija.
+
+scripts/verify-experience.mjs
+Comprueba en Edge un punto fuera de vista, un punto visible, clic normal, apertura
+de ficha, datos requeridos y ausencia de yaw/pitch.
+
+
+
+ARCHIVOS DE LOS CUATRO PERFILES Y LA AUDITORÍA
+==============================================
+
+src/auth/demo-auth.ts
+Amplía DemoRole con engineer1 y engineer2. authenticateDemo devuelve una sesión
+con rol, nombre visible y usuario. sessionStorage guarda el objeto de sesión.
+
+src/auth/role-permissions.ts
+Es la única matriz de permisos. Orbinodo calibra; Jefe audita; Ingenieros editan;
+todos consultan el mapa.
+
+src/persistence/demo-operations-store.ts
+Fusiona los datos base con cambios de localStorage. Valida estados, fechas, textos,
+roles y registra valores anterior/nuevo. Limita cada historial a 200 entradas.
+
+src/ui/camera-map.ts
+Agrupa diez equipos por nivel. Al seleccionar un nodo navega, orienta la vista y
+abre la ficha. El color cambia según el estado operativo.
+
+src/ui/manager-audit-view.ts
+Crea un diálogo accesible para accesos y otro contenido para cambios. Se vuelve
+visible únicamente cuando main.ts aplica viewAuditHistory al perfil Jefe.
+
+src/viewer/security-camera-markers.ts
+Separa datos inmutables de campos operativos. Solo construye el formulario cuando
+editCameraOperations es verdadero.
+
+src/viewer/panorama-viewer.ts
+Procesa el formulario, llama al almacenamiento, actualiza el punto y notifica al
+mapa. También expone goToCamera para navegar desde el inventario.
+
+src/styles/operational-tools.css
+Contiene mapa, colores de estado, editor adaptable y diálogo de auditoría.
+
+scripts/verify-experience.mjs
+Usa cuatro cuentas aleatorias, ejecuta dos cambios distintos y comprueba permisos,
+persistencia e historiales sin utilizar credenciales reales.
+

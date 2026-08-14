@@ -1,0 +1,235 @@
+PUNTOS INTERACTIVOS DE CÁMARAS CCTV - DEMOSTRACIÓN ORBINODO
+============================================================
+
+1. OBJETIVO
+-----------
+
+Esta mejora agrega diez puntos interactivos dentro del recorrido 360°. Cada
+punto representa una cámara de seguridad ficticia instalada en el ambiente que
+se está observando.
+
+El punto permanece unido a su yaw y pitch dentro del panorama. El complemento
+del visor calcula su proyección en pantalla y solamente lo dibuja cuando queda
+dentro del campo visual del usuario. Al girar en otra dirección, desaparece.
+
+Al hacer clic se abre una ficha lateral. La ficha no muestra yaw, pitch,
+coordenadas geográficas, direcciones IP, contraseñas ni información de red.
+
+Todos los nombres, marcas, modelos, fechas, estados y datos operativos son
+ficticios. No representan equipos reales ni una recomendación de compra.
+
+
+2. INVENTARIO FICTICIO
+----------------------
+
+Cámara 1 - Sótano
+- Código: CCTV-DEM-001
+- Lugar: Sótano, zona de acceso al parqueadero.
+- Marca y modelo ficticios: OrbiGuard Demo OG-360-D1.
+- Tipo: 360°.
+- Punto técnico interno: yaw 121.1; pitch 12.7.
+
+Cámara 2 - Parqueadero
+- Código: CCTV-DEM-002
+- Lugar: Parqueadero, control del acceso principal.
+- Marca y modelo ficticios: OrbiGuard Demo OG-360-X2.
+- Tipo: 360°.
+- Punto técnico interno: yaw 58.5; pitch 16.6.
+
+Cámara 3 - Pasillo
+- Código: CCTV-DEM-003
+- Lugar: Primer piso, pasillo de distribución.
+- Marca y modelo ficticios: OrbiGuard Demo OG-FIX-C4.
+- Tipo: fija.
+- Punto técnico interno: yaw 10.6; pitch 18.4.
+
+Cámara 4 - Cocina
+- Código: CCTV-DEM-004
+- Lugar: Primer piso, acceso de la cocina.
+- Marca y modelo ficticios: OrbiGuard Demo OG-360-C1.
+- Tipo: 360°.
+- Punto técnico interno: yaw 8.3; pitch 18.2.
+
+Cámara 5 - Jardín
+- Código: CCTV-DEM-005
+- Lugar: Exterior, jardín próximo a la cocina.
+- Marca y modelo ficticios: OrbiGuard Demo OG-360-X2.
+- Tipo: 360°.
+- Punto técnico interno: yaw 17.5; pitch -0.4.
+
+Cámara 6 - Escalera inferior
+- Código: CCTV-DEM-006
+- Lugar: Primer piso, base de las escaleras.
+- Marca y modelo ficticios: OrbiGuard Demo OG-360-S1.
+- Tipo: 360°.
+- Punto técnico interno: yaw 118.4; pitch 41.9.
+
+Cámara 7 - Escalera superior
+- Código: CCTV-DEM-007
+- Lugar: Segundo piso, descanso de las escaleras.
+- Marca y modelo ficticios: OrbiGuard Demo OG-360-S1.
+- Tipo: 360°.
+- Punto técnico interno: yaw 14.6; pitch 20.0.
+
+Cámara 8 - Cuarto 1
+- Código: CCTV-DEM-008
+- Lugar: Segundo piso, entrada del Cuarto 1.
+- Marca y modelo ficticios: OrbiGuard Demo OG-360-I2.
+- Tipo: 360°.
+- Punto técnico interno: yaw -21.6; pitch 18.5.
+
+Cámara 9 - Cuarto 2
+- Código: CCTV-DEM-009
+- Lugar: Segundo piso, entrada del Cuarto 2.
+- Marca y modelo ficticios: OrbiGuard Demo OG-360-I2.
+- Tipo: 360°.
+- Punto técnico interno: yaw -26.7; pitch 22.7.
+
+Cámara 10 - Estudio
+- Código: CCTV-DEM-010
+- Lugar: Segundo piso, estudio.
+- Marca y modelo ficticios: OrbiGuard Demo OG-360-I2.
+- Tipo: 360°.
+- Punto técnico interno: yaw -2.2; pitch 23.3.
+
+Los puntos técnicos anteriores se documentan para mantenimiento del software,
+pero no aparecen dentro de la ficha que consulta el usuario.
+
+
+3. DATOS QUE APARECEN EN LA FICHA Y POR QUÉ SON PERTINENTES
+-----------------------------------------------------------
+
+Nombre de la cámara
+Permite identificar rápidamente el equipo durante una inspección, incidente o
+conversación entre seguridad y mantenimiento.
+
+Lugar
+Explica dónde está instalado el equipo sin mostrar coordenadas técnicas. Ayuda a
+relacionar el activo con el espacio que se observa en el recorrido.
+
+Código del activo
+Es un identificador único. Evita confundir dos equipos del mismo modelo y permite
+relacionar la cámara con órdenes de trabajo, inventarios y reportes.
+
+Marca y modelo
+Ayudan a localizar manuales, repuestos, garantías y procedimientos compatibles.
+En esta demo ambos son ficticios para no atribuir características falsas a un
+fabricante real.
+
+Tipo de cámara
+Aclara si la cobertura esperada es panorámica 360° o fija. Esto ayuda a entender
+el alcance del punto y a detectar posibles zonas que necesitan otra cámara.
+
+Estado operativo
+Permite saber si el equipo está operativo, en mantenimiento o fuera de servicio.
+Es importante para identificar degradaciones temporales de la cobertura.
+
+Cobertura prevista
+Describe el objetivo de seguridad del equipo: acceso, circulación, perímetro o
+transición entre niveles. Una cámara instalada sin un propósito documentado es
+más difícil de evaluar.
+
+Modo de grabación
+Indica si el registro es continuo o se activa por eventos. Es pertinente para
+comprender qué evidencia debería existir después de un incidente.
+
+Retención
+Indica durante cuánto tiempo se conservarían las grabaciones. Ayuda a definir
+cuánto tiempo existe para detectar, reportar e investigar un incidente. En un
+sistema real debe alinearse con privacidad, legislación y políticas internas.
+
+Fecha de instalación
+Permite estimar antigüedad, garantía, vida útil y posibles ciclos de renovación.
+
+Último mantenimiento
+Sirve como evidencia de revisión y permite detectar equipos que llevan demasiado
+tiempo sin inspección preventiva.
+
+Próximo mantenimiento
+Convierte la ficha en una ayuda de planificación, no solamente en un registro
+histórico. Facilita anticipar revisiones y reducir fallos inesperados.
+
+Área responsable
+Define quién debe atender alertas, fallos o mantenimiento. Evita que una novedad
+quede sin propietario dentro de la organización.
+
+Observaciones
+Permiten registrar condiciones especiales, limitaciones o aclaraciones que no
+encajan en los demás campos.
+
+
+4. DATOS QUE NO SE MUESTRAN EN LA FICHA
+---------------------------------------
+
+- Yaw y pitch: son coordenadas de calibración del visor, no datos útiles para el
+  jefe que consulta el inventario.
+- Coordenadas geográficas exactas: no son necesarias en esta vivienda de demo.
+- Dirección IP, puerto, usuario o contraseña: revelarían detalles técnicos que
+  aumentarían el riesgo en una instalación real.
+- Topología de red y ubicación de grabadores: información que debería reservarse
+  para personal autorizado y documentación protegida.
+- Grabaciones reales: esta demo solo representa inventario; no transmite video.
+
+
+5. ARCHIVOS PRINCIPALES
+-----------------------
+
+src/domain/security-camera.types.ts
+Define todos los campos permitidos en un registro CCTV.
+
+src/data/demo-cameras.ts
+Contiene las diez cámaras ficticias, sus fichas y las coordenadas internas.
+
+src/viewer/security-camera-markers.ts
+Convierte cada registro en un punto interactivo y construye la ficha lateral.
+Escapa el texto antes de insertarlo como HTML.
+
+src/styles/security-cameras.css
+Define el punto amarillo CCTV, estados visuales y presentación de la ficha.
+
+src/viewer/panorama-viewer.ts
+Carga MarkersPlugin antes de VirtualTourPlugin y entrega a cada panorama su
+propio punto CCTV.
+
+src/data/demo-cameras.test.ts
+Comprueba diez cámaras, un registro por panorama, identificadores únicos,
+ángulos válidos, nueve equipos 360° y una sola cámara fija en el Pasillo.
+
+
+6. COMPROBACIÓN REALIZADA
+-------------------------
+
+- TypeScript terminó sin errores.
+- 14 pruebas unitarias terminaron correctamente.
+- Edge confirmó que el punto del Parqueadero queda oculto fuera de la mirada.
+- Edge abrió con un clic normal la ficha de Cámara 3 - Pasillo.
+- La ficha mostró lugar, marca, tipo, fechas y responsable sin yaw ni pitch.
+- Los dos roles, flechas, minimapa, navegación móvil y cierre de sesión siguieron
+  funcionando sin errores.
+
+
+7. LIMITACIÓN DE LA DEMO
+------------------------
+
+Los puntos representan fichas de inventario, no cámaras conectadas. No existe
+transmisión de video, monitoreo en vivo, estado obtenido desde red, almacenamiento
+de grabaciones ni integración con un VMS. Esas funciones requerirían una fase
+posterior con análisis de ciberseguridad, permisos de servidor y fuentes de datos
+autorizadas.
+
+
+EDICIÓN OPERATIVA Y MAPA CCTV
+=============================
+
+Las fichas CCTV ahora cambian según el perfil. Ingeniero 1 e Ingeniero 2 reciben
+un formulario para estado, mantenimiento, responsable y observaciones. Orbinodo y
+Jefe reciben la misma información en modo de solo lectura.
+
+El mapa lógico de cámaras contiene diez nodos agrupados por nivel. Al seleccionar
+uno, el visor abre su panorama, gira hacia el punto y muestra la ficha. Los colores
+representan Operativa, En mantenimiento y Fuera de servicio.
+
+Los cambios viven en localStorage y solamente se comparten dentro del mismo
+navegador. La explicación completa se encuentra en
+documentacion/perfiles_permisos_edicion_e_historiales.txt.
+

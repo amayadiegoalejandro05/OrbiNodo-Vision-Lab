@@ -1,0 +1,272 @@
+PROMPT PARA CONTINUAR EN OTRO CHAT DE CODEX
+===========================================
+
+Copia desde la línea "INICIO DEL PROMPT" hasta "FIN DEL PROMPT" y pégalo en un
+nuevo chat de Codex abierto sobre la carpeta D:\01_ORBINODO.
+
+
+INICIO DEL PROMPT
+-----------------
+
+Actúa como arquitecto de software, desarrollador backend senior y especialista en
+bases de datos. Trabajaremos dentro del proyecto existente D:\01_ORBINODO.
+
+OBJETIVO PRINCIPAL
+
+Quiero reemplazar el almacenamiento local del navegador por una base de datos
+central propia de Orbinodo. Para esta demostración, PostgreSQL y la API se ejecutarán
+en este mismo computador Windows. Los cambios realizados por Ingeniero 1 o
+Ingeniero 2 deben quedar disponibles para el Jefe y Orbinodo desde otros navegadores
+y dispositivos cuando esos dispositivos puedan conectarse a la API.
+
+No quiero contratar por ahora una base de datos administrada como Supabase, Neon,
+Firebase u otro servicio. PostgreSQL será administrado por Orbinodo. La aplicación
+web actual está desplegada en https://orbinodo-demo.vercel.app, pero primero debemos
+terminar y verificar la arquitectura local antes de modificar producción.
+
+FORMA DE TRABAJO OBLIGATORIA
+
+1. Inspecciona el repositorio antes de decidir o editar.
+2. Explícame el trabajo por etapas y avanza un solo paso por vez.
+3. Después de explicarme cada paso, espera a que yo responda "listo" antes de pasar
+   al siguiente, especialmente cuando tenga que instalar programas o configurar
+   Windows, PostgreSQL, red, firewall, router, dominio o HTTPS.
+4. No despliegues a Vercel ni cambies producción sin mi autorización explícita.
+5. No borres datos, volúmenes, archivos o historiales sin autorización.
+6. No uses comandos destructivos como `docker compose down -v`.
+7. Nunca muestres contraseñas, secretos, hashes, tokens ni cadenas de conexión en el
+   chat, pruebas, capturas, Git o archivos que puedan publicarse.
+8. Usa `.env` para secretos y deja únicamente nombres de variables y ejemplos falsos
+   en `.env.example`.
+9. Conserva los comentarios y explicaciones técnicas dentro del código y de archivos
+   `.txt` en `documentacion`; en el chat comunica solo instrucciones y resultados.
+10. Mantén todos los archivos de texto y código en UTF-8. Evita comandos que puedan
+    recodificar archivos completos y confirma que no aparezcan secuencias como Ã o Â.
+11. Respeta los cambios existentes del usuario y no reescribas partes no relacionadas.
+12. Para cada bloque de implementación ejecuta solamente estas tres verificaciones:
+    `npm run typecheck`, `npm run test` y `npm run verify:browser`, adaptando la última
+    cuando sea necesario para probar la API y dos sesiones independientes.
+
+ESTADO ACTUAL DEL PROYECTO
+
+- Frontend Vite + TypeScript.
+- Photo Sphere Viewer con diez panoramas y diez cámaras CCTV ficticias.
+- Los datos de cámaras están definidos inicialmente en `src/data/demo-cameras.ts`.
+- Los tipos están en `src/domain/security-camera.types.ts`.
+- El almacenamiento actual está en `src/persistence/demo-operations-store.ts`.
+- Actualmente `localStorage` guarda modificaciones e historiales; `sessionStorage`
+  guarda la sesión activa. Por eso cada dispositivo tiene datos diferentes.
+- La autenticación actual se realiza en el navegador desde `src/auth/demo-auth.ts`.
+  Esta autenticación es adecuada solamente para la demo anterior y debe migrarse al
+  backend; las credenciales y decisiones de autorización no deben seguir expuestas
+  en variables `VITE_*`.
+- Los permisos visuales se centralizan en `src/auth/role-permissions.ts`, pero el
+  backend deberá volver a validarlos en cada endpoint. Ocultar botones no es seguridad.
+- La aplicación ya está publicada en Vercel. No actualizarla todavía.
+
+PERFILES Y PERMISOS QUE DEBEN CONSERVARSE
+
+Orbinodo / programmer:
+- Puede ver el calibrador yaw/pitch.
+- Puede consultar el mapa y las fichas de cámaras.
+- No modifica los campos operativos actuales.
+- No ve el historial reservado al Jefe.
+
+Jefe / manager:
+- No ve el calibrador.
+- Consulta mapa y fichas de cámaras en modo de solo lectura.
+- Consulta el historial de accesos y el historial de cambios por perfil.
+- No puede editar cámaras.
+
+Ingeniero 1 / engineer1 e Ingeniero 2 / engineer2:
+- No ven el calibrador ni la auditoría completa.
+- Consultan el mapa y las fichas.
+- Solo pueden modificar: estado operativo, último mantenimiento, próximo
+  mantenimiento, área responsable y observaciones.
+- Cada modificación debe registrar autor, fecha del servidor, cámara, campo, valor
+  anterior y valor nuevo.
+
+ARQUITECTURA DESEADA PARA LA DEMO LOCAL
+
+Propón e implementa una arquitectura sencilla y mantenible con:
+
+- PostgreSQL instalado y ejecutado en este computador Windows.
+- Una API de Orbinodo escrita en Node.js y TypeScript dentro del mismo repositorio,
+  separada claramente del frontend.
+- Migraciones SQL versionadas.
+- Script de datos iniciales para las diez cámaras y los cuatro usuarios de prueba.
+- Contraseñas almacenadas con un algoritmo apropiado para contraseñas, como Argon2id
+  o bcrypt; no utilizar SHA-256 simple como almacenamiento de contraseñas del servidor.
+- Sesiones seguras controladas por el backend. Prefiere cookies HttpOnly y explica
+  la configuración necesaria; no guardes tokens sensibles en localStorage.
+- Validación de entrada y consultas parametrizadas.
+- PostgreSQL accesible únicamente por la API. No publiques el puerto 5432 en internet.
+- Operaciones de actualización e historial dentro de una misma transacción SQL, para
+  que nunca se guarde el cambio sin su auditoría o viceversa.
+- Hora calculada por el servidor/base de datos, no por el reloj del navegador.
+- Manejo visible del estado "API no disponible". No vuelvas silenciosamente a
+  localStorage, porque eso crearía dos fuentes de verdad diferentes.
+
+MODELO MÍNIMO DE DATOS
+
+Diseña y justifica al menos estas entidades, ajustándolas si encuentras una opción
+mejor al revisar el código:
+
+1. users
+   - id, username único, display_name, password_hash, role, is_active,
+     created_at y updated_at.
+
+2. cameras
+   - identidad, código de activo, nombre, panorama, ubicación, marca, modelo, tipo,
+     yaw, pitch, instalación, cobertura, grabación y retención.
+
+3. camera_operational_state
+   - camera_id, status, last_maintenance_on, next_maintenance_on,
+     responsible_area, notes, updated_by y updated_at.
+
+4. camera_change_history
+   - cámara, autor, fecha, campo, valor anterior y valor nuevo. Debe ser un registro
+     de solo adición desde la operación normal de la API.
+
+5. access_sessions
+   - usuario, login_at, logout_at, duración calculable y estado de la sesión.
+
+ENDPOINTS MÍNIMOS
+
+- POST /api/auth/login
+- POST /api/auth/logout
+- GET /api/auth/me
+- GET /api/cameras
+- PATCH /api/cameras/:id/operations
+- GET /api/audit/access-sessions, solo Jefe
+- GET /api/audit/camera-changes, solo Jefe
+- GET /api/health
+
+La API debe responder con códigos HTTP y mensajes claros, sin revelar detalles de
+PostgreSQL, rutas internas, hashes ni trazas en producción.
+
+SINCRONIZACIÓN ENTRE DISPOSITIVOS
+
+Al consultar o modificar información, el frontend debe usar la API como única fuente
+de verdad. Después de guardar, todos los componentes visibles deben refrescarse.
+Para la primera demo basta con volver a consultar al iniciar sesión, al recuperar el
+foco de la página, al abrir el historial y después de una modificación. Puedes
+proponer un sondeo moderado si aporta valor, pero no agregues WebSockets todavía sin
+justificar la necesidad.
+
+PRUEBA MULTIDISPOSITIVO SIMULADA
+
+La verificación integral debe abrir dos contextos de navegador independientes:
+
+1. Ingeniero 1 inicia sesión y modifica una cámara.
+2. Jefe abre la aplicación en otra sesión sin compartir localStorage.
+3. Jefe ve el estado nuevo y la entrada de auditoría proveniente de PostgreSQL.
+4. Se verifica que Jefe no pueda modificar y que un Ingeniero no pueda consultar los
+   endpoints de auditoría aunque intente llamarlos directamente.
+
+PERSISTENCIA Y RESPALDOS
+
+- Los datos deben almacenarse en el directorio de datos persistente de PostgreSQL o
+  en un volumen claramente identificado.
+- Reiniciar PostgreSQL, la API o Windows no debe borrar la información.
+- Documenta cómo iniciar, detener y reiniciar correctamente los servicios.
+- Crea un procedimiento de copia con `pg_dump` y otro de restauración con
+  `pg_restore` o `psql`, según el formato elegido.
+- Los respaldos deben guardarse fuera del directorio activo de PostgreSQL y nunca
+  incluirse en Git.
+- Añade una prueba controlada de respaldo y restauración usando datos ficticios antes
+  de considerar terminada la fase.
+
+IMPORTANTE SOBRE VERCEL Y EL ACCESO DESDE EL CELULAR
+
+No supongas que la página HTTPS de Vercel puede llamar directamente a
+`http://localhost`, `http://192.168.x.x` o a una API HTTP de este computador. El
+navegador puede bloquear estas llamadas por contenido mixto y, además, localhost en
+el celular significa el propio celular, no este computador.
+
+Primero completa la API y PostgreSQL localmente. Después detente y explícame las
+alternativas para conectar producción:
+
+A. Alojar temporalmente toda la demo en este computador y acceder dentro de la misma
+   red local.
+B. Publicar la API propia mediante dirección IP pública, dominio, HTTPS, firewall y
+   redirección de puertos, comprobando antes si el proveedor usa CGNAT.
+C. Utilizar un túnel gratuito de un tercero, dejando claro que ya existiría una
+   dependencia externa aunque no tenga costo.
+D. Trasladar posteriormente API y PostgreSQL a un servidor físico de Orbinodo o de
+   la empresa.
+
+No abras puertos ni modifiques el router o el firewall sin mi autorización explícita.
+
+DOCUMENTACIÓN QUE DEBES CREAR O ACTUALIZAR
+
+- Un `.txt` con la arquitectura y el flujo frontend → API → PostgreSQL.
+- Un `.txt` con cada instalación y para qué sirve.
+- Un `.txt` con todos los comandos, lugar donde se ejecutan y finalidad.
+- Un `.txt` que explique cada archivo de backend, migración, configuración y prueba.
+- Un `.txt` de respaldo, restauración y recuperación ante fallos.
+- Actualiza la guía de fases y el archivo existente de preguntas y respuestas, sin
+  crear otro documento duplicado de preguntas.
+- Explica dentro del código las decisiones que una persona nueva necesitaría conocer.
+
+PRIMER PASO DEL NUEVO CHAT
+
+No instales ni modifiques nada todavía. Primero:
+
+1. Inspecciona las herramientas ya instaladas: versión de Windows, Node, npm,
+   PostgreSQL, psql, Docker y Git.
+2. Inspecciona el repositorio y confirma los puntos exactos donde localStorage y la
+   autenticación del navegador deben ser reemplazados.
+3. Recomienda si para este computador conviene PostgreSQL nativo en Windows o
+   PostgreSQL en contenedor. Considera facilidad, persistencia, respaldo, consumo y
+   licenciamiento para una futura presentación empresarial.
+4. Presenta el plan por pasos, los riesgos y el resultado esperado.
+5. Espera mi respuesta "listo" antes de comenzar la instalación.
+
+FIN DEL PROMPT
+--------------
+
+
+QUÉ PASA CUANDO SE APAGA ESTE COMPUTADOR
+========================================
+
+La base de datos no debería borrarse al apagar correctamente el computador.
+PostgreSQL guarda las tablas en archivos persistentes del SSD. Al volver a encender
+el equipo e iniciar PostgreSQL y la API, los datos vuelven a estar disponibles.
+
+Lo que ocurre durante el apagado depende de dónde se aloje cada componente:
+
+CASO 1: PÁGINA EN VERCEL Y API/POSTGRESQL EN ESTE COMPUTADOR
+
+- La dirección de Vercel continúa cargando porque la página está alojada en Vercel.
+- La API de Orbinodo queda fuera de servicio mientras el computador esté apagado.
+- El inicio de sesión basado en servidor, cámaras compartidas e historiales no
+  funcionarán hasta encender nuevamente el computador y levantar los servicios.
+- La interfaz debe mostrar "Servidor temporalmente no disponible" y no fingir que
+  guardó información localmente.
+
+CASO 2: PÁGINA, API Y POSTGRESQL EN ESTE COMPUTADOR
+
+- La página completa deja de estar disponible mientras el equipo esté apagado.
+- Al encenderlo y reiniciar los servicios, la página y los datos vuelven.
+
+LOS DATOS SÍ PODRÍAN PERDERSE SI:
+
+- Se elimina manualmente el directorio de datos de PostgreSQL.
+- Se borra el volumen persistente de un contenedor.
+- Se usa un comando destructivo como `docker compose down -v`.
+- Se desinstala PostgreSQL eliminando también sus datos.
+- Falla el SSD y no existe un respaldo válido.
+- Una migración o acción administrativa defectuosa modifica o elimina registros.
+
+Por eso se necesitan copias periódicas con pg_dump, una copia en otra unidad física
+y una prueba de restauración. Un respaldo que nunca se ha restaurado todavía no debe
+considerarse un respaldo comprobado.
+
+APAGADO RECOMENDADO
+
+Se debe cerrar PostgreSQL mediante su servicio o herramienta normal y apagar Windows
+correctamente. Un corte eléctrico brusco no equivale a borrar automáticamente la
+base; PostgreSQL cuenta con recuperación transaccional, pero los cortes repetidos,
+el daño del disco o una escritura interrumpida siguen siendo riesgos. Para una demo
+importante conviene utilizar UPS y mantener respaldos recientes.

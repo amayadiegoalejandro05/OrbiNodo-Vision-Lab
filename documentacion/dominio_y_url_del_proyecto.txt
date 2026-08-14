@@ -1,0 +1,73 @@
+ORBINODO — EXPLICACIÓN DEL DOMINIO Y LA URL DEL PROYECTO
+========================================================
+
+1. POR QUÉ LA DIRECCIÓN ACTUAL TERMINA EN VERCEL.APP
+
+La aplicación está alojada en Vercel. Al crear un proyecto, Vercel entrega gratuitamente una dirección dentro de su dominio, por ejemplo:
+
+https://orbinodo-demo.vercel.app
+
+"orbinodo-demo" identifica el proyecto y "vercel.app" identifica al proveedor que presta el dominio gratuito. No significa que el computador del desarrollador deba permanecer encendido; Vercel conserva y sirve los archivos desde su infraestructura.
+
+2. CAMBIAR EL NOMBRE SIN COMPRAR UN DOMINIO
+
+El nombre del proyecto puede cambiarse a "orbinodo-recorridovirtual". La URL gratuita quedaría:
+
+https://orbinodo-recorridovirtual.vercel.app
+
+Esta opción es adecuada para desarrollo, demostraciones y pruebas. No permite eliminar "vercel.app", porque ese dominio pertenece a Vercel.
+
+3. POR QUÉ UNA URL PROPIA DEBE TENER TERMINACIÓN
+
+Una dirección pública no puede ser solamente "orbinodorecorridovirtual". Necesita un dominio de nivel superior, como .com, .co o .app. Para utilizar:
+
+https://orbinodorecorridovirtual.com
+
+se debe comprar y renovar "orbinodorecorridovirtual.com", siempre que esté disponible.
+
+4. DIFERENCIA ENTRE DOMINIO Y ALOJAMIENTO
+
+El dominio es el nombre que escribe el visitante. El alojamiento es la infraestructura que entrega HTML, CSS, JavaScript e imágenes. Comprar un dominio no obliga a comprar otro servidor: Vercel puede continuar alojando la aplicación y el dominio propio puede apuntar hacia ese proyecto.
+
+5. RECOMENDACIÓN PARA UNA MARCA CON VARIOS PRODUCTOS
+
+Como Orbinodo abarcará más soluciones, resulta más flexible adquirir un dominio principal corto, por ejemplo:
+
+https://orbinodo.com
+
+El recorrido podría publicarse en un subdominio:
+
+https://recorrido.orbinodo.com
+
+Otros productos podrían usar direcciones como soporte.orbinodo.com o automatizacion.orbinodo.com. Esto conserva una identidad de marca común y evita comprar un dominio largo por cada producto.
+
+6. PASOS PARA TENER UN DOMINIO PROPIO
+
+1. Verificar que el nombre deseado esté disponible.
+2. Comprar el dominio en un registrador o en Vercel.
+3. Abrir el proyecto de Vercel y entrar en Settings > Domains.
+4. Agregar el dominio o subdominio deseado.
+5. Configurar en el registrador los registros DNS exactos indicados por Vercel.
+6. Esperar la propagación y la verificación del dominio.
+7. Confirmar que Vercel generó el certificado HTTPS.
+8. Probar acceso, inicio de sesión y recorrido desde una red externa.
+
+Comandos opcionales de la CLI:
+
+npx vercel domains add recorrido.orbinodo.com orbinodo-demo
+Asocia el dominio con el proyecto enlazado.
+
+npx vercel domains inspect recorrido.orbinodo.com
+Muestra el estado y los registros DNS que deben configurarse. Se deben utilizar los valores que entregue Vercel para el proyecto, no valores inventados.
+
+7. COSTOS Y RESPONSABILIDADES
+
+La URL vercel.app no requiere comprar un dominio. Un dominio propio normalmente se paga y renueva de forma periódica. Precio, disponibilidad y condiciones dependen del registrador y de la extensión elegida. Antes de comprarlo deben verificarse propiedad de marca, renovación automática, acceso administrativo, correo de recuperación y responsable empresarial.
+
+8. CONCLUSIÓN PARA PRESENTAR A LA EMPRESA
+
+La URL actual es técnicamente válida, pública y utiliza HTTPS. Su terminación vercel.app indica que se usa el dominio gratuito del proveedor. Para una dirección totalmente corporativa se requiere comprar un dominio propio y conectarlo mediante DNS. La alternativa recomendada para una plataforma con varios servicios es un dominio principal de Orbinodo y un subdominio específico para el recorrido virtual.
+
+Fuentes oficiales:
+https://vercel.com/docs/domains/set-up-custom-domain
+https://vercel.com/docs/domains/working-with-domains/add-a-domain

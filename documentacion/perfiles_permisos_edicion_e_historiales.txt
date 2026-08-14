@@ -1,0 +1,268 @@
+PERFILES, PERMISOS, EDICIÓN E HISTORIALES - DEMO ORBINODO
+==========================================================
+
+1. OBJETIVO
+-----------
+
+La demostración distingue cuatro perfiles con responsabilidades diferentes:
+
+Orbinodo
+- Puede usar el calibrador yaw/pitch.
+- Puede consultar el mapa lógico de cámaras y sus fichas.
+- No modifica información operativa.
+- No ve los historiales reservados al Jefe.
+
+Jefe
+- Puede consultar el mapa lógico de cámaras y todas sus fichas.
+- Las fichas son de solo lectura.
+- Puede consultar el historial de accesos exitosos.
+- Puede consultar el historial explícito de cambios de los ingenieros.
+- No ve ni puede activar el calibrador.
+
+Ingeniero 1
+- Puede consultar el mapa de cámaras y las fichas.
+- Puede modificar campos operativos autorizados.
+- No ve el calibrador.
+- No ve los historiales del Jefe.
+
+Ingeniero 2
+- Tiene los mismos permisos operativos de Ingeniero 1.
+- Sus cambios quedan identificados separadamente como Ingeniero 2.
+
+La interfaz muestra el perfil activo en la parte superior para reducir errores
+por trabajar con una cuenta equivocada.
+
+
+2. MAPA LÓGICO DE CÁMARAS
+-------------------------
+
+El mapa contiene diez nodos CCTV agrupados por nivel. No pretende representar un
+plano arquitectónico ni distancias reales.
+
+Al seleccionar un nodo:
+
+1. El recorrido se traslada al panorama de la cámara.
+2. La vista gira hacia su yaw y pitch.
+3. Se abre automáticamente la ficha del equipo.
+
+El color del nodo resume el estado:
+
+- Verde/cian: Operativa.
+- Amarillo: En mantenimiento.
+- Rojo: Fuera de servicio.
+
+Importancia: permite detectar rápidamente degradaciones de cobertura y evita
+tener que recorrer manualmente todos los panoramas para localizar un equipo.
+
+
+3. CAMPOS QUE PUEDEN EDITAR LOS INGENIEROS
+-------------------------------------------
+
+Estado operativo
+Permite marcar una cámara como Operativa, En mantenimiento o Fuera de servicio.
+Es pertinente porque cambia la disponibilidad efectiva de la cobertura.
+
+Último mantenimiento
+Registra cuándo se ejecutó la revisión más reciente. Ayuda a demostrar seguimiento
+preventivo y detectar equipos sin atención durante demasiado tiempo.
+
+Próximo mantenimiento
+Permite planificar la siguiente intervención. El sistema impide guardar una fecha
+anterior al último mantenimiento.
+
+Área responsable
+Identifica quién debe atender el activo. Es importante para evitar novedades sin
+un responsable claramente asignado.
+
+Observaciones
+Registra hallazgos, trabajos realizados, limitaciones o acciones pendientes. Se
+limita a 500 caracteres para controlar el tamaño del almacenamiento de la demo.
+
+
+4. CAMPOS BLOQUEADOS Y RAZÓN
+----------------------------
+
+Los ingenieros no pueden modificar desde la ficha:
+
+- Código del activo.
+- Nombre y ubicación.
+- Marca y modelo.
+- Tipo fijo o 360°.
+- Fecha original de instalación.
+- Cobertura prevista.
+- Modo de grabación y retención.
+- Yaw y pitch.
+
+Estos campos representan identidad, diseño, políticas o calibración. Cambiarlos
+accidentalmente puede romper la trazabilidad, alterar el propósito de seguridad
+o colocar el punto en una posición incorrecta. En una solución real deberían
+requerir un flujo de aprobación o permisos técnicos superiores.
+
+
+5. HISTORIAL DE CAMBIOS DEL JEFE
+--------------------------------
+
+Cada guardado con cambios reales registra:
+
+- Ingeniero que realizó la modificación.
+- Fecha y hora del navegador.
+- Cámara, nombre y código del activo.
+- Cada campo modificado.
+- Valor anterior.
+- Valor nuevo.
+
+Ejemplo de lectura:
+
+Ingeniero 1 modificó Cámara 3 - Pasillo
+Estado operativo: “Operativa” → “En mantenimiento”
+Área responsable: “Seguridad patrimonial” → “Mantenimiento CCTV”
+
+No se crea una entrada si el ingeniero pulsa Guardar sin cambiar valores. Esto
+evita llenar el historial con eventos que no representan una modificación.
+
+Importancia: permite rendición de cuentas, reconstrucción de decisiones y revisión
+de cambios que puedan afectar la cobertura de seguridad.
+
+
+6. HISTORIAL DE ACCESOS DEL JEFE
+--------------------------------
+
+Registra únicamente inicios de sesión exitosos e incluye:
+
+- Nombre del perfil.
+- Usuario utilizado.
+- Rol.
+- Fecha y hora del navegador.
+
+Una recarga de la misma sesión no crea un nuevo acceso. Cerrar sesión y volver a
+entrar sí genera una entrada nueva.
+
+No se guarda la contraseña ni su hash dentro del historial.
+
+Importancia: muestra quién ingresó a la demostración y cuándo, y ayuda a explicar
+el concepto de trazabilidad de acceso. Los intentos fallidos no se registran en
+esta versión cliente; en producción deberían registrarse de forma segura en el
+servidor, sin almacenar contraseñas.
+
+
+7. PERSISTENCIA LOCAL Y LIMITACIÓN IMPORTANTE
+---------------------------------------------
+
+Las ediciones y ambos historiales se guardan en localStorage y se conservan al
+recargar o cerrar el navegador. Se limitan a las 200 entradas más recientes de
+cada historial para evitar crecimiento indefinido.
+
+Esta persistencia pertenece únicamente al navegador y dispositivo donde se
+realizaron las acciones. Ejemplo:
+
+- Si Ingeniero 1 edita desde el computador A, el Jefe verá ese cambio cuando
+  entre como Jefe en el mismo navegador del computador A.
+- Si el Jefe entra desde el computador B, no verá el cambio del computador A.
+
+Además, una persona con herramientas del navegador puede modificar o borrar
+localStorage. Por lo tanto, esta función demuestra el flujo de trabajo, pero no
+constituye un registro de auditoría confiable o empresarial.
+
+Para compartir y proteger los cambios entre varios computadores se requerirá:
+
+- Backend autenticado.
+- Base de datos central.
+- Roles verificados por el servidor.
+- Marcas de tiempo generadas por el servidor.
+- Registro de auditoría inmutable o con protección contra alteraciones.
+- Conexiones HTTPS y políticas de conservación.
+- Integración con identidad empresarial, idealmente SSO y MFA.
+
+
+8. CUENTAS DE LA DEMO
+---------------------
+
+Los nombres predeterminados son:
+
+- Orbinodo.
+- Jefe.
+- Ingeniero 1.
+- Ingeniero 2.
+
+Si no se configuran hashes separados, Jefe e Ingenieros reutilizan temporalmente
+la contraseña de Orbinodo. Esto es solamente para facilitar la demostración. Para
+presentación formal conviene asignar una contraseña distinta a cada perfil.
+
+Variables nuevas:
+
+VITE_DEMO_ENGINEER_1_USERNAME
+VITE_DEMO_ENGINEER_1_PASSWORD_SHA256
+VITE_DEMO_ENGINEER_2_USERNAME
+VITE_DEMO_ENGINEER_2_PASSWORD_SHA256
+
+
+9. FUNCIONES ADICIONALES Y SU IMPORTANCIA
+-----------------------------------------
+
+Indicador de perfil activo
+Reduce errores al dejar claro si se está observando, calibrando o editando.
+
+Estado por color en el mapa
+Permite priorizar visualmente cámaras en mantenimiento o fuera de servicio.
+
+Validación de fechas
+Evita inconsistencias como programar el próximo mantenimiento antes del último.
+
+Campos de identidad bloqueados
+Protegen trazabilidad y calibración frente a ediciones operativas accidentales.
+
+Valor anterior y valor nuevo
+Hace que el historial sea explicativo y útil para revisar exactamente qué cambió.
+
+Límite de historial
+Evita que una demostración cliente consuma almacenamiento indefinidamente.
+
+
+10. ARCHIVOS PRINCIPALES
+------------------------
+
+src/auth/demo-auth.ts
+Define cuatro cuentas y guarda una sesión con rol, nombre y usuario.
+
+src/auth/role-permissions.ts
+Centraliza permisos para calibrador, mapa, edición e historiales.
+
+src/persistence/demo-operations-store.ts
+Valida y guarda ediciones, accesos e historial de cambios en localStorage.
+
+src/ui/camera-map.ts
+Construye el mapa lógico de diez cámaras y refleja su estado.
+
+src/ui/manager-audit-view.ts
+Crea los dos historiales que únicamente muestra el perfil Jefe.
+
+src/viewer/security-camera-markers.ts
+Genera fichas editables para Ingenieros y fichas de solo lectura para los demás.
+
+src/styles/operational-tools.css
+Diseña mapa, formularios, estados e historiales en computador y celular.
+
+src/main.ts
+Aplica permisos antes de mostrar la aplicación y coordina todos los componentes.
+
+
+11. VERIFICACIÓN REALIZADA
+--------------------------
+
+- TypeScript terminó sin errores.
+- 17 pruebas unitarias terminaron correctamente.
+- Edge ingresó como Orbinodo, Ingeniero 1, Ingeniero 2 y Jefe.
+- Orbinodo conservó el calibrador.
+- Ambos ingenieros editaron Cámara 3 y generaron entradas separadas.
+- El mapa reflejó el estado En mantenimiento.
+- Jefe vio los datos finales sin formulario de edición.
+- Jefe vio cuatro nombres en accesos y dos autores en cambios.
+- La sesión y los permisos de Jefe sobrevivieron una recarga.
+- No hubo errores de navegador.
+
+
+12. ESTADO DE PUBLICACIÓN
+-------------------------
+
+La implementación está terminada localmente. No se han agregado las variables de
+Ingeniero 1 e Ingeniero 2 a Vercel y no se ha realizado un nuevo despliegue.

@@ -1,0 +1,209 @@
+/* Estilos propios; el visor importa además su CSS oficial. */
+:root {
+  --topbar-height: 5.35rem;
+  color: #f5f7fb;
+  background: #07111f;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: radial-gradient(circle at top right, #183a54 0, transparent 34rem), #07111f;
+}
+
+button, input { font: inherit; }
+
+button {
+  padding: 0.7rem 1rem;
+  border: 1px solid #75d9c580;
+  border-radius: 0.75rem;
+  color: #08271f;
+  background: #75d9c5;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button:disabled {
+  color: #8f9baa;
+  background: #ffffff0a;
+  cursor: not-allowed;
+}
+
+.app-shell {
+  display: grid;
+  min-height: 100vh;
+  grid-template-rows: auto 1fr auto;
+}
+
+.topbar {
+  position: sticky;
+  z-index: 30;
+  top: 0;
+  display: grid;
+  min-height: var(--topbar-height);
+  padding: 0.85rem 1.5rem;
+  align-items: center;
+  grid-template-columns: minmax(16rem, 1fr) auto minmax(16rem, 1fr);
+  gap: 1.25rem;
+  border-bottom: 1px solid #ffffff1f;
+  background: #07111ff2;
+  backdrop-filter: blur(10px);
+}
+
+.brand-heading { min-width: 0; }
+.manager-control-host { justify-self: center; }
+.topbar-actions { display: flex; align-items: center; justify-self: end; gap: 1rem; }
+.eyebrow, .location, .locations p, .viewer-help { color: #aebed0; }
+
+.eyebrow {
+  margin: 0 0 0.25rem;
+  color: #75d9c5;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 0; font-size: clamp(1.25rem, 3vw, 1.8rem); }
+.location { margin: 0; text-align: right; }
+
+.workspace {
+  display: grid;
+  min-height: 0;
+  align-items: start;
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+}
+
+/* La barra lateral desplaza su contenido sin obligar a mover el panorama. */
+.locations {
+  position: sticky;
+  top: var(--topbar-height);
+  align-self: start;
+  max-height: calc(100dvh - var(--topbar-height));
+  padding: 1.5rem;
+  overflow-y: auto;
+  border-right: 1px solid #ffffff1f;
+  background: #0d1a2a;
+  scrollbar-gutter: stable;
+}
+
+.locations button { width: 100%; }
+
+.viewer-panel {
+  display: flex;
+  min-width: 0;
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.panorama-viewer {
+  width: 100%;
+  min-height: 32rem;
+  height: min(68vh, 48rem);
+  overflow: hidden;
+  border: 1px solid #ffffff24;
+  border-radius: 1rem;
+  background: #02070d;
+  box-shadow: 0 1.5rem 4rem #00000045;
+}
+
+.viewer-feedback { display: flex; width: 100%; align-items: center; gap: 0.75rem; }
+
+.status {
+  flex: 1;
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  color: #08271f;
+  background: #75d9c5;
+  font-weight: 700;
+}
+
+.status[data-state='loading'] { color: #3d2a00; background: #f7c969; }
+.status[data-state='error'] { color: #4b0d13; background: #ff9ba5; }
+.viewer-feedback button { margin-top: 0.75rem; white-space: nowrap; }
+.viewer-help { width: 100%; margin: 0; font-size: 0.85rem; }
+
+.maps-dashboard {
+  display: grid;
+  width: 100%;
+  margin-top: 1.25rem;
+  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.map-card,
+.camera-map {
+  min-width: 0;
+  height: 100%;
+  padding: 1rem;
+  border: 1px solid #ffffff1f;
+  border-radius: 0.9rem;
+  background: #0d1a2acc;
+}
+
+.map-description { margin: 0.45rem 0 0.8rem; color: #aebed0; font-size: 0.75rem; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  margin: -1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+footer {
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid #ffffff1f;
+  color: #8fa0b3;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+@media (max-width: 950px) {
+  .topbar { grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr); }
+  .location-summary { display: none; }
+}
+
+@media (max-width: 700px) {
+  :root { --topbar-height: auto; }
+  .topbar {
+    position: static;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .manager-control-host, .topbar-actions { justify-self: stretch; }
+  .topbar-actions { justify-content: space-between; }
+  .location-summary { display: grid; }
+  .location { text-align: left; }
+  .workspace { grid-template-columns: 1fr; }
+  .locations {
+    position: static;
+    max-height: 68dvh;
+    padding: 1rem;
+    overflow-y: auto;
+    border-right: 0;
+    border-bottom: 1px solid #ffffff1f;
+  }
+  .panorama-viewer { min-height: 24rem; height: 62vh; }
+  .viewer-feedback { align-items: stretch; flex-direction: column; }
+  .viewer-feedback button { margin-top: 0; }
+  .maps-dashboard { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; }
+}

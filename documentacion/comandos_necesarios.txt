@@ -1,0 +1,237 @@
+COMANDOS NECESARIOS Y SU UTILIDAD
+
+cd D:\01_ORBINODO
+Entra en la carpeta del proyecto.
+
+code .
+Abre el proyecto en Visual Studio Code.
+
+npm ci
+Instala las versiones exactas de package-lock.json en otro computador.
+
+npm run dev
+Inicia el servidor local; se detiene con Ctrl+C.
+
+npm run typecheck
+Comprueba TypeScript sin generar archivos.
+
+npm run lint
+Analiza el código con ESLint.
+
+npm run build
+Comprueba tipos y genera dist. dist puede contener fotos privadas.
+
+npm run preview
+Muestra localmente la construcción existente en dist.
+
+npm run check
+Ejecuta lint, pruebas, tipos, build y verificación real del navegador.
+
+git status
+Muestra archivos nuevos o modificados sin cambiar nada.
+
+git diff
+Muestra cambios aún no preparados.
+
+git diff --staged
+Muestra cambios seleccionados con git add.
+
+git add nombre-del-archivo
+Selecciona un archivo; confirma antes que no sea una foto privada.
+
+git commit -m "mensaje descriptivo"
+Guarda un punto del historial local.
+
+git log --oneline
+Muestra el historial resumido.
+
+PRECAUCIÓN
+git push publica cambios y requiere autorización.
+git reset --hard y git clean pueden eliminar trabajo.
+npm update cambia dependencias; después ejecuta npm run check.
+No uses git add . sin revisar git status.
+No agregues --host a Vite para una demostración local normal.
+
+
+VERIFICACIÓN REAL DE LA FASE 3
+npm run verify:browser
+Inicia Vite temporalmente, abre Microsoft Edge, pulsa las flechas y comprueba la ruta completa de ida y regreso. También detecta errores del navegador y texto corrupto.
+
+VERIFICACIÓN ACUMULATIVA DESDE LA FASE 4
+npm run verify:browser
+Ejecuta scripts/verify-tour.mjs y comprueba en Edge flechas, menú directo, estado activo, teclado, inicio y vista móvil.
+npm run check
+Ejecuta ESLint, Vitest, TypeScript, Vite y la verificación real del navegador. Es el criterio técnico de cierre.
+
+VERIFICACIÓN DE LA FASE 5
+npm run test
+Ejecuta seis pruebas sobre cantidad de pisos, ocho panoramas, archivos, entradas, ramas y conectividad.
+npm run verify:browser
+Recorre en Edge las dos plantas, las ramas derecha e izquierda, el estudio, los regresos, el menú y la vista móvil.
+npm run check
+Ejecuta todas las comprobaciones anteriores además de ESLint, TypeScript y la construcción final.
+
+COMANDOS PREVISTOS PARA LA NUEVA FASE 6
+
+No se han ejecutado todavía porque la fase aún no se ha implementado.
+
+npm install --save-dev vercel
+Instala la CLI de Vercel dentro del proyecto.
+
+npm run auth:hash
+Comando que se añadirá para generar localmente el SHA-256 de la contraseña sin guardarla como texto en el código.
+
+npx vercel login
+Autoriza la cuenta de Vercel; requiere interacción del propietario.
+
+npx vercel env add VITE_DEMO_USERNAME
+Configura el usuario de demostración para la vista previa o producción.
+
+npx vercel env add VITE_DEMO_PASSWORD_SHA256
+Configura el hash de la contraseña. No se introduce aquí la contraseña en texto plano.
+
+npx vercel
+Crea una vista previa pública. Requiere autorización antes de ejecutarse.
+
+npx vercel --prod
+Publica la versión aprobada. Requiere una segunda autorización.
+
+npm run check
+Debe pasar antes de crear la vista previa y antes de producción.
+
+npm audit
+Revisa vulnerabilidades conocidas después de instalar Vercel.
+
+PRECAUCIONES
+No usar una contraseña personal ni enviarla por chat.
+No escribir la contraseña en código, TXT, commits o historial de comandos.
+Las variables VITE y el hash pueden inspeccionarse en el navegador.
+Esta barrera no protege archivos públicos frente a una persona técnica.
+No ejecutar vercel ni compartir la URL sin autorización explícita.
+
+
+COMANDOS DE LA FASE 6
+
+npm run auth:hash
+Solicita una contraseña en el terminal y muestra su hash SHA-256. La contraseña no debe enviarse por chat ni escribirse como parte del comando. Copiar solamente el hash de 64 caracteres.
+
+npm run dev
+Abre la versión local. Después de cambiar .env.local se debe detener y volver a iniciar Vite para que relea las variables.
+
+npm run check
+Ejecuta ESLint, 9 pruebas, compilación y verificación automatizada del acceso en Edge.
+
+npx vercel login
+Inicia sesión en Vercel. Requiere conexión a Internet y se ejecutará cuando se inicie el despliegue.
+
+npx vercel
+Crea o enlaza el proyecto y genera una URL de vista previa. Aceptar Vite, el directorio actual y la configuración detectada; no cambiar dist manualmente porque vercel.json ya lo declara.
+
+npx vercel env add VITE_DEMO_USERNAME
+Registra el usuario en Vercel. Debe añadirse al menos para Preview y Production.
+
+npx vercel env add VITE_DEMO_PASSWORD_SHA256
+Registra el hash, nunca la contraseña en texto. Debe añadirse para Preview y Production.
+
+npx vercel --prod
+Publica la versión de producción. Solo se ejecuta después de aprobar la URL Preview.
+
+Importante: las variables VITE son visibles técnicamente en el código descargado por el navegador. Esta fase es una barrera básica para una demo pública, no autenticación segura.
+
+
+COMANDOS DEL AVANCE 1 DE FASE 7
+
+npm run check
+Ahora termina ejecutando scripts/verify-experience.mjs. Valida código, nueve pruebas unitarias, compilación dividida y experiencia real en Edge móvil.
+
+npm run verify:browser
+Comprueba directamente la carga diferida, navegación, contador, sesión y controles móviles con credenciales de prueba generadas en memoria.
+
+No ejecutar npx vercel ni npx vercel --prod durante el desarrollo de fase 7. Primero debe cerrarse y aprobarse localmente la fase.
+
+
+COMANDOS PARA LOS DOS USUARIOS DE LA DEMO
+=========================================
+
+npm run auth:hash
+Solicita primero el rol programador o jefe y después una contraseña. Devuelve el
+hash SHA-256 con el nombre de variable correcto. No escribir la contraseña como
+parte del comando ni copiarla en documentos.
+
+Variables locales opcionales para una contraseña propia del Jefe:
+
+VITE_DEMO_MANAGER_USERNAME=Jefe
+Define el nombre exacto del segundo usuario. Distingue mayúsculas y minúsculas.
+
+VITE_DEMO_MANAGER_PASSWORD_SHA256=hash_de_64_caracteres
+Define el hash de la contraseña exclusiva del Jefe. Si falta, se reutiliza
+temporalmente el hash del Programador.
+
+npx vercel env add VITE_DEMO_MANAGER_USERNAME
+Registra en Vercel el nombre del usuario Jefe para el entorno que se seleccione.
+
+npx vercel env add VITE_DEMO_MANAGER_PASSWORD_SHA256
+Registra en Vercel el hash de la contraseña del Jefe. Se pega solamente el hash,
+nunca la contraseña original.
+
+npx vercel --prod
+Construye y publica los cambios y las variables configuradas en producción. No
+debe ejecutarse hasta autorizar expresamente la actualización de Vercel.
+
+Para comprobar localmente después de cambiar .env.local:
+
+npm run dev
+Reinicia Vite para que vuelva a leer las variables. Una pestaña que conserve una
+sesión anterior debe cerrar sesión y entrar nuevamente con el usuario que se
+quiere verificar.
+
+
+
+COMANDO DEL COMPLEMENTO DE PUNTOS CCTV
+======================================
+
+npm install @photo-sphere-viewer/markers-plugin@5.15.0
+Instala el complemento oficial que dibuja puntos interactivos dentro del panorama
+y abre fichas laterales. Se fija la versión 5.15.0 para que coincida exactamente
+con @photo-sphere-viewer/core y @photo-sphere-viewer/virtual-tour-plugin.
+
+No ejecutar npm audit fix --force automáticamente. Puede introducir cambios
+incompatibles en dependencias. Los avisos de npm deben revisarse por separado
+antes de decidir actualizaciones.
+
+
+
+COMANDOS Y VARIABLES PARA INGENIERO 1 E INGENIERO 2
+====================================================
+
+npm run auth:hash
+Ahora permite elegir programador, jefe, ingeniero1 o ingeniero2 y entrega el nombre
+correcto de la variable del hash.
+
+VITE_DEMO_ENGINEER_1_USERNAME=Ingeniero 1
+Define el usuario exacto del primer ingeniero.
+
+VITE_DEMO_ENGINEER_1_PASSWORD_SHA256=hash_de_64_caracteres
+Define su contraseña mediante hash, sin guardar el texto original.
+
+VITE_DEMO_ENGINEER_2_USERNAME=Ingeniero 2
+Define el usuario exacto del segundo ingeniero.
+
+VITE_DEMO_ENGINEER_2_PASSWORD_SHA256=hash_de_64_caracteres
+Define su contraseña mediante hash.
+
+npx vercel env add VITE_DEMO_ENGINEER_1_USERNAME
+npx vercel env add VITE_DEMO_ENGINEER_1_PASSWORD_SHA256
+npx vercel env add VITE_DEMO_ENGINEER_2_USERNAME
+npx vercel env add VITE_DEMO_ENGINEER_2_PASSWORD_SHA256
+Registran en Vercel las cuatro variables nuevas. Deben configurarse para Preview
+y Production si se quieren contraseñas independientes en ambos entornos.
+
+npx vercel --prod
+Publica la nueva versión después de configurar las variables. No se ejecuta sin
+autorización explícita del propietario.
+
+Herramientas del navegador -> Aplicación -> Almacenamiento local
+Permite inspeccionar la simulación técnica. No debe usarse para alterar datos en
+una presentación; demuestra por qué localStorage no es auditoría segura.
+

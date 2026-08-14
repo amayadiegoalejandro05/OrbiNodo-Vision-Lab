@@ -1,0 +1,40 @@
+AJUSTE VISUAL DE LA BARRA DE UBICACIONES
+========================================
+
+PROBLEMA ENCONTRADO
+-------------------
+
+El menú había perdido sus reglas visuales específicas. Como consecuencia, las
+listas mostraban las viñetas normales del navegador y todos los ambientes heredaban
+el fondo cian del estilo general de los botones. Los recuadros también quedaban casi
+unidos y era difícil reconocer cuál ubicación estaba activa.
+
+
+CORRECCIÓN REALIZADA
+--------------------
+
+El archivo src/styles/experience.css vuelve a definir el menú completo:
+
+- Elimina las viñetas mediante list-style: none.
+- Separa los pisos y deja espacio entre cada ambiente.
+- Muestra los ambientes inactivos como tarjetas oscuras con borde suave.
+- Reserva el fondo cian para la ubicación actual.
+- Conserva un punto cian como indicador visual de cada destino.
+- Agrega estados hover y focus para ratón y teclado.
+- Diferencia el botón Volver al inicio de los botones de habitaciones.
+- Presenta la ayuda detrás de una separación visual.
+
+
+DESPLAZAMIENTO INDEPENDIENTE
+----------------------------
+
+La clase .locations utiliza overflow-y: auto. Esto significa que la barra vertical
+aparece solamente cuando el contenido supera la altura disponible. No se fuerza una
+barra cuando todo cabe.
+
+overscroll-behavior-y: contain evita que, al llegar al principio o al final de la
+barra lateral, el movimiento continúe desplazando accidentalmente toda la página.
+La barra tiene un color tenue para no competir visualmente con el recorrido.
+
+En celular, el panel plegable admite como máximo el 72 % de la altura visible y su
+contenido se desplaza internamente cuando sea necesario.

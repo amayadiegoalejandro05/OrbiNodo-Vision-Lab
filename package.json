@@ -1,0 +1,33 @@
+{
+  "name": "recorrido-virtual-vivienda",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src eslint.config.js",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "check": "npm run lint && npm run test && npm run build && npm run verify:browser",
+    "test": "vitest run",
+    "verify:browser": "node scripts/verify-experience.mjs",
+    "auth:hash": "node scripts/hash-demo-password.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.2",
+    "eslint": "^10.8.0",
+    "playwright-core": "^1.62.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0",
+    "vercel": "^58.4.4",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@photo-sphere-viewer/core": "^5.15.0",
+    "@photo-sphere-viewer/markers-plugin": "^5.15.0",
+    "@photo-sphere-viewer/virtual-tour-plugin": "^5.15.0"
+  }
+}

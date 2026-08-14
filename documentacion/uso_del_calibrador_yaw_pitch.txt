@@ -1,0 +1,120 @@
+ORBINODO — USO DEL CALIBRADOR DE YAW Y PITCH
+================================================
+
+ACLARACIÓN DE TÉRMINOS
+
+La coordenada horizontal se llama yaw, no raw.
+
+- yaw: giro horizontal alrededor del panorama.
+- pitch: inclinación vertical de la vista.
+
+El visor trabaja internamente en radianes, pero el calibrador convierte los valores a grados para que puedan copiarse directamente a src/data/demo-tour.ts.
+
+QUÉ SE IMPLEMENTÓ
+
+src/ui/coordinate-calibrator.ts
+Convierte radianes a grados, normaliza yaw entre -180 y 180, muestra las coordenadas y permite copiarlas junto con el panorama actual.
+
+src/viewer/panorama-viewer.ts
+Escucha el evento position-updated de Photo Sphere Viewer y entrega la posición actual al calibrador.
+
+src/main.ts
+Conecta el visor con el calibrador y actualiza el identificador cuando cambia el panorama.
+
+src/styles/calibration.css
+Dibuja la mira central y organiza los controles en computador y celular.
+
+index.html
+Contiene el botón Activar calibrador, las salidas Yaw y Pitch, el botón Copiar coordenadas y la mira.
+
+CÓMO MEDIR UNA CONEXIÓN
+
+1. Ejecutar npm run dev.
+2. Abrir el recorrido e iniciar sesión.
+3. Entrar al panorama desde el cual saldrá la flecha.
+4. Pulsar Activar calibrador.
+5. Arrastrar el panorama hasta colocar el centro de la puerta, escalera o ruta debajo de la mira amarilla.
+6. Ajustar también la altura de la mira. La flecha debe quedar sobre el paso, no sobre el techo.
+7. Pulsar Copiar coordenadas.
+8. Registrar el texto copiado antes de cambiar de panorama.
+9. Repetir la medición desde el panorama contrario; la conexión de regreso tiene coordenadas propias.
+
+FORMATO COPIADO
+
+parqueadero-01 | yaw: -90.0 | pitch: -12.0
+
+El primer valor identifica el panorama que se está observando. Los números son la dirección hacia la cual debe apuntar la flecha dentro de ese panorama.
+
+MEDICIONES NECESARIAS PARA LOS ESPACIOS NUEVOS
+
+1. En parqueadero-01, centrar el acceso que baja al Sótano.
+2. En sotano-01, centrar la escalera o salida que sube al Parqueadero.
+3. En cocina-01, centrar la puerta que sale al Jardín.
+4. En jardin-01, centrar la puerta que entra a la Cocina.
+
+DÓNDE SE APLICARÁ CADA MEDICIÓN
+
+Panorama parqueadero-01:
+Se editará el enlace cuyo targetId es sotano-01.
+
+Panorama sotano-01:
+Se editará el enlace cuyo targetId es parqueadero-01.
+
+Panorama cocina-01:
+Se editará el enlace cuyo targetId es jardin-01.
+
+Panorama jardin-01:
+Se editará el enlace cuyo targetId es cocina-01.
+
+Ejemplo:
+
+{
+  targetId: 'sotano-01',
+  label: 'Bajar al sótano',
+  yaw: -90.0,
+  pitch: -12.0,
+}
+
+Solo se reemplazarán yaw y pitch. No se cambiarán targetId, imágenes, identificadores ni las demás conexiones.
+
+RECOMENDACIONES
+
+- Medir cada dirección por separado.
+- No calcular automáticamente la vuelta sumando 180 grados.
+- Usar un decimal como máximo.
+- Centrar el lugar por donde caminaría una persona.
+- Evitar ubicar la flecha sobre una pared aunque el destino esté detrás de ella.
+- Probar nuevamente después de editar.
+- Si dos flechas se superponen, ajustar ligeramente yaw o pitch sin cambiar su significado.
+- Desactivar el calibrador al terminar para comprobar la experiencia normal.
+
+VALIDACIÓN FINAL
+
+Después de aplicar las cuatro coordenadas se debe ejecutar npm run check y recorrer manualmente:
+
+Parqueadero -> Sótano -> Parqueadero
+Cocina -> Jardín -> Cocina
+
+La modificación permanece local hasta que exista autorización para actualizar Vercel.
+
+
+ACCESO AL CALIBRADOR SEGÚN EL ROL
+=================================
+
+El calibrador solamente está disponible para la cuenta Programador. La cuenta
+Jefe puede navegar por el recorrido, pero la barra completa del calibrador se
+oculta antes de mostrar la aplicación.
+
+Si se cambia de Programador a Jefe mediante Cerrar sesión, el sistema desactiva
+el calibrador, oculta la mira y limpia cualquier lectura o mensaje pendiente.
+Para volver a calibrar es necesario cerrar sesión e ingresar como Programador.
+
+
+
+CALIBRADOR EN EL MODELO DE CUATRO PERFILES
+==========================================
+
+El calibrador queda reservado exclusivamente a Orbinodo. Jefe, Ingeniero 1 e
+Ingeniero 2 no ven botón, lecturas ni mira. Los Ingenieros modifican información
+operativa, pero no coordenadas, para evitar mover accidentalmente puntos CCTV.
+

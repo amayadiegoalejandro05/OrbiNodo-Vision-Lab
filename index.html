@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <!-- UTF-8 evita caracteres dañados en tildes, eñes y símbolos. -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Demo pública de un recorrido virtual de vivienda con panoramas 360°." />
+  <title>Recorrido virtual de la vivienda</title>
+</head>
+<body>
+  <main id="login-screen" class="login-screen" aria-labelledby="login-title" hidden>
+    <section class="login-card">
+      <p class="eyebrow">Demo de Orbinodo</p>
+      <h1 id="login-title">Acceso al recorrido virtual</h1>
+      <p>Ingresa las credenciales asignadas para abrir la demostración.</p>
+      <form id="login-form" class="login-form">
+        <label for="demo-username">Usuario</label>
+        <input id="demo-username" name="username" type="text" autocomplete="username" required />
+        <label for="demo-password">Contraseña</label>
+        <input id="demo-password" name="password" type="password" autocomplete="current-password" required />
+        <button type="submit">Entrar a Orbinodo</button>
+        <p id="login-message" class="login-message" role="alert" aria-live="polite"></p>
+      </form>
+      <p class="login-notice">Acceso básico para una demo con imágenes artificiales públicas.</p>
+    </section>
+  </main>
+
+  <div id="app" class="app-shell" hidden>
+    <header class="topbar">
+      <div class="brand-heading">
+        <p class="eyebrow">Recorrido virtual</p>
+        <h1>Recorrido virtual de la vivienda</h1>
+      </div>
+      <!-- El control del Jefe se monta aquí para mantenerlo centrado en la cabecera. -->
+      <div id="manager-control-host" class="manager-control-host"></div>
+      <div class="topbar-actions">
+        <div class="location-summary">
+          <p id="current-location" class="location" aria-label="Ubicación actual">Primer piso · Parqueadero · Punto 1</p>
+          <p id="tour-progress" class="tour-progress" aria-live="polite">Ubicación 2 de 10</p>
+        </div>
+        <button id="logout-button" class="logout-button" type="button">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <button id="toggle-locations" class="menu-toggle" type="button" aria-controls="location-menu" aria-expanded="false">Mostrar ubicaciones</button>
+    <main class="workspace">
+      <aside class="locations" aria-labelledby="locations-title">
+        <h2 id="locations-title">Ubicaciones</h2>
+        <p class="locations-intro">Elige un ambiente o utiliza las flechas del panorama.</p>
+        <nav id="location-menu" aria-label="Pisos y ambientes"></nav>
+        <button id="go-home" class="home-button" type="button">Volver al inicio</button>
+        <details class="tour-help">
+          <summary>¿Cómo usar el recorrido?</summary>
+          <ul>
+            <li>Arrastra la imagen para mirar alrededor.</li>
+            <li>Las flechas del suelo aparecen al mirar hacia una zona de paso.</li>
+            <li>Los puntos CCTV abren la ficha simulada de cada cámara.</li>
+            <li>Toca un nodo de los mapas para transportarte.</li>
+            <li>Usa la rueda o pellizca la pantalla para acercar.</li>
+          </ul>
+        </details>
+      </aside>
+
+      <section class="viewer-panel" aria-labelledby="viewer-title">
+        <h2 id="viewer-title" class="sr-only">Visor panorámico 360°</h2>
+        <div class="calibration-toolbar" aria-label="Herramientas de calibración">
+          <button id="toggle-calibration" class="calibration-toggle" type="button" aria-pressed="false">Activar calibrador</button>
+          <div id="calibration-readout" class="calibration-readout" hidden>
+            <output id="calibration-yaw">Yaw: 0.0°</output>
+            <output id="calibration-pitch">Pitch: 0.0°</output>
+            <button id="copy-calibration" class="calibration-copy" type="button">Copiar coordenadas</button>
+            <span id="calibration-copy-status" class="calibration-copy-status" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+        <div class="viewer-stage">
+          <div id="panorama-viewer" class="panorama-viewer" aria-label="Panorama 360° de Parqueadero"></div>
+          <div id="calibration-crosshair" class="calibration-crosshair" aria-hidden="true" hidden></div>
+        </div>
+        <div class="viewer-feedback">
+          <p id="app-status" class="status" role="status">Preparando el visor 360°…</p>
+          <button id="retry-panorama" type="button" hidden>Reintentar carga</button>
+        </div>
+        <p class="viewer-help">Gira para encontrar flechas y puntos CCTV; toca un punto para consultar la ficha simulada.</p>
+
+        <!-- Ambos mapas viven debajo del recorrido y comparten el ancho disponible. -->
+        <section id="maps-dashboard" class="maps-dashboard" aria-label="Mapas interactivos del recorrido">
+          <section class="tour-minimap map-card" aria-labelledby="minimap-title">
+            <div class="minimap-heading">
+              <h3 id="minimap-title">Minimapa de nodos</h3>
+              <div class="minimap-legend" aria-label="Leyenda del minimapa">
+                <span><i aria-hidden="true"></i>Disponible</span>
+                <span><i class="current" aria-hidden="true"></i>Actual</span>
+              </div>
+            </div>
+            <p class="map-description">Selecciona un espacio para transportarte dentro del recorrido.</p>
+            <div id="tour-minimap" aria-label="Nodos navegables del recorrido"></div>
+          </section>
+        </section>
+      </section>
+    </main>
+    <footer>Demo pública preparada para despliegue manual en Vercel.</footer>
+  </div>
+  <noscript>Esta aplicación necesita JavaScript para funcionar.</noscript>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

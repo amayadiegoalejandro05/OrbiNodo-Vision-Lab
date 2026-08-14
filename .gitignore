@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+.env*
+.vercel
+
+# La plantilla se conserva; los archivos con valores reales permanecen ignorados.
+!.env.example
+
+# Las fotografías reales de la vivienda nunca deben entrar en Git.
+public/panoramas/private/*
+!public/panoramas/private/README.md

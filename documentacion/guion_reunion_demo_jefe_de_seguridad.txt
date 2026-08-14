@@ -1,0 +1,234 @@
+GUION PARA PRESENTAR LA DEMO DE ORBINODO A UN JEFE DE SEGURIDAD
+================================================================
+
+OBJETIVO DE LA REUNIÓN
+
+Presentar una prueba de concepto funcional de un recorrido virtual 360°, demostrar su utilidad y recibir retroalimentación. No presentar esta versión como un producto terminado ni como una solución preparada para almacenar información confidencial.
+
+MENSAJE PRINCIPAL
+
+"Esta es una demostración técnica de Orbinodo enfocada en validar la experiencia del recorrido virtual. Las imágenes son completamente artificiales y no representan una vivienda real. La publicación actual no contiene información personal, ubicaciones reales ni material confidencial."
+
+PRESENTACIÓN SUGERIDA — 3 A 5 MINUTOS
+
+1. Introducción
+
+"Orbinodo será una plataforma que puede abarcar diferentes soluciones. Este módulo demuestra un recorrido virtual de una vivienda mediante panoramas 360°. Por ahora estamos validando navegación, funcionamiento en computador y celular, estructura por pisos y facilidad de uso."
+
+2. Alcance actual
+
+"La demostración tiene ocho panoramas artificiales: tres espacios del primer piso, dos puntos de escalera y tres espacios del segundo piso. Se puede navegar mediante flechas o elegir directamente una ubicación."
+
+3. Demostración
+
+- Abrir la URL en una ventana privada.
+- Intentar primero una contraseña incorrecta.
+- Ingresar con las credenciales correctas.
+- Mostrar el parqueadero y la navegación con flechas.
+- Abrir el menú y saltar directamente al Estudio.
+- Mostrar el contador de ubicación.
+- Recargar la página para demostrar la sesión de la pestaña.
+- Cerrar sesión y comprobar que vuelve al formulario.
+
+4. Explicación técnica breve
+
+"La interfaz está desarrollada con TypeScript y Vite. El visor utiliza Photo Sphere Viewer y un modelo de nodos enlazados para representar los espacios. La página está alojada en Vercel mediante HTTPS. El visor 360° se descarga después del acceso, lo que reduce la carga inicial. El proyecto tiene validaciones automáticas para la topología del recorrido, compilación, navegación y experiencia móvil."
+
+5. Explicación honesta de seguridad
+
+"El control de acceso actual es deliberadamente básico porque esta versión solo publica imágenes artificiales. Si usamos una escala informal, la protección de acceso de la aplicación está aproximadamente en 2 de 10. Sirve como barrera para una demostración, pero no debe considerarse autenticación segura."
+
+"La validación ocurre en el navegador. Aunque la contraseña no se guarda directamente y se compara mediante un hash SHA-256, una persona con conocimientos técnicos puede inspeccionar el JavaScript, modificar la sesión o intentar acceder directamente a los archivos públicos."
+
+"El alojamiento sí aporta HTTPS, certificados y protecciones de infraestructura de Vercel. Eso protege la comunicación y la disponibilidad básica, pero no convierte el formulario del navegador en un sistema seguro de autenticación. Son capas diferentes."
+
+6. Razón por la que el riesgo actual es aceptable
+
+"Para esta prueba no se cargaron fotografías reales, nombres de propietarios, direcciones, planos exactos, coordenadas, datos personales ni información empresarial. Por eso decidimos validar primero la experiencia del producto sin incorporar todavía una arquitectura de seguridad más costosa."
+
+7. Evolución si la empresa aprueba el concepto
+
+"Antes de utilizar fotografías reales o información sensible, propondría diseñar la siguiente versión junto con desarrollo backend y seguridad. La decisión no sería simplemente agregar otra contraseña; sería cambiar el modelo de acceso y almacenamiento."
+
+La evolución debería considerar:
+
+- Autenticación validada en servidor.
+- Usuarios individuales en lugar de una credencial compartida.
+- Contraseñas tratadas con un algoritmo específico para contraseñas, como Argon2id o bcrypt, con salt.
+- Sesiones seguras mediante cookies HttpOnly, Secure y SameSite.
+- Almacenamiento privado de panoramas.
+- URLs firmadas y temporales para entregar imágenes autorizadas.
+- Autorización por proyecto, cliente o propiedad.
+- Caducidad y revocación de accesos.
+- Límites de intentos y protección contra fuerza bruta.
+- Registro de accesos y eventos relevantes.
+- Gestión segura de secretos.
+- Copias de respaldo, retención y eliminación de información.
+- Revisión de metadatos de fotografías.
+- Evaluación de amenazas y pruebas de seguridad antes de producción.
+- Revisión legal de privacidad, consentimiento y tratamiento de datos.
+
+FRASE RECOMENDADA PARA INVITAR SU PARTICIPACIÓN
+
+"Me interesa especialmente su criterio sobre qué amenazas y requisitos deberíamos considerar antes de pasar de imágenes artificiales a información real. La intención es involucrar seguridad desde el diseño de la siguiente versión, no pedir una aprobación retrospectiva cuando el producto ya esté terminado."
+
+PREGUNTAS QUE PUEDES HACERLE
+
+1. ¿Qué clasificación de información tendría para la empresa un recorrido de una propiedad real?
+2. ¿Quiénes deberían poder acceder y durante cuánto tiempo?
+3. ¿Se permitirían credenciales compartidas o se exigirían cuentas individuales?
+4. ¿La empresa ya tiene un proveedor de identidad, inicio de sesión corporativo o MFA?
+5. ¿En qué país o región deberían almacenarse los datos?
+6. ¿Qué registros de auditoría necesitarían conservarse?
+7. ¿Qué política existe para fotografías, planos, direcciones y metadatos?
+8. ¿Se requiere aprobación del propietario o del cliente antes de publicar?
+9. ¿Qué proceso de pruebas de seguridad exige la empresa antes de producción?
+10. ¿Quién debería poder eliminar un recorrido y cómo se comprobaría su eliminación?
+
+PREGUNTAS DIFÍCILES Y RESPUESTAS SUGERIDAS
+
+Pregunta: ¿La contraseña protege realmente las imágenes?
+Respuesta: "No de forma fuerte. Protege la entrada visual frente a usuarios casuales, pero los archivos siguen siendo públicos. Esta limitación está aceptada únicamente porque las imágenes son artificiales."
+
+Pregunta: ¿Por qué publicaron algo con seguridad 2 de 10?
+Respuesta: "Porque se diseñó como una prueba de concepto sin información sensible. El objetivo era validar interacción, navegación y despliegue antes de invertir en backend, identidad y almacenamiento privado."
+
+Pregunta: ¿El hash SHA-256 hace segura la contraseña?
+Respuesta: "Evita escribir la contraseña directamente en la configuración, pero no resuelve la autenticación porque la comparación ocurre en el cliente. Para usuarios reales utilizaríamos validación en servidor y un algoritmo de hash específico para contraseñas."
+
+Pregunta: ¿Vercel puede ver la información?
+Respuesta: "Vercel aloja y distribuye los archivos publicados. En esta demo son recursos artificiales y públicos. Para material real habría que revisar contrato, región, controles del proveedor, retención y modelo de responsabilidad compartida."
+
+Pregunta: ¿Se puede saber quién ingresó?
+Respuesta: "No en esta versión. Se usa una credencial compartida y no incorporamos analítica ni auditoría. Una versión empresarial necesitaría identidades individuales y registros de eventos."
+
+Pregunta: ¿Qué ocurre si alguien comparte la contraseña?
+Respuesta: "No podemos atribuir ni revocar a una persona concreta con el modelo actual. Esa es una razón para migrar a cuentas individuales y accesos con vencimiento."
+
+Pregunta: ¿Está listo para producción?
+Respuesta: "Está listo como demo pública con contenido artificial. No está aprobado para fotografías reales ni datos sensibles."
+
+Pregunta: ¿Quién debe mejorar la seguridad?
+Respuesta: "Debe ser un trabajo conjunto entre producto, desarrollo, infraestructura, privacidad y seguridad. Yo puedo continuar la implementación, pero los requisitos, amenazas y controles deben revisarse con los responsables de seguridad."
+
+COSAS QUE CONVIENE EVITAR DECIR
+
+- No afirmar que SHA-256 cifra la contraseña. Es una función hash, no cifrado.
+- No decir que HTTPS protege archivos públicos frente a quien conoce la URL.
+- No llamar al formulario "autenticación segura".
+- No prometer que la solución es imposible de vulnerar.
+- No decir que Vercel se encarga de toda la seguridad.
+- No minimizar un riesgo si en el futuro se incorporan fotografías reales.
+- No presentar el valor 2 de 10 como una medición certificada; es una referencia informal del control de acceso actual.
+- No responder con detalles inventados. Si algo no fue evaluado, decirlo y registrarlo como requisito.
+
+RECOMENDACIONES PARA LA REUNIÓN
+
+- Presentar primero el valor del producto y después sus límites.
+- Usar una ventana privada para evitar que sessionStorage omita el formulario.
+- Tener abierta una segunda pestaña con la URL por si el visor necesita recargarse.
+- Llevar una captura o grabación corta como contingencia si falla Internet.
+- No mostrar archivos .env, el panel de variables ni credenciales en pantalla compartida.
+- No compartir la contraseña por una diapositiva o documento permanente.
+- Solicitar permiso antes de tomar notas con nombres o requisitos internos.
+- Cerrar con próximos pasos concretos, responsables y criterios de aceptación.
+
+CIERRE SUGERIDO
+
+"La demo confirma que el recorrido virtual es técnicamente viable y utilizable. El siguiente punto de decisión es definir si el caso de negocio justifica trabajar con contenido real. Si la respuesta es positiva, convertiríamos las observaciones de seguridad en requisitos de arquitectura antes de cargar cualquier dato sensible."
+
+RESUMEN EN UNA FRASE
+
+"Es una prueba de concepto funcional, alojada por HTTPS y construida con imágenes artificiales; su formulario es una barrera básica, no un control de acceso empresarial."
+
+
+APLICACIÓN PRINCIPAL EN SEGURIDAD PATRIMONIAL
+
+Este módulo fue ideado principalmente como una herramienta de apoyo para seguridad patrimonial. Su propósito no es sustituir una inspección física, un estudio de seguridad, un sistema de videovigilancia ni la decisión de un profesional. Su función es permitir que personal autorizado conozca, documente y analice visualmente un inmueble o instalación de manera remota y estructurada.
+
+MENSAJE SUGERIDO PARA LA REUNIÓN
+
+"El recorrido virtual no se concibió únicamente como una visita inmobiliaria. Su aplicación principal es seguridad patrimonial: ofrecer una representación navegable del lugar para apoyar inspecciones, planeación, capacitación y análisis de riesgos sin exigir que todas las personas se desplacen inicialmente al sitio."
+
+POSIBLES USOS EN SEGURIDAD PATRIMONIAL
+
+1. Reconocimiento previo del lugar
+
+Permite que supervisores y analistas autorizados comprendan la distribución general antes de una visita presencial. Ayuda a preparar preguntas, identificar áreas que requieren revisión y aprovechar mejor el tiempo en campo.
+
+2. Apoyo a estudios de seguridad
+
+Puede complementar formularios, planos y fotografías convencionales con una experiencia espacial. El analista puede relacionar ambientes, recorridos y conexiones entre zonas. Las conclusiones de riesgo deben validarse presencialmente y quedar a cargo de personal competente.
+
+3. Planeación de recorridos de vigilancia
+
+Puede ayudar a explicar rutas de inspección, puntos de control, cambios de nivel, accesos y secuencias de desplazamiento. En una versión empresarial podrían marcarse recorridos autorizados sin publicar información sensible a usuarios no autorizados.
+
+4. Inducción y capacitación
+
+Personal nuevo, contratistas o equipos de apoyo podrían familiarizarse con un lugar antes de ingresar. El módulo puede servir como complemento visual de protocolos, restricciones y responsabilidades, sin reemplazar la capacitación formal.
+
+5. Preparación de respuesta a incidentes
+
+Con información actualizada y debidamente protegida, equipos autorizados podrían estudiar la distribución para preparar procedimientos ante eventos. No debe presentarse como plano de emergencia certificado ni como fuente única para tomar decisiones durante un incidente.
+
+6. Revisión remota entre especialistas
+
+Permite que profesionales ubicados en lugares diferentes revisen el mismo entorno y comenten observaciones con una referencia espacial común. Esto puede reducir desplazamientos preliminares y facilitar reuniones técnicas.
+
+7. Evidencia visual de inspecciones
+
+Una versión futura podría asociar cada punto con fecha, responsable, observaciones y vigencia. Esto permitiría comparar el estado del lugar entre inspecciones. Para que funcione como evidencia formal se necesitarían integridad, trazabilidad, control de versiones y reglas de retención.
+
+8. Inventario contextual
+
+El recorrido podría ayudar a ubicar de manera general activos, equipos o zonas funcionales. No deberían mostrarse públicamente valores, seriales, controles físicos, ubicaciones críticas ni información que facilite una intrusión.
+
+9. Apoyo para clientes y responsables del inmueble
+
+El responsable de seguridad podría explicar hallazgos o recomendaciones usando el recorrido como contexto visual. Una versión futura podría separar lo visible para el cliente, el analista y el administrador.
+
+10. Seguimiento de mejoras
+
+Se podrían comparar versiones autorizadas para mostrar cambios en cerramientos, iluminación, accesos o distribución. La herramienta ayudaría a comunicar avances, pero la verificación final seguiría requiriendo inspección y evidencia actualizada.
+
+VALOR OPERATIVO ESPERADO
+
+- Mejor comprensión espacial que una colección de fotografías aisladas.
+- Menor necesidad de desplazamientos preliminares.
+- Reuniones técnicas con referencias visuales comunes.
+- Preparación más ordenada de inspecciones presenciales.
+- Capacitación contextual para personal autorizado.
+- Posibilidad futura de relacionar ubicaciones con observaciones y tareas.
+- Registro histórico visual cuando exista control de versiones.
+
+RIESGOS ESPECÍFICOS DEL USO PATRIMONIAL
+
+En seguridad patrimonial, un recorrido real puede revelar distribución, accesos, rutas, activos, puntos ciegos y medidas de protección. Por esa razón, las fotografías artificiales de la demo no deben confundirse con el modelo de publicación requerido para información real.
+
+Antes de utilizar contenido real deberían definirse:
+
+- Clasificación de la información de cada recorrido.
+- Consentimiento y autorización para capturar y compartir imágenes.
+- Usuarios, roles y necesidad de conocer.
+- Áreas que deben ocultarse, difuminarse o excluirse.
+- Tiempo de vigencia de las imágenes.
+- Revocación inmediata de accesos.
+- Almacenamiento privado y entrega temporal de archivos.
+- Registro de visualizaciones, descargas y cambios.
+- Prohibición o control de copias y capturas cuando sea viable.
+- Eliminación segura al terminar el contrato o propósito.
+- Revisión de metadatos, rostros, placas, documentos y activos visibles.
+- Procedimiento para actualizar recorridos que ya no representan el estado actual.
+
+ACLARACIÓN IMPORTANTE
+
+La demo actual demuestra navegación y experiencia de usuario, no la protección requerida por un sistema de seguridad patrimonial en producción. Un recorrido desactualizado o compartido sin controles puede convertirse en una fuente de riesgo. La arquitectura de una versión real debe partir de la clasificación de la información y de un análisis de amenazas.
+
+PREGUNTA RECOMENDADA PARA EL JEFE DE SEGURIDAD
+
+"Considerando que un recorrido real puede revelar accesos, distribución y activos, ¿cómo clasificaría esta información y qué controles exigiría para captura, almacenamiento, consulta, auditoría, actualización y eliminación?"
+
+CIERRE ORIENTADO A SEGURIDAD PATRIMONIAL
+
+"El valor de Orbinodo está en convertir imágenes aisladas en conocimiento espacial navegable para apoyar la gestión de seguridad patrimonial. Esta demo valida la experiencia con información artificial; el siguiente reto es diseñar con seguridad la captura y consulta de recorridos reales."
