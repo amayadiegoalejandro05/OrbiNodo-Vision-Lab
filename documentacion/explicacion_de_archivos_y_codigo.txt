@@ -788,3 +788,21 @@ scripts/verify-experience.mjs
 Usa cuatro cuentas aleatorias, ejecuta dos cambios distintos y comprueba permisos,
 persistencia e historiales sin utilizar credenciales reales.
 
+BACKEND LOCAL DE ORBINODO - BLOQUE INICIAL
+==========================================
+
+backend/config/environment.ts
+Carga .env.backend.local y valida todos los valores sin construir una URL secreta.
+
+backend/domain/health-probe.ts
+Define el contrato mínimo para comprobar PostgreSQL sin acoplar las pruebas.
+
+backend/database/postgres-health-probe.ts
+Crea el pool y consulta CURRENT_TIMESTAMP sin exponer la contraseña.
+
+backend/app.ts y backend/server.ts
+Construyen Fastify, publican GET /api/health e inician y detienen ordenadamente la
+API. Los errores HTTP no contienen trazas ni detalles internos.
+
+backend/app.test.ts y tsconfig.backend.json
+Prueban las respuestas 200 y 503 y aplican TypeScript estricto al backend.

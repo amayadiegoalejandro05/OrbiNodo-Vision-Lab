@@ -1,0 +1,37 @@
+ARQUITECTURA LOCAL DE ORBINODO
+==============================
+
+Flujo inicial
+-------------
+
+Navegador -> API Node.js y TypeScript -> PostgreSQL 18
+
+El navegador nunca se conecta directamente a PostgreSQL. La API escucha inicialmente
+en 127.0.0.1:3001 y PostgreSQL escucha únicamente en localhost:5432. Abrir acceso a
+otros dispositivos será una fase posterior que requiere autorización para configurar
+HTTPS, firewall y red.
+
+Separación de responsabilidades
+-------------------------------
+
+- src contiene el frontend Vite existente.
+- backend contiene la API propia de Orbinodo.
+- backend/config valida variables de entorno sin publicar secretos.
+- backend/database encapsula las conexiones y consultas a PostgreSQL.
+- backend/domain contiene contratos independientes de Fastify y PostgreSQL.
+- backend/app.ts ensambla endpoints y respuestas HTTP.
+- backend/server.ts inicia y detiene ordenadamente el proceso local.
+
+Estado de salud
+---------------
+
+GET /api/health consulta CURRENT_TIMESTAMP en PostgreSQL. Si funciona, responde 200
+con la hora calculada por el servidor. Si PostgreSQL no está disponible, responde 503
+con un mensaje controlado y sin revelar rutas, consultas, contraseñas o trazas.
+
+Fuente de verdad
+----------------
+
+En este primer bloque el frontend conserva su funcionamiento anterior. La migración
+posterior retirará localStorage como fuente de datos y no implementará un modo local
+alternativo cuando la API esté ausente.

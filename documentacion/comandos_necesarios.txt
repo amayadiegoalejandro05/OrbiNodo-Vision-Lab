@@ -235,3 +235,18 @@ Herramientas del navegador -> Aplicación -> Almacenamiento local
 Permite inspeccionar la simulación técnica. No debe usarse para alterar datos en
 una presentación; demuestra por qué localStorage no es auditoría segura.
 
+API LOCAL DE ORBINODO
+---------------------
+
+npm run api:dev
+Lugar: D:\01_ORBINODO
+Finalidad: iniciar la API local con observación automática después de completar
+.env.backend.local. No publica el servicio en internet.
+
+npm run api:start
+Lugar: D:\01_ORBINODO
+Finalidad: iniciar la API local sin observación automática de archivos.
+
+GET http://127.0.0.1:3001/api/health
+Finalidad: comprobar que la API puede consultar PostgreSQL. Debe responder 200 si
+ambos servicios están disponibles y 503 si la base no responde.

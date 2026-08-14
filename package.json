@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "typecheck": "tsc --noEmit",
+    "api:dev": "tsx watch backend/server.ts",
+    "api:start": "tsx backend/server.ts",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.backend.json",
     "lint": "eslint src eslint.config.js",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
@@ -17,8 +19,10 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.1.2",
+    "@types/pg": "^8.21.0",
     "eslint": "^10.8.0",
     "playwright-core": "^1.62.1",
+    "tsx": "^4.23.12",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "vercel": "^58.4.4",
@@ -26,8 +30,13 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.1.2",
     "@photo-sphere-viewer/core": "^5.15.0",
     "@photo-sphere-viewer/markers-plugin": "^5.15.0",
-    "@photo-sphere-viewer/virtual-tour-plugin": "^5.15.0"
+    "@photo-sphere-viewer/virtual-tour-plugin": "^5.15.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.12.0",
+    "pg": "^8.23.0",
+    "zod": "^4.4.3"
   }
 }
