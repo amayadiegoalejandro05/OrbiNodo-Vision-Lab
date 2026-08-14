@@ -534,3 +534,11 @@ UPDATE y DELETE sobre camera_change_history para proteger la auditoría.
 Pregunta: ¿Ya se comparten datos entre navegadores?
 Respuesta: Todavía no. El esquema central es la base necesaria, pero faltan el
 seed, los endpoints y sustituir localStorage en el frontend.
+
+Pregunta: ¿Dónde están las contraseñas iniciales de los cuatro perfiles?
+Respuesta: Solo en .env.backend.local, que Git ignora. El seed almacena hashes
+Argon2id con salts independientes y nunca imprime valores ni hashes.
+
+Pregunta: ¿Repetir db:seed borra cambios de una cámara?
+Respuesta: No. Las cámaras y estados existentes se conservan mediante ON CONFLICT
+DO NOTHING; la repetición tampoco crea duplicados.

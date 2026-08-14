@@ -8,6 +8,7 @@
     "api:dev": "tsx watch backend/server.ts",
     "api:start": "tsx backend/server.ts",
     "db:migrate": "tsx backend/database/migrate.ts",
+    "db:seed": "tsx backend/database/seed.ts",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.backend.json",
     "lint": "eslint src eslint.config.js",
     "build": "npm run typecheck && vite build",

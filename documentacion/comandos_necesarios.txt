@@ -255,3 +255,8 @@ npm run db:migrate
 Lugar: D:\01_ORBINODO
 Finalidad: aplicar en orden las migraciones SQL pendientes a orbinodo_demo. Usa
 .env.backend.local, bloqueo asesor y una transacción. No imprime credenciales.
+
+npm run db:seed
+Lugar: D:\01_ORBINODO
+Finalidad: crear o actualizar cuatro usuarios y cargar las diez cámaras ficticias.
+Requiere cuatro contraseñas de seed en .env.backend.local y no imprime sus valores.

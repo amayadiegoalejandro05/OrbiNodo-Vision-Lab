@@ -887,3 +887,11 @@ El backend TypeScript vive en backend y expone GET /api/health. La migración
 access_sessions. El runner usa checksums, bloqueo asesor, consultas parametrizadas
 y una transacción completa. Todavía faltan seed, autenticación y migración del
 frontend; por ahora localStorage sigue activo únicamente como estado anterior.
+
+Paso 3: datos iniciales seguros
+-------------------------------
+
+El comando db:seed toma cuatro contraseñas únicamente de .env.backend.local y usa
+Argon2id de Node.js con salt aleatorio. Crea Orbinodo, Jefe, Ingeniero 1 e Ingeniero 2
+y carga las diez cámaras ficticias. La ejecución es transaccional e idempotente: no
+duplica filas ni reemplaza estados operativos que ya existan.

@@ -1,0 +1,32 @@
+DATOS INICIALES Y SEED
+======================
+
+Finalidad
+---------
+
+db:seed crea los cuatro perfiles de prueba y carga las diez cámaras ficticias con su
+estado inicial. No crea accesos ni entradas de historial porque la carga inicial no
+es una edición realizada por un ingeniero.
+
+Contraseñas
+-----------
+
+Las cuatro contraseñas se leen exclusivamente desde .env.backend.local. Para esta
+demo local se aceptan entre 10 y 128 caracteres por decisión del propietario. Nunca
+se incorporan a TypeScript, SQL, logs, documentación
+o Git. Node.js deriva hashes Argon2id con salt aleatorio de 16 bytes, 64 MiB de
+memoria, tres pasadas y una salida de 32 bytes.
+
+Repetición segura
+-----------------
+
+Los usuarios se actualizan por nombre normalizado para conservar cuatro cuentas y
+adoptar las contraseñas locales vigentes. Las cámaras y estados usan ON CONFLICT DO
+NOTHING: un segundo seed no duplica filas ni reemplaza cambios operativos existentes.
+
+Transacción
+-----------
+
+Los hashes se calculan antes de abrir la transacción. PostgreSQL toma un bloqueo,
+comprueba la migración 0001, inserta todo y confirma con COMMIT. Cualquier error hace
+ROLLBACK y evita una carga parcial.

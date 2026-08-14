@@ -819,3 +819,13 @@ Crea las cinco entidades del dominio, índices, restricciones, timestamps y trig
 
 backend/database/migration-files.test.ts
 Comprueba entidades, protección append-only y ausencia de SQL destructivo.
+
+backend/security/password-hash.ts
+Deriva hashes Argon2id con parámetros explícitos y salt aleatorio mediante Node.js.
+
+backend/database/seed/seed-accounts.ts
+Valida las cuatro contraseñas locales y asocia cada una con su perfil público.
+
+backend/database/seed/seed-runner.ts y backend/database/seed.ts
+Calculan hashes antes de la transacción, verifican la migración e insertan usuarios,
+cámaras y estados iniciales sin duplicar ni sobrescribir operaciones existentes.
