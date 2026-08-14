@@ -516,3 +516,21 @@ Pregunta: ¿Por qué se muestra el perfil activo?
 Respuesta: Reduce el riesgo de editar o presentar la demo desde una cuenta
 equivocada y aclara los permisos disponibles.
 
+FASE 8 - POSTGRESQL Y API LOCAL
+===============================
+
+Pregunta: ¿Por qué existen schema_migrations y checksums?
+Respuesta: Permiten saber exactamente qué versión del esquema está aplicada. El
+checksum detecta si alguien cambió un archivo SQL que ya había sido ejecutado.
+
+Pregunta: ¿Una migración fallida deja algunas tablas creadas?
+Respuesta: No. El runner ejecuta todos los pendientes dentro de una transacción.
+Ante un error hace ROLLBACK y conserva el estado anterior completo.
+
+Pregunta: ¿La API puede borrar o corregir el historial anterior?
+Respuesta: La operación normal solo inserta. Un trigger de PostgreSQL rechaza
+UPDATE y DELETE sobre camera_change_history para proteger la auditoría.
+
+Pregunta: ¿Ya se comparten datos entre navegadores?
+Respuesta: Todavía no. El esquema central es la base necesaria, pero faltan el
+seed, los endpoints y sustituir localStorage en el frontend.

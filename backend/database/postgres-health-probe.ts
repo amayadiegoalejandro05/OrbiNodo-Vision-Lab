@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import type { BackendEnvironment } from '../config/environment';
 import type { HealthProbe } from '../domain/health-probe';
+import { createPostgresOptions } from './postgres-options';
 
 export interface PostgresHealthProbe extends HealthProbe {
   close: () => Promise<void>;
@@ -8,17 +9,7 @@ export interface PostgresHealthProbe extends HealthProbe {
 
 // Los campos separados evitan construir o imprimir una URL que contenga contraseña.
 export function createPostgresHealthProbe(env: BackendEnvironment): PostgresHealthProbe {
-  const pool = new Pool({
-    host: env.ORBINODO_DATABASE_HOST,
-    port: env.ORBINODO_DATABASE_PORT,
-    database: env.ORBINODO_DATABASE_NAME,
-    user: env.ORBINODO_DATABASE_USER,
-    password: env.ORBINODO_DATABASE_PASSWORD,
-    ssl: env.ORBINODO_DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : false,
-    max: 10,
-    connectionTimeoutMillis: 3_000,
-    idleTimeoutMillis: 30_000,
-  });
+  const pool = new Pool(createPostgresOptions(env));
 
   return {
     readServerTime: async () => {

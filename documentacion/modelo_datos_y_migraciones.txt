@@ -1,0 +1,35 @@
+MODELO DE DATOS Y MIGRACIONES
+=============================
+
+schema_migrations
+-----------------
+
+Tabla técnica creada por el runner. Guarda nombre, checksum SHA-256 del archivo SQL
+y fecha de aplicación. El checksum protege una migración aplicada contra cambios
+posteriores. No contiene contraseñas ni información operativa.
+
+Entidades de negocio
+--------------------
+
+users almacena identidad, rol, estado y hash de contraseña. Un índice sobre
+lower(username) impide duplicados que solo cambien mayúsculas.
+
+cameras conserva inventario, panorama, ubicación, equipo, coordenadas, instalación,
+cobertura, grabación y retención.
+
+camera_operational_state mantiene exactamente un estado por cámara. updated_by puede
+ser NULL solo para la importación inicial; toda edición futura tendrá autor.
+
+camera_change_history registra una fila por campo cambiado. change_set_id agrupa los
+campos de una misma solicitud y los snapshots del autor conservan la atribución.
+
+access_sessions conserva acceso, cierre, expiración, revocación y estado. El token
+aleatorio no se almacena: se guarda un hash binario de 32 bytes. Esto no equivale a
+usar SHA-256 para contraseñas; las contraseñas usarán Argon2id.
+
+Garantías
+---------
+
+La migración completa se ejecuta en una transacción con bloqueo asesor. Un error
+provoca ROLLBACK. camera_change_history rechaza UPDATE y DELETE mediante trigger.
+Las fechas de auditoría y updated_at se calculan con CURRENT_TIMESTAMP en PostgreSQL.

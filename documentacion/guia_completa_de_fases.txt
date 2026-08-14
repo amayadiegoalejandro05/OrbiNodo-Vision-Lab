@@ -869,3 +869,21 @@ perfiles que ingresan en el mismo navegador y pueden alterarse con herramientas
 del cliente. Es una simulación funcional, no auditoría empresarial. El detalle
 completo está en documentacion/perfiles_permisos_edicion_e_historiales.txt.
 
+FASE 8 - BASE DE DATOS CENTRAL PROPIA
+=====================================
+
+Paso 1: instalación y aislamiento local
+---------------------------------------
+
+PostgreSQL 18.6 quedó instalado como servicio automático. Escucha solo en
+127.0.0.1 y ::1; el puerto 5432 no está publicado en la red. Se crearon la base
+orbinodo_demo y el usuario técnico no administrador orbinodo_api.
+
+Paso 2: API y migraciones iniciales
+-----------------------------------
+
+El backend TypeScript vive en backend y expone GET /api/health. La migración
+0001 crea users, cameras, camera_operational_state, camera_change_history y
+access_sessions. El runner usa checksums, bloqueo asesor, consultas parametrizadas
+y una transacción completa. Todavía faltan seed, autenticación y migración del
+frontend; por ahora localStorage sigue activo únicamente como estado anterior.

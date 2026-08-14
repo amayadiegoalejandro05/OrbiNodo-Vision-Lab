@@ -806,3 +806,16 @@ API. Los errores HTTP no contienen trazas ni detalles internos.
 
 backend/app.test.ts y tsconfig.backend.json
 Prueban las respuestas 200 y 503 y aplican TypeScript estricto al backend.
+
+backend/database/migration-files.ts
+Ordena archivos SQL y calcula un checksum para detectar cambios indebidos.
+
+backend/database/migration-runner.ts y migrate.ts
+Crean schema_migrations, bloquean concurrencia y aplican pendientes dentro de una
+transacción. Un error ejecuta ROLLBACK y la salida administrativa es sanitizada.
+
+backend/database/migrations/0001_initial_schema.sql
+Crea las cinco entidades del dominio, índices, restricciones, timestamps y triggers.
+
+backend/database/migration-files.test.ts
+Comprueba entidades, protección append-only y ausencia de SQL destructivo.

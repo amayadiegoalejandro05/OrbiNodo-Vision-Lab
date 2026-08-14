@@ -250,3 +250,8 @@ Finalidad: iniciar la API local sin observación automática de archivos.
 GET http://127.0.0.1:3001/api/health
 Finalidad: comprobar que la API puede consultar PostgreSQL. Debe responder 200 si
 ambos servicios están disponibles y 503 si la base no responde.
+
+npm run db:migrate
+Lugar: D:\01_ORBINODO
+Finalidad: aplicar en orden las migraciones SQL pendientes a orbinodo_demo. Usa
+.env.backend.local, bloqueo asesor y una transacción. No imprime credenciales.
