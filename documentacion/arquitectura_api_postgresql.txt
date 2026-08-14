@@ -54,10 +54,11 @@ en la auditoría usada por la aplicación.
 Ejecución en Vercel
 -------------------
 
-api/[...path].ts adapta la misma aplicación Fastify a una Vercel Function y mantiene
-las rutas /api en el mismo origen del frontend. El pool acepta DATABASE_URL o
-POSTGRES_URL cuando existe y conserva los parámetros separados para desarrollo local.
+backend/vercel-handler.ts adapta la misma aplicación Fastify a Vercel Functions. Las
+entradas exactas de api/auth, api/cameras y api/audit mantienen todas las rutas /api
+en el mismo origen del frontend; api/[...path].ts queda como respaldo. El pool acepta
+DATABASE_URL o POSTGRES_URL y normaliza SSL administrado a verify-full.
 
-La Function nunca usa 127.0.0.1 para producción. Antes de publicar se debe conectar
-un PostgreSQL administrado, aplicar las tres migraciones, ejecutar el seed inicial y
-activar cookies Secure. Sin esos pasos el despliegue no se considera funcional.
+La Function nunca usa 127.0.0.1 para producción. La producción activa usa Neon,
+contiene tres migraciones, cuatro usuarios, diez cámaras y cookies Secure. La URL
+https://orbinodo-demo.vercel.app fue verificada mediante API y navegador real.

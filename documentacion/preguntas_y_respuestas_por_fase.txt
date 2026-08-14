@@ -554,8 +554,9 @@ Respuesta: La operación normal solo inserta. Un trigger de PostgreSQL rechaza
 UPDATE y DELETE sobre camera_change_history para proteger la auditoría.
 
 Pregunta: ¿Ya se comparten datos entre navegadores?
-Respuesta: Todavía no. El esquema central es la base necesaria, pero faltan el
-seed, los endpoints y sustituir localStorage en el frontend.
+Respuesta: Sí. Producción usa Neon como fuente central para sesiones, cámaras y
+auditoría. El frontend consulta los endpoints y ya no usa localStorage como fuente
+alternativa de esos datos.
 
 Pregunta: ¿Dónde están las contraseñas iniciales de los cuatro perfiles?
 Respuesta: Solo en .env.backend.local, que Git ignora. El seed almacena hashes
@@ -592,3 +593,7 @@ base administrada accesible mediante DATABASE_URL o POSTGRES_URL cifrada.
 Pregunta: ¿Por qué no se publica antes de conectar la base administrada?
 Respuesta: Porque el frontend abriría, pero login, cámaras y auditoría fallarían. Un
 despliegue se considera terminado solo si /api/health y los perfiles funcionan.
+
+Pregunta: ¿Cuál es la dirección pública verificada?
+Respuesta: https://orbinodo-demo.vercel.app. La API, Neon, perfiles, permisos y la
+interfaz en Edge fueron verificados; después se limpiaron las sesiones de prueba.

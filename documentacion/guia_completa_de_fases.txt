@@ -934,3 +934,15 @@ sesiones y cero cambios. Los registros borrados no se recuperan desde la base lo
 La API ya dispone de una entrada serverless para Vercel y admite DATABASE_URL. El
 despliegue final queda condicionado a conectar un PostgreSQL administrado, porque
 Vercel no puede acceder al servicio PostgreSQL instalado en el computador local.
+
+Paso 6: publicación verificada en Vercel y Neon
+-----------------------------------------------
+
+Se conectó el proyecto orbinodo-demo a Neon, se aplicaron las tres migraciones y se
+cargaron cuatro usuarios, diez cámaras y diez estados operativos. Vercel ejecuta nueve
+entradas serverless exactas que reutilizan Fastify y se conectan con SSL verify-full.
+
+La producción está activa en https://orbinodo-demo.vercel.app. Se comprobaron salud,
+login, logout, diez cámaras, permisos 401/403, auditoría del Jefe y la interfaz real en
+Edge. Al terminar se eliminaron las sesiones de prueba: Neon quedó con cero sesiones y
+cero cambios, conservando usuarios, inventario, estados y migraciones.

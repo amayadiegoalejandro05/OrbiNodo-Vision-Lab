@@ -329,3 +329,29 @@ Muestra únicamente los nombres y destinos de variables configuradas, no sus val
 npx vercel --prod
 Solo debe ejecutarse después de crear, migrar y sembrar la base administrada y de
 configurar las variables secretas. Nunca publica la base local.
+
+PRODUCCIÓN ACTIVA Y VERIFICACIÓN
+--------------------------------
+
+URL pública:
+https://orbinodo-demo.vercel.app
+
+npm run verify:production
+Finalidad: comprobar salud, conexión con Neon, diez cámaras, login, logout y permisos
+del Jefe y del Ingeniero. Usa las contraseñas locales sin imprimirlas ni subirlas.
+
+npm run verify:production:browser
+Finalidad: abrir la producción en Edge y comprobar visualmente formulario, panorama,
+perfil Jefe, control superior y diez cámaras.
+
+INICIO LOCAL HABITUAL
+---------------------
+
+Terminal 1:
+npm run api:dev
+
+Terminal 2:
+npm run dev
+
+Reinicio limpio local, solo cuando se desee borrar la auditoría de prueba:
+npm run db:reset -- --confirm-clean-baseline

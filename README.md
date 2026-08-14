@@ -1,10 +1,12 @@
 # Recorrido virtual 360° de una vivienda
 
-Aplicación web local para recorrer una vivienda mediante panoramas equirectangulares.
+Aplicación web para recorrer una vivienda mediante panoramas equirectangulares, con
+autenticación, cámaras CCTV ficticias y auditoría central en PostgreSQL.
 
 ## Estado actual
 
-La Fase 5 está implementada con dos pisos y ocho panoramas ficticios:
+La versión actual está publicada y usa Vite, Fastify, Vercel Functions y Neon. El
+recorrido contiene dos pisos, ocho panoramas ficticios y diez cámaras:
 
 - Primer piso: Parqueadero, Pasillo y Cocina.
 - Escaleras: base en el primer piso y descanso en el segundo.
@@ -18,11 +20,11 @@ la ubicación activa y funciona con teclado y en pantallas móviles.
 
 ```bash
 npm install
-npm run dev
+npm run api:dev
 ```
 
-Vite mostrará la dirección local. Si existe una versión anterior en el navegador,
-usa una recarga forzada.
+En otra terminal ejecuta `npm run dev`. La API usa `.env.backend.local` y PostgreSQL
+local; Vite mostrará la dirección localhost del frontend.
 
 ## Verificación
 
@@ -30,9 +32,8 @@ usa una recarga forzada.
 npm run check
 ```
 
-Este comando ejecuta ESLint, seis pruebas con Vitest, TypeScript, la construcción de
-Vite y una prueba real en Microsoft Edge. La prueba recorre ambos pisos, las ramas
-derecha e izquierda, el Estudio y todos los regresos.
+Este comando ejecuta ESLint, 44 pruebas con Vitest, TypeScript, la construcción de
+Vite y pruebas reales en Microsoft Edge.
 
 ## Documentación
 
@@ -49,19 +50,22 @@ Los ocho panoramas actuales son ficticios. Las fotografías reales deben guardar
 en `public/panoramas/private/`. Git ignora su contenido, pero una construcción local
 puede copiarlo a `dist/`; ambas carpetas deben revisarse antes de compartir archivos.
 
-No se realiza publicación ni `git push` automáticamente.
+Las contraseñas permanecen en archivos locales ignorados por Git. La base guarda
+únicamente hashes Argon2id y las sesiones usan cookies HttpOnly y Secure.
 
-## Próxima fase
+## Producción
 
-La nueva Fase 6 publicará Orbinodo como una demo HTTPS accesible desde cualquier red.
-Mostrará un formulario de usuario y contraseña antes de montar el recorrido.
+La demo verificada está disponible en:
 
-Será una barrera básica ejecutada en el navegador: las panorámicas artificiales
-seguirán siendo públicas y no se utilizará esta solución para contenido sensible.
-La contraseña se comparará mediante SHA-256 y la sesión durará la pestaña actual.
+https://orbinodo-demo.vercel.app
 
-Solo se prevé instalar la CLI de Vercel. No se usarán Supabase, base de datos,
-backend ni almacenamiento privado. La publicación todavía no se ha ejecutado y
-requerirá una cuenta de Vercel y autorización explícita.
+Para comprobar la API y la interfaz publicada:
 
-Las fases posteriores continúan numeradas como 7, 8 y 9.
+```bash
+npm run verify:production
+npm run verify:production:browser
+```
+
+Producción usa Neon; no intenta conectarse al PostgreSQL instalado en localhost.
+Después de la verificación inicial, la auditoría quedó limpia: cero sesiones y cero
+cambios, conservando cuatro usuarios, diez cámaras y diez estados operativos.
