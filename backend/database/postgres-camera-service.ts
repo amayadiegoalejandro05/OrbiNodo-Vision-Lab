@@ -3,7 +3,7 @@ import type { Pool, PoolClient } from 'pg';
 import type {
   CameraOperationsUpdate, CameraRecord, CameraService, CameraUpdateResult,
 } from '../domain/camera-service';
-import { CameraActorNotAllowedError } from '../domain/camera-service';
+import { CameraActorNotAllowedError } from '../domain/camera-service.js';
 
 interface CameraRow {
   id: string;

@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import type { AuthRole, AuthService, AuthUser, LoginResult } from '../domain/auth-service';
-import { verifyPassword } from '../security/password-hash';
+import { verifyPassword } from '../security/password-hash.js';
 
 interface UserRow {
   id: string;

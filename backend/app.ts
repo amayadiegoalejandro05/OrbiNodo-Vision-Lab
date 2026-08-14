@@ -1,12 +1,12 @@
 import cookie from '@fastify/cookie';
 import Fastify from 'fastify';
-import type { AuditService } from './domain/audit-service';
-import type { AuthService } from './domain/auth-service';
-import type { CameraService } from './domain/camera-service';
-import type { HealthProbe } from './domain/health-probe';
-import { authRoutes } from './routes/auth-routes';
-import { auditRoutes } from './routes/audit-routes';
-import { cameraRoutes } from './routes/camera-routes';
+import type { AuditService } from './domain/audit-service.js';
+import type { AuthService } from './domain/auth-service.js';
+import type { CameraService } from './domain/camera-service.js';
+import type { HealthProbe } from './domain/health-probe.js';
+import { authRoutes } from './routes/auth-routes.js';
+import { auditRoutes } from './routes/audit-routes.js';
+import { cameraRoutes } from './routes/camera-routes.js';
 
 export interface ApiAppOptions {
   healthProbe: HealthProbe;

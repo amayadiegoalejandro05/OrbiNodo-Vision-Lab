@@ -2,7 +2,7 @@ import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { AuthService } from '../domain/auth-service';
 import type { CameraService } from '../domain/camera-service';
-import { CameraActorNotAllowedError } from '../domain/camera-service';
+import { CameraActorNotAllowedError } from '../domain/camera-service.js';
 
 export interface CameraRouteOptions {
   authService: AuthService;

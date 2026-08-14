@@ -1,11 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { createApiApp } from '../backend/app';
-import { loadBackendEnvironment } from '../backend/config/environment';
-import { createPostgresAuditService } from '../backend/database/postgres-audit-service';
-import { createPostgresAuthService } from '../backend/database/postgres-auth-service';
-import { createPostgresCameraService } from '../backend/database/postgres-camera-service';
-import { createPostgresHealthProbe } from '../backend/database/postgres-health-probe';
-import { createPostgresPool } from '../backend/database/postgres-options';
+import { createApiApp } from '../backend/app.js';
+import { loadBackendEnvironment } from '../backend/config/environment.js';
+import { createPostgresAuditService } from '../backend/database/postgres-audit-service.js';
+import { createPostgresAuthService } from '../backend/database/postgres-auth-service.js';
+import { createPostgresCameraService } from '../backend/database/postgres-camera-service.js';
+import { createPostgresHealthProbe } from '../backend/database/postgres-health-probe.js';
+import { createPostgresPool } from '../backend/database/postgres-options.js';
 
 const environment = loadBackendEnvironment();
 const pool = createPostgresPool(environment);
