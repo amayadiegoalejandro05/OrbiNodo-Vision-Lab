@@ -6,8 +6,13 @@ import type { BackendEnvironment } from '../config/environment';
 export function createPostgresOptions(env: BackendEnvironment): PoolConfig {
   const connectionString = env.DATABASE_URL ?? env.POSTGRES_URL;
   if (connectionString) {
+    const url = new URL(connectionString);
+    const sslMode = url.searchParams.get('sslmode');
+    if (sslMode === 'prefer' || sslMode === 'require' || sslMode === 'verify-ca') {
+      url.searchParams.set('sslmode', 'verify-full');
+    }
     return {
-      connectionString,
+      connectionString: url.toString(),
       max: 5,
       connectionTimeoutMillis: 5_000,
       idleTimeoutMillis: 30_000,

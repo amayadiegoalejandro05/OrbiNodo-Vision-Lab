@@ -20,7 +20,10 @@ describe('opciones PostgreSQL', () => {
     const options = createPostgresOptions({
       ...localEnvironment, DATABASE_URL: connectionString,
     });
-    expect(options).toMatchObject({ connectionString, max: 5 });
+    expect(options).toMatchObject({
+      connectionString: 'postgresql://usuario:clave@db.example/base?sslmode=verify-full',
+      max: 5,
+    });
     expect(options).not.toHaveProperty('host');
     expect(options).not.toHaveProperty('password');
   });
