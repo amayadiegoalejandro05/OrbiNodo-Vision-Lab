@@ -3,8 +3,18 @@ import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { resolve } from 'node:path';
 import { config as loadDotenv } from 'dotenv';
+import pg from 'pg';
 
 loadDotenv({ path: resolve('.env.backend.local'), quiet: true });
+const { Pool } = pg;
+const database = new Pool({
+  host: process.env.ORBINODO_DATABASE_HOST ?? '127.0.0.1',
+  port: Number(process.env.ORBINODO_DATABASE_PORT ?? 5432),
+  database: process.env.ORBINODO_DATABASE_NAME ?? 'orbinodo_demo',
+  user: process.env.ORBINODO_DATABASE_USER ?? 'orbinodo_api',
+  password: process.env.ORBINODO_DATABASE_PASSWORD,
+  ssl: process.env.ORBINODO_DATABASE_SSL === 'true',
+});
 
 async function freePort() {
   const server = createServer();
@@ -74,7 +84,17 @@ try {
     verifySession(engineerCookie, 'Ingeniero 1'),
     verifySession(managerCookie, 'Jefe'),
   ]);
+  const view = await database.query(
+    'SELECT * FROM vista_historial_accesos LIMIT 1',
+  );
+  const columns = view.fields.map(({ name }) => name);
+  const expected = ['Usuario', 'Entrada', 'Salida', 'Estado', 'Duración'];
+  if (columns.join('|') !== expected.join('|')) {
+    throw new Error('La vista legible no tiene las columnas esperadas.');
+  }
   console.log('Autenticación PostgreSQL verificada con dos sesiones independientes.');
+  console.log('Vista legible del historial de accesos verificada.');
 } finally {
   api.kill();
+  await database.end();
 }

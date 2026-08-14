@@ -41,3 +41,13 @@ El formulario usa /api/auth/login; al recargar consulta /api/auth/me y el botón
 Cerrar sesión llama /api/auth/logout. La identidad ya no vive en sessionStorage y
 el navegador no calcula SHA-256. vite.config.ts reenvía /api exclusivamente a
 http://127.0.0.1:3001 durante desarrollo. Este bloque no configura Vercel.
+
+Vista legible en pgAdmin
+------------------------
+La migración 0002 crea public.vista_historial_accesos con Usuario, Entrada,
+Salida, Estado y Duración en hora de Bogotá. En pgAdmin abre Schemas > public >
+Views y actualiza con Refresh si no aparece. Para consultarla basta ejecutar:
+
+SELECT * FROM vista_historial_accesos;
+
+La vista es solo de lectura y no expone contraseñas, hashes ni tokens de sesión.

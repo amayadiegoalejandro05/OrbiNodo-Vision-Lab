@@ -4,6 +4,10 @@ ESTADO ACTUAL LOCAL: las instrucciones históricas sobre auth:hash y variables
 VITE_DEMO_* ya no aplican. Se conservan solo como registro de fases anteriores.
 Para trabajar ahora, inicia la API con npm run api:dev y Vite con npm run dev.
 
+SELECT * FROM vista_historial_accesos;
+Lugar: Query Tool de orbinodo_demo en pgAdmin.
+Finalidad: mostrar el historial con fechas de Bogotá, estados en español y duración.
+
 NUEVO: npm run verify:browser también valida login, /me y logout reales contra
 PostgreSQL con dos perfiles, sin mostrar contraseñas, hashes ni cookies.
 

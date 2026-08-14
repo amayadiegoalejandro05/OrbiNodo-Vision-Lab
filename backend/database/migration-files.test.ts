@@ -5,7 +5,10 @@ describe('migraciones SQL de Orbinodo', () => {
   it('mantiene una versión inicial íntegra y con las entidades obligatorias', async () => {
     const migrations = await loadMigrationFiles();
 
-    expect(migrations.map((item) => item.version)).toEqual(['0001_initial_schema.sql']);
+    expect(migrations.map((item) => item.version)).toEqual([
+      '0001_initial_schema.sql',
+      '0002_access_history_view.sql',
+    ]);
     expect(migrations[0]?.checksum).toMatch(/^[a-f0-9]{64}$/);
     const sql = migrations[0]?.sql ?? '';
     for (const table of [
@@ -17,6 +20,14 @@ describe('migraciones SQL de Orbinodo', () => {
     ]) {
       expect(sql).toContain('CREATE TABLE ' + table);
     }
+  });
+
+  it('incluye una vista legible del historial de accesos', async () => {
+    const viewSql = (await loadMigrationFiles())[1]?.sql ?? '';
+    expect(viewSql).toContain('CREATE VIEW vista_historial_accesos');
+    expect(viewSql).toContain("AT TIME ZONE 'America/Bogota'");
+    expect(viewSql).toContain('"Duración"');
+    expect(viewSql).not.toMatch(/session_token_hash|password_hash/i);
   });
 
   it('protege auditoría, usa hora del servidor y no contiene borrados', async () => {

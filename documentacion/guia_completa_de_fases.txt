@@ -4,6 +4,9 @@ GUÍA COMPLETA DE FASES DEL RECORRIDO VIRTUAL 360°
 ESTADO ACTUAL LOCAL: Vite usa un proxy /api hacia 127.0.0.1:3001. Login, recarga
 y logout consultan PostgreSQL mediante cookie HttpOnly. No se modificó Vercel.
 
+La migración 0002 añade vista_historial_accesos para consultar en pgAdmin el
+usuario, entrada, salida, estado y duración sin repetir SQL técnico.
+
 ACTUALIZACIÓN DEL BACKEND: ya existen sesiones reales en PostgreSQL para login,
 /me y logout. La política local permite contraseñas de 10 caracteres con Argon2id.
 En HTTPS, ORBINODO_COOKIE_SECURE debe configurarse como true.

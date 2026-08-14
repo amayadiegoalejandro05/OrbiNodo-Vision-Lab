@@ -5,6 +5,9 @@ ESTADO ACTUAL: el frontend autentica contra Fastify/PostgreSQL mediante /api.
 Las explicaciones posteriores sobre SHA-256, VITE_DEMO_* y sessionStorage describen
 fases históricas y ya no representan el código ejecutado.
 
+La migración 0002_access_history_view.sql añade una presentación de solo lectura
+para pgAdmin. Traduce estados, usa hora de Bogotá y oculta todos los hashes y tokens.
+
 ACTUALIZACIÓN: backend/routes/auth-routes.ts y postgres-auth-service.ts implementan
 login, /me y logout. La cookie recibe el token HttpOnly y PostgreSQL guarda solo
 su huella SHA-256, usando la hora del servidor para expirar sesiones.
