@@ -192,6 +192,7 @@ try {
   await closeViewerPanel();
 
   await page.getByRole('button', { name: 'Control del Jefe' }).click();
+  await page.waitForSelector('.audit-tabs [role="tab"]');
   assert(await page.locator('.audit-tabs [role="tab"]').count() === 4, 'El historial no contiene cuatro pestañas de perfiles.');
   const latestText = await page.locator('.latest-access-summary').textContent();
   assert(latestText?.includes('Ingeniero 2') && latestText.includes('Duración:'), 'El resumen no muestra el último ingreso ajeno al Jefe y su duración.');
@@ -203,9 +204,12 @@ try {
   await page.getByRole('tab', { name: 'Ingeniero 1' }).click();
   const engineer1Text = await page.locator('.audit-profile-panel').textContent();
   assert(engineer1Text?.includes('Ingeniero 1 ingresó al software'), 'Falta el acceso de Ingeniero 1.');
+  assert(engineer1Text?.includes('Ingeniero 1 modificó Cámara 3 - Pasillo'), 'Falta el cambio remoto de Ingeniero 1.');
+  assert(engineer1Text?.includes('Estado operativo'), 'El cambio de Ingeniero 1 no muestra sus campos.');
   await page.getByRole('tab', { name: 'Ingeniero 2' }).click();
   const engineer2Text = await page.locator('.audit-profile-panel').textContent();
   assert(engineer2Text?.includes('Ingeniero 2 ingresó al software'), 'Falta el acceso de Ingeniero 2.');
+  assert(engineer2Text?.includes('Ingeniero 2 modificó Cámara 3 - Pasillo'), 'Falta el cambio remoto de Ingeniero 2.');
   assert(engineer2Text?.includes('Duración: Menos de 1 minuto'), 'No se calculó la duración de la sesión del Ingeniero 2.');
   await assertCleanEncoding();
   await page.getByRole('button', { name: 'Cerrar historial' }).click();

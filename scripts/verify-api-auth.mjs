@@ -93,6 +93,24 @@ try {
     body: '{}',
   });
   if (forbidden.status !== 403) throw new Error('El Jefe pudo editar por API.');
+  const engineerAudit = await fetch(`${baseUrl}/api/audit/camera-changes`, {
+    headers: { cookie: engineerCookie },
+  });
+  if (engineerAudit.status !== 403) {
+    throw new Error('Un Ingeniero pudo consultar la auditoría privada.');
+  }
+  const accessAudit = await fetch(baseUrl + '/api/audit/access-sessions', {
+    headers: { cookie: managerCookie },
+  });
+  const changeAudit = await fetch(baseUrl + '/api/audit/camera-changes', {
+    headers: { cookie: managerCookie },
+  });
+  const accessAuditBody = await accessAudit.json();
+  const changeAuditBody = await changeAudit.json();
+  if (!accessAudit.ok || !Array.isArray(accessAuditBody.accessSessions)
+      || !changeAudit.ok || !Array.isArray(changeAuditBody.cameraChanges)) {
+    throw new Error('El Jefe no recibió la auditoría completa desde la API.');
+  }
   await Promise.all([
     verifySession(engineerCookie, 'Ingeniero 1'),
     verifySession(managerCookie, 'Jefe'),
@@ -104,6 +122,16 @@ try {
   const expected = ['Usuario', 'Entrada', 'Salida', 'Estado', 'Duración'];
   if (columns.join('|') !== expected.join('|')) {
     throw new Error('La vista legible no tiene las columnas esperadas.');
+  }
+  const changesView = await database.query(
+    'SELECT * FROM vista_historial_cambios LIMIT 1',
+  );
+  const changeColumns = changesView.fields.map(({ name }) => name);
+  const expectedChanges = [
+    'Ingeniero', 'Cámara', 'Código', 'Campo', 'Valor anterior', 'Valor nuevo', 'Fecha',
+  ];
+  if (changeColumns.join('|') !== expectedChanges.join('|')) {
+    throw new Error('La vista legible de cambios no tiene las columnas esperadas.');
   }
   const cameraState = await database.query({
     text: `SELECT o.notes,

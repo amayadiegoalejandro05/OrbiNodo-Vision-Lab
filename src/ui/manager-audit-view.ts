@@ -1,10 +1,9 @@
 import type { DemoRole } from '../auth/demo-auth';
-import {
-  getAccessHistory,
-  getChangeHistory,
-  type AccessHistoryEntry,
-  type CameraChangeHistoryEntry,
-} from '../persistence/demo-operations-store';
+import type {
+  AccessAuditEntry as AccessHistoryEntry,
+  AuditHistory,
+  CameraChangeAuditEntry as CameraChangeHistoryEntry,
+} from '../domain/audit.types';
 
 export interface ManagerAuditViewApi {
   element: HTMLElement;
@@ -72,7 +71,10 @@ function createChangeEntry(entry: CameraChangeHistoryEntry): HTMLElement {
   return article;
 }
 
-export function createManagerAuditView(parent: HTMLElement): ManagerAuditViewApi {
+export function createManagerAuditView(
+  parent: HTMLElement,
+  loadAudit: () => Promise<AuditHistory>,
+): ManagerAuditViewApi {
   const section = document.createElement('section');
   section.className = 'manager-audit-tools';
   section.hidden = true;
@@ -84,7 +86,7 @@ export function createManagerAuditView(parent: HTMLElement): ManagerAuditViewApi
   dialog.innerHTML = `
     <div class="audit-dialog-heading">
       <div>
-        <p class="audit-eyebrow">Auditoría local de la demostración</p>
+        <p class="audit-eyebrow">Auditoría central de PostgreSQL</p>
         <h2 id="audit-dialog-title">Historial por perfil</h2>
       </div>
       <button type="button" class="audit-close" aria-label="Cerrar historial">×</button>
@@ -156,9 +158,11 @@ export function createManagerAuditView(parent: HTMLElement): ManagerAuditViewApi
     panel.append(heading, accessHeading, accessList, changesHeading, changeList);
   }
 
-  function renderHistory(): void {
-    const accessHistory = getAccessHistory();
-    const changeHistory = getChangeHistory();
+  async function renderHistory(): Promise<void> {
+    summary.replaceChildren(createEmpty('Consultando PostgreSQL…'));
+    tabList.replaceChildren();
+    panel.replaceChildren();
+    const { accessHistory, changeHistory } = await loadAudit();
     renderSummary(accessHistory);
     tabList.replaceChildren();
     const latestNonManager = accessHistory.find((entry) => entry.role !== 'manager');
@@ -178,9 +182,17 @@ export function createManagerAuditView(parent: HTMLElement): ManagerAuditViewApi
     renderProfile(activeRole, accessHistory, changeHistory);
   }
 
-  section.querySelector('.open-audit-button')?.addEventListener('click', () => {
-    renderHistory();
+  section.querySelector('.open-audit-button')?.addEventListener('click', async () => {
     dialog.showModal();
+    try {
+      await renderHistory();
+    } catch (error) {
+      summary.replaceChildren(createEmpty(
+        error instanceof Error ? error.message : 'No fue posible cargar la auditoría.',
+      ));
+      tabList.replaceChildren();
+      panel.replaceChildren();
+    }
   });
   dialog.querySelector('.audit-close')?.addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });

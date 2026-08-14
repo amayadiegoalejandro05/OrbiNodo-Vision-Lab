@@ -33,3 +33,10 @@ Garantías
 La migración completa se ejecuta en una transacción con bloqueo asesor. Un error
 provoca ROLLBACK. camera_change_history rechaza UPDATE y DELETE mediante trigger.
 Las fechas de auditoría y updated_at se calculan con CURRENT_TIMESTAMP en PostgreSQL.
+
+Vistas administrativas
+----------------------
+
+0002_access_history_view.sql crea vista_historial_accesos.
+0003_camera_change_history_view.sql crea vista_historial_cambios con etiquetas en
+español y hora de Colombia. Las vistas no exponen hashes de contraseña ni de sesión.

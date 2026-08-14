@@ -850,3 +850,24 @@ Valida las cuatro contraseñas locales y asocia cada una con su perfil público.
 backend/database/seed/seed-runner.ts y backend/database/seed.ts
 Calculan hashes antes de la transacción, verifican la migración e insertan usuarios,
 cámaras y estados iniciales sin duplicar ni sobrescribir operaciones existentes.
+
+ARCHIVOS DE AUDITORÍA CENTRAL
+-----------------------------
+
+backend/database/postgres-audit-service.ts
+Consulta sesiones y cambios en PostgreSQL. Agrupa por change_set_id para que un
+guardado con varios campos se muestre como una sola operación en el panel.
+
+backend/routes/audit-routes.ts
+Publica /api/audit/access-sessions y /api/audit/camera-changes. Revalida la cookie
+y el rol manager en el servidor antes de consultar datos.
+
+src/api/audit-api.ts y src/ui/manager-audit-view.ts
+Validan la respuesta, cargan ambos historiales al abrir Control del Jefe y muestran
+accesos, duración y valores anterior/nuevo sin usar localStorage como fuente.
+
+backend/database/migrations/0003_camera_change_history_view.sql
+Crea vista_historial_cambios para lectura clara desde pgAdmin.
+
+scripts/close-active-sessions.ts
+Cierra sesiones activas de un nombre público sin eliminarlas del historial.

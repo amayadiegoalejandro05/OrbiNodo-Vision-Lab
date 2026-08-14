@@ -5,6 +5,7 @@ import './styles/experience.css';
 import './styles/calibration.css';
 import './styles/minimap.css';
 import './styles/operational-tools.css';
+import { getAuditFromApi } from './api/audit-api';
 import { getCamerasFromApi, updateCameraOperations } from './api/camera-api';
 import {
   endApiSession, getActiveApiSession, type DemoSession,
@@ -14,7 +15,6 @@ import { getRolePermissions } from './auth/role-permissions';
 import { demoTour } from './data/demo-tour';
 import type { PanoramaLocation } from './domain/tour.types';
 import type { SecurityCameraRecord } from './domain/security-camera.types';
-import { recordSuccessfulLogin, recordSuccessfulLogout } from './persistence/demo-operations-store';
 import { createCameraMap, type CameraMapApi } from './ui/camera-map';
 import { createCoordinateCalibrator } from './ui/coordinate-calibrator';
 import { createLocationMenu, type LocationMenuApi } from './ui/location-menu';
@@ -43,7 +43,7 @@ const locationElement = required<HTMLParagraphElement>('#current-location');
 const progressElement = required<HTMLParagraphElement>('#tour-progress');
 const retryButton = required<HTMLButtonElement>('#retry-panorama');
 const calibrator = createCoordinateCalibrator(app);
-const managerAudit = createManagerAuditView(managerControlHost);
+const managerAudit = createManagerAuditView(managerControlHost, getAuditFromApi);
 const profileElement = document.createElement('p');
 profileElement.className = 'current-profile';
 profileElement.setAttribute('aria-live', 'polite');
@@ -197,7 +197,6 @@ async function refreshCamerasFromApi(): Promise<void> {
 }
 
 const loginView = createLoginView(loginScreen, (session) => {
-  recordSuccessfulLogin(session);
   void mountTour(session);
 });
 homeButton.addEventListener('click', () => void navigateTo(demoTour.startPanoramaId));
@@ -212,7 +211,6 @@ logoutButton.addEventListener('click', async () => {
   logoutButton.disabled = true;
   try {
     await endApiSession();
-    recordSuccessfulLogout();
     unmountTour();
     loginView.show();
   } catch {

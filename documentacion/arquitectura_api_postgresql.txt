@@ -38,3 +38,15 @@ sea Ingeniero 1 o 2, bloquea la fila y guarda estado e historial en una transacc
 El frontend ya carga y edita cámaras mediante esos endpoints. Conserva una copia
 solo en memoria para renderizar y vuelve a consultar al recuperar el foco. Si la API
 falla muestra el error: no usa localStorage como fuente alternativa de cámaras.
+
+Auditoría central del Jefe
+--------------------------
+
+GET /api/audit/access-sessions y GET /api/audit/camera-changes leen directamente
+de PostgreSQL. Ambas rutas exigen una sesión válida con rol manager; un Ingeniero
+recibe 403 incluso si intenta abrir la URL manualmente. El panel Control del Jefe
+consulta las dos rutas cada vez que se abre y agrupa los campos de un mismo guardado.
+
+La vista vista_historial_cambios permite revisar en pgAdmin el Ingeniero, cámara,
+código, campo, valor anterior, valor nuevo y fecha local. localStorage ya no participa
+en la auditoría usada por la aplicación.

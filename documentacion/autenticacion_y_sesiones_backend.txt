@@ -51,3 +51,16 @@ Views y actualiza con Refresh si no aparece. Para consultarla basta ejecutar:
 SELECT * FROM vista_historial_accesos;
 
 La vista es solo de lectura y no expone contraseñas, hashes ni tokens de sesión.
+
+Cierre administrativo sin borrar historial
+--------------------------------------------
+
+Desde D:\01_ORBINODO se puede ejecutar:
+
+npm run sessions:close -- Orbinodo
+
+El comando busca solamente sesiones activas del nombre indicado, les asigna
+logged_out y CURRENT_TIMESTAMP como salida. No elimina filas ni afecta otros usuarios.
+
+El historial que ve el Jefe se sirve desde /api/audit/access-sessions. La API exige
+la cookie HttpOnly válida y el rol manager; los demás perfiles reciben 403.

@@ -290,3 +290,19 @@ npm run db:seed
 Lugar: D:\01_ORBINODO
 Finalidad: crear o actualizar cuatro usuarios y cargar las diez cámaras ficticias.
 Requiere cuatro contraseñas de seed en .env.backend.local y no imprime sus valores.
+
+npm run sessions:close -- Orbinodo
+Lugar: D:\01_ORBINODO
+Finalidad: cerrar únicamente las sesiones activas del usuario indicado. Cambia su
+estado a logged_out y registra la hora de salida; no elimina el historial.
+
+SELECT * FROM vista_historial_cambios;
+Lugar: pgAdmin 4 -> orbinodo_demo -> Query Tool
+Finalidad: ver los cambios de cámaras con nombres comprensibles, valores anterior
+y nuevo y fecha de Colombia. Para ver primero los más recientes:
+
+SELECT * FROM vista_historial_cambios ORDER BY "Fecha" DESC;
+
+SELECT * FROM vista_historial_accesos;
+Lugar: pgAdmin 4 -> orbinodo_demo -> Query Tool
+Finalidad: ver entradas, salidas, estado y duración de las sesiones.

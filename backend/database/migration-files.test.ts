@@ -8,6 +8,7 @@ describe('migraciones SQL de Orbinodo', () => {
     expect(migrations.map((item) => item.version)).toEqual([
       '0001_initial_schema.sql',
       '0002_access_history_view.sql',
+      '0003_camera_change_history_view.sql',
     ]);
     expect(migrations[0]?.checksum).toMatch(/^[a-f0-9]{64}$/);
     const sql = migrations[0]?.sql ?? '';
@@ -36,5 +37,13 @@ describe('migraciones SQL de Orbinodo', () => {
     expect(sql).toContain('camera_change_history_append_only');
     expect(sql).toContain('CURRENT_TIMESTAMP');
     expect(sql).not.toMatch(/\b(DROP|TRUNCATE|DELETE\s+FROM)\b/i);
+  });
+
+  it('incluye una vista legible de cambios sin datos sensibles', async () => {
+    const viewSql = (await loadMigrationFiles())[2]?.sql ?? '';
+    expect(viewSql).toContain('CREATE VIEW vista_historial_cambios');
+    expect(viewSql).toContain('"Valor anterior"');
+    expect(viewSql).toContain("AT TIME ZONE 'America/Bogota'");
+    expect(viewSql).not.toMatch(/session_token_hash|password_hash/i);
   });
 });

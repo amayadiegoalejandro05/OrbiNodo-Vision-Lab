@@ -15,6 +15,7 @@ const unusedCameras: CameraService = {
 };
 const authOptions = {
   authService: unusedAuth,
+  auditService: { listAccessSessions: async () => [], listCameraChanges: async () => [] },
   cameraService: unusedCameras,
   cookieName: 'orbinodo_session',
   cookieSecure: false,

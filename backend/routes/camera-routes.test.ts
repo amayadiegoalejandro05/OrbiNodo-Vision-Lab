@@ -26,6 +26,7 @@ function buildApp(user: AuthUser | null, cameraService: CameraService) {
   };
   const app = createApiApp({
     authService, cameraService, cookieName: 'orbinodo_session',
+    auditService: { listAccessSessions: async () => [], listCameraChanges: async () => [] },
     cookieSecure: false, sessionHours: 8,
     healthProbe: { readServerTime: async () => new Date() },
   });

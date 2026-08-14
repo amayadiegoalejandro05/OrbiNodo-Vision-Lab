@@ -911,3 +911,15 @@ El comando db:seed toma cuatro contraseñas únicamente de .env.backend.local y 
 Argon2id de Node.js con salt aleatorio. Crea Orbinodo, Jefe, Ingeniero 1 e Ingeniero 2
 y carga las diez cámaras ficticias. La ejecución es transaccional e idempotente: no
 duplica filas ni reemplaza estados operativos que ya existan.
+
+Paso 4: auditoría central verificable
+------------------------------------
+
+La API expone historiales de accesos y cambios solamente al Jefe. El navegador ya
+no arma el historial desde localStorage: consulta PostgreSQL cada vez que se abre
+Control del Jefe. Los cambios de cada Ingeniero conservan cámara, campo, valor
+anterior, valor nuevo, autor y hora calculada por el servidor.
+
+La migración 0003 agrega vista_historial_cambios para consultar esa información en
+pgAdmin sin escribir una consulta larga. Las verificaciones comprueban 401 sin
+sesión, 403 para Ingenieros, acceso del Jefe y visibilidad de cambios de ambos autores.

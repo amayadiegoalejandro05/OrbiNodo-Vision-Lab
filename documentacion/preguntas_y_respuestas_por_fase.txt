@@ -564,3 +564,19 @@ Argon2id con salts independientes y nunca imprime valores ni hashes.
 Pregunta: ¿Repetir db:seed borra cambios de una cámara?
 Respuesta: No. Las cámaras y estados existentes se conservan mediante ON CONFLICT
 DO NOTHING; la repetición tampoco crea duplicados.
+
+Pregunta: ¿El historial del Jefe sigue guardado en el navegador?
+Respuesta: No. El panel consulta access_sessions y camera_change_history mediante
+la API local cada vez que se abre. PostgreSQL es la fuente central.
+
+Pregunta: ¿Un Ingeniero puede consultar el historial cambiando la URL?
+Respuesta: No. La API vuelve a validar su sesión y responde 403 si el rol no es
+manager, aunque el botón no aparezca en la interfaz.
+
+Pregunta: ¿Cómo veo los cambios sin escribir una consulta extensa?
+Respuesta: En pgAdmin abre Query Tool sobre orbinodo_demo y ejecuta:
+SELECT * FROM vista_historial_cambios;
+
+Pregunta: ¿Cerrar una sesión activa borra su registro?
+Respuesta: No. npm run sessions:close -- Nombre marca la sesión como logged_out y
+registra logout_at; la fila permanece disponible para auditoría.
