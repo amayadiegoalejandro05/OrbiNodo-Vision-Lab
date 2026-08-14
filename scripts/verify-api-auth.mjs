@@ -80,6 +80,19 @@ try {
   const engineerCookie = await login('Ingeniero 1', engineerPassword);
   const managerCookie = await login('Jefe', managerPassword);
   if (engineerCookie === managerCookie) throw new Error('Las sesiones no son únicas.');
+  const cameras = await fetch(`${baseUrl}/api/cameras`, {
+    headers: { cookie: engineerCookie },
+  });
+  const inventory = await cameras.json();
+  if (!cameras.ok || inventory.cameras?.length !== 10) {
+    throw new Error('La API no devolvió las diez cámaras de PostgreSQL.');
+  }
+  const forbidden = await fetch(`${baseUrl}/api/cameras/camera-01/operations`, {
+    method: 'PATCH',
+    headers: { cookie: managerCookie, 'content-type': 'application/json' },
+    body: '{}',
+  });
+  if (forbidden.status !== 403) throw new Error('El Jefe pudo editar por API.');
   await Promise.all([
     verifySession(engineerCookie, 'Ingeniero 1'),
     verifySession(managerCookie, 'Jefe'),

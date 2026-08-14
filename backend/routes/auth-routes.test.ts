@@ -1,13 +1,19 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApiApp } from '../app';
 import type { AuthService } from '../domain/auth-service';
+import type { CameraService } from '../domain/camera-service';
 
 const apps: Array<ReturnType<typeof createApiApp>> = [];
 afterEach(async () => Promise.all(apps.splice(0).map((app) => app.close())));
+const unusedCameras: CameraService = {
+  listCameras: async () => [],
+  updateOperations: async () => null,
+};
 
 function buildApp(authService: AuthService, cookieSecure = false) {
   const app = createApiApp({
     authService, cookieSecure, cookieName: 'orbinodo_session', sessionHours: 8,
+    cameraService: unusedCameras,
     healthProbe: { readServerTime: async () => new Date() },
   });
 

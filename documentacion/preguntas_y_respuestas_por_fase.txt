@@ -8,6 +8,12 @@ Pregunta: ¿Cómo veo accesos sin repetir una consulta larga?
 Respuesta: Ejecuta SELECT * FROM vista_historial_accesos; o abre la vista desde
 Schemas > public > Views en pgAdmin.
 
+Pregunta: ¿Puede Jefe modificar una cámara llamando directamente a la API?
+Respuesta: No. PATCH vuelve a validar sesión y rol en el backend y responde 403.
+
+Pregunta: ¿Qué ocurre si falla el historial durante una actualización?
+Respuesta: PostgreSQL ejecuta ROLLBACK; tampoco queda guardado el estado operativo.
+
 Pregunta: ¿La contraseña de 10 caracteres sigue siendo válida?
 Respuesta: Sí. Se deriva con Argon2id; las sesiones usan tokens aleatorios y la
 base de datos conserva solamente SHA-256 del token, nunca de la contraseña.

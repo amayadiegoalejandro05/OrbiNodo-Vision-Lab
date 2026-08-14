@@ -7,6 +7,9 @@ y logout consultan PostgreSQL mediante cookie HttpOnly. No se modificó Vercel.
 La migración 0002 añade vista_historial_accesos para consultar en pgAdmin el
 usuario, entrada, salida, estado y duración sin repetir SQL técnico.
 
+La API ya ofrece GET /api/cameras y PATCH /api/cameras/:id/operations. El segundo
+solo acepta Ingenieros y confirma estado más auditoría dentro de una transacción.
+
 ACTUALIZACIÓN DEL BACKEND: ya existen sesiones reales en PostgreSQL para login,
 /me y logout. La política local permite contraseñas de 10 caracteres con Argon2id.
 En HTTPS, ORBINODO_COOKIE_SECURE debe configurarse como true.

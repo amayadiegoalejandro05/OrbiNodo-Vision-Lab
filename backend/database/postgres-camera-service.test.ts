@@ -1,0 +1,51 @@
+import type { Pool } from 'pg';
+import { describe, expect, it, vi } from 'vitest';
+import { createPostgresCameraService } from './postgres-camera-service';
+
+const row = {
+  id: 'camera-01', asset_code: 'CCTV-001', name: 'Cámara 1',
+  panorama_id: 'sotano-01', location: 'Sótano', brand: 'Demo', model: 'X1',
+  camera_type: '360°', yaw: 10, pitch: 5, installed_on: '2025-01-01',
+  coverage: 'Acceso', recording_mode: 'Continua', retention: '30 días',
+  status: 'Operativa', last_maintenance_on: '2026-01-01',
+  next_maintenance_on: '2026-06-01', responsible_area: 'Seguridad', notes: 'Inicial',
+};
+
+const actor = {
+  username: 'Ingeniero 1', displayName: 'Ingeniero 1', role: 'engineer1' as const,
+};
+
+describe('transacción operativa PostgreSQL', () => {
+  it('guarda estado e historial antes de confirmar', async () => {
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{
+        id: '7', username: actor.username, display_name: actor.displayName,
+      }] })
+      .mockResolvedValueOnce({ rows: [row] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    const release = vi.fn();
+    const pool = {
+      connect: async () => ({ query, release }),
+    } as unknown as Pool;
+    const service = createPostgresCameraService(pool);
+    const result = await service.updateOperations('camera-01', actor, {
+      status: 'En mantenimiento', lastMaintenanceOn: '2026-01-01',
+      nextMaintenanceOn: '2026-06-01', responsibleArea: 'Seguridad',
+      notes: 'Revisión abierta',
+    });
+    const sql = query.mock.calls.map(([value]) =>
+      typeof value === 'string' ? value : value.text,
+    );
+    expect(sql[0]).toBe('BEGIN');
+    expect(sql.at(-1)).toBe('COMMIT');
+    expect(sql.filter((text) => text.includes('INSERT INTO camera_change_history')))
+      .toHaveLength(2);
+    expect(result?.changedFields).toEqual(['status', 'notes']);
+    expect(result?.camera.status).toBe('En mantenimiento');
+    expect(release).toHaveBeenCalledOnce();
+  });
+});

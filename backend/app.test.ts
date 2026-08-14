@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createApiApp } from './app';
 import type { AuthService } from './domain/auth-service';
+import type { CameraService } from './domain/camera-service';
 
 const apps: Array<ReturnType<typeof createApiApp>> = [];
 const unusedAuth: AuthService = {
@@ -8,8 +9,13 @@ const unusedAuth: AuthService = {
   getSession: async () => null,
   logout: async () => undefined,
 };
+const unusedCameras: CameraService = {
+  listCameras: async () => [],
+  updateOperations: async () => null,
+};
 const authOptions = {
   authService: unusedAuth,
+  cameraService: unusedCameras,
   cookieName: 'orbinodo_session',
   cookieSecure: false,
   sessionHours: 8,

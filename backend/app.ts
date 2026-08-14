@@ -1,12 +1,15 @@
 import cookie from '@fastify/cookie';
 import Fastify from 'fastify';
 import type { AuthService } from './domain/auth-service';
+import type { CameraService } from './domain/camera-service';
 import type { HealthProbe } from './domain/health-probe';
 import { authRoutes } from './routes/auth-routes';
+import { cameraRoutes } from './routes/camera-routes';
 
 export interface ApiAppOptions {
   healthProbe: HealthProbe;
   authService: AuthService;
+  cameraService: CameraService;
   cookieName: string;
   cookieSecure: boolean;
   sessionHours: number;
@@ -31,6 +34,12 @@ export function createApiApp(options: ApiAppOptions) {
     cookieName: options.cookieName,
     cookieSecure: options.cookieSecure,
     sessionHours: options.sessionHours,
+  });
+  void app.register(cameraRoutes, {
+    prefix: '/api/cameras',
+    authService: options.authService,
+    cameraService: options.cameraService,
+    cookieName: options.cookieName,
   });
 
   app.get('/api/health', async (_request, reply) => {

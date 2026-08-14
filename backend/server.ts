@@ -1,6 +1,7 @@
 import { createApiApp } from './app';
 import { loadBackendEnvironment } from './config/environment';
 import { createPostgresAuthService } from './database/postgres-auth-service';
+import { createPostgresCameraService } from './database/postgres-camera-service';
 import { createPostgresHealthProbe } from './database/postgres-health-probe';
 import { createPostgresPool } from './database/postgres-options';
 
@@ -11,8 +12,9 @@ async function startServer(): Promise<void> {
   const authService = createPostgresAuthService(
     pool, environment.ORBINODO_SESSION_HOURS,
   );
+  const cameraService = createPostgresCameraService(pool);
   const app = createApiApp({
-    healthProbe, authService, logger: true,
+    healthProbe, authService, cameraService, logger: true,
     cookieName: environment.ORBINODO_COOKIE_NAME,
     cookieSecure: environment.ORBINODO_COOKIE_SECURE === 'true',
     sessionHours: environment.ORBINODO_SESSION_HOURS,

@@ -8,6 +8,11 @@ fases históricas y ya no representan el código ejecutado.
 La migración 0002_access_history_view.sql añade una presentación de solo lectura
 para pgAdmin. Traduce estados, usa hora de Bogotá y oculta todos los hashes y tokens.
 
+backend/database/postgres-camera-service.ts une cámaras con su estado operativo.
+Actualiza únicamente cinco campos autorizados y crea una fila append-only por cada
+valor modificado antes del COMMIT. backend/routes/camera-routes.ts valida sesión,
+rol, fechas y longitudes antes de invocar esa transacción.
+
 ACTUALIZACIÓN: backend/routes/auth-routes.ts y postgres-auth-service.ts implementan
 login, /me y logout. La cookie recibe el token HttpOnly y PostgreSQL guarda solo
 su huella SHA-256, usando la hora del servidor para expirar sesiones.
