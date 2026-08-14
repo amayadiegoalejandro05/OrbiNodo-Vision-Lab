@@ -1,0 +1,36 @@
+AUTENTICACIÓN Y SESIONES DEL BACKEND
+====================================
+
+Rutas locales
+-------------
+POST /api/auth/login recibe username y password.
+GET /api/auth/me devuelve el perfil de la sesión activa.
+POST /api/auth/logout invalida la sesión y elimina la cookie.
+
+Las contraseñas de esta demo pueden tener exactamente 10 caracteres. Se guardan
+como Argon2id (64 MiB, 3 pasadas), nunca como texto ni SHA-256. Un acceso fallido
+siempre devuelve el mismo mensaje para no revelar si el usuario existe.
+
+Sesiones
+--------
+Cada login genera 32 bytes aleatorios. El navegador recibe el token en una cookie
+HttpOnly, SameSite=Lax y Path=/; la base de datos guarda solamente SHA-256(token).
+La expiración se calcula con CURRENT_TIMESTAMP de PostgreSQL y dura 8 horas por
+defecto. Logout cambia el estado de la sesión; no basta con borrar la cookie.
+
+Configuración
+-------------
+ORBINODO_SESSION_HOURS controla la duración (1 a 168 horas).
+ORBINODO_COOKIE_NAME controla el nombre de cookie.
+ORBINODO_COOKIE_SECURE=false se admite únicamente durante HTTP local. En cualquier
+entorno HTTPS debe ser true; producción requiere además HTTPS obligatorio.
+
+Comprobación
+------------
+npm run typecheck
+npm run test
+npm run verify:browser
+
+El último comando conserva la prueba visual y también inicia una API temporal,
+abre sesiones reales de Jefe e Ingeniero 1, consulta /me, ejecuta logout y confirma
+que ambas cookies quedan invalidadas. No imprime contraseñas ni tokens.

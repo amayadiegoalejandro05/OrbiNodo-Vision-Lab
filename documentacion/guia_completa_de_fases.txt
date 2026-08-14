@@ -1,6 +1,10 @@
 GUÍA COMPLETA DE FASES DEL RECORRIDO VIRTUAL 360°
 ===================================================
 
+ACTUALIZACIÓN DEL BACKEND: ya existen sesiones reales en PostgreSQL para login,
+/me y logout. La política local permite contraseñas de 10 caracteres con Argon2id.
+En HTTPS, ORBINODO_COOKIE_SECURE debe configurarse como true.
+
 PROPÓSITO DE ESTE DOCUMENTO
 
 Esta guía explica qué se construye en cada fase, qué se necesita antes de comenzar,

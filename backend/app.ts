@@ -1,9 +1,15 @@
 import cookie from '@fastify/cookie';
 import Fastify from 'fastify';
+import type { AuthService } from './domain/auth-service';
 import type { HealthProbe } from './domain/health-probe';
+import { authRoutes } from './routes/auth-routes';
 
 export interface ApiAppOptions {
   healthProbe: HealthProbe;
+  authService: AuthService;
+  cookieName: string;
+  cookieSecure: boolean;
+  sessionHours: number;
   logger?: boolean;
 }
 
@@ -19,6 +25,13 @@ export function createApiApp(options: ApiAppOptions) {
 
   // Las sesiones futuras usarán cookies HttpOnly; ninguna ruta debe analizarlas a mano.
   void app.register(cookie);
+  void app.register(authRoutes, {
+    prefix: '/api/auth',
+    authService: options.authService,
+    cookieName: options.cookieName,
+    cookieSecure: options.cookieSecure,
+    sessionHours: options.sessionHours,
+  });
 
   app.get('/api/health', async (_request, reply) => {
     try {

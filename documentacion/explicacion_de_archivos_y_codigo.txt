@@ -1,6 +1,10 @@
 EXPLICACIÓN DE ARCHIVOS Y CÓDIGO
 =================================
 
+ACTUALIZACIÓN: backend/routes/auth-routes.ts y postgres-auth-service.ts implementan
+login, /me y logout. La cookie recibe el token HttpOnly y PostgreSQL guarda solo
+su huella SHA-256, usando la hora del servidor para expirar sesiones.
+
 PROPÓSITO
 
 Este documento explica qué hace cada archivo generado, quién lo utiliza, qué se puede

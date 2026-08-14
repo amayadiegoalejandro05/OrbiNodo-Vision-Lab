@@ -1,4 +1,8 @@
 BANCO DE PREGUNTAS Y RESPUESTAS POR FASE
+
+Pregunta: ¿La contraseña de 10 caracteres sigue siendo válida?
+Respuesta: Sí. Se deriva con Argon2id; las sesiones usan tokens aleatorios y la
+base de datos conserva solamente SHA-256 del token, nunca de la contraseña.
 RECORRIDO VIRTUAL 360° DE UNA VIVIENDA
 
 Este archivo se ampliará al terminar cada fase. Las respuestas describen únicamente

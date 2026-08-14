@@ -1,5 +1,8 @@
 COMANDOS NECESARIOS Y SU UTILIDAD
 
+NUEVO: npm run verify:browser también valida login, /me y logout reales contra
+PostgreSQL con dos perfiles, sin mostrar contraseñas, hashes ni cookies.
+
 cd D:\01_ORBINODO
 Entra en la carpeta del proyecto.
 

@@ -1,4 +1,4 @@
-import type { PoolConfig } from 'pg';
+import { Pool, type PoolConfig } from 'pg';
 import type { BackendEnvironment } from '../config/environment';
 
 // Centralizar estas opciones evita que salud, migraciones y rutas construyan
@@ -15,4 +15,8 @@ export function createPostgresOptions(env: BackendEnvironment): PoolConfig {
     connectionTimeoutMillis: 3_000,
     idleTimeoutMillis: 30_000,
   };
+}
+
+export function createPostgresPool(env: BackendEnvironment): Pool {
+  return new Pool(createPostgresOptions(env));
 }
