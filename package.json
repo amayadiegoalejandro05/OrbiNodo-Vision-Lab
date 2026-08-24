@@ -17,7 +17,8 @@
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "check": "npm run lint && npm run test && npm run build && npm run verify:browser",
-    "test": "vitest run",
+    "test": "vitest run --exclude **/*.integration.test.ts",
+    "test:integration": "node --env-file=.env.backend.local node_modules/vitest/vitest.mjs run backend/database/postgres-auth-service.integration.test.ts backend/database/postgres-persistence.integration.test.ts",
     "verify:browser": "node scripts/verify-browser.mjs",
     "verify:production": "node --env-file=.env.backend.local scripts/verify-production.mjs",
     "verify:production:browser": "node --env-file=.env.backend.local scripts/verify-production-browser.mjs"

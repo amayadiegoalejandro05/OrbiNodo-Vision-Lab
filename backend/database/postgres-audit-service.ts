@@ -1,5 +1,6 @@
 import type { Pool } from 'pg';
 import type { AuthRole } from '../domain/auth-service';
+import { expireDueSessions } from './postgres-auth-service.js';
 import type {
   AccessAuditEntry,
   AuditFieldChange,
@@ -40,8 +41,13 @@ const fieldLabels: Record<AuditFieldChange['field'], string> = {
 export function createPostgresAuditService(pool: Pool): AuditService {
   return {
     async listAccessSessions(): Promise<AccessAuditEntry[]> {
+      await expireDueSessions(pool);
       const result = await pool.query<AccessRow>(`
-        SELECT s.id, s.login_at, s.logout_at, u.role, u.display_name, u.username
+        SELECT s.id, s.login_at,
+          COALESCE(s.logout_at, s.revoked_at,
+            CASE WHEN s.status = 'expired'
+              THEN LEAST(s.expires_at, s.idle_expires_at) END) AS logout_at,
+          u.role, u.display_name, u.username
         FROM access_sessions s
         JOIN users u ON u.id = s.user_id
         ORDER BY s.login_at DESC

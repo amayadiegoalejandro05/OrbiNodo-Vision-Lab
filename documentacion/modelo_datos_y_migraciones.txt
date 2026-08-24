@@ -27,6 +27,9 @@ access_sessions conserva acceso, cierre, expiración, revocación y estado. El t
 aleatorio no se almacena: se guarda un hash binario de 32 bytes. Esto no equivale a
 usar SHA-256 para contraseñas; las contraseñas usarán Argon2id.
 
+login_rate_limits conserva contadores compartidos de intentos fallidos. La clave es
+un SHA-256 de usuario normalizado e IP; no almacena la IP en texto.
+
 Garantías
 ---------
 
@@ -40,3 +43,13 @@ Vistas administrativas
 0002_access_history_view.sql crea vista_historial_accesos.
 0003_camera_change_history_view.sql crea vista_historial_cambios con etiquetas en
 español y hora de Colombia. Las vistas no exponen hashes de contraseña ni de sesión.
+0004_session_activity_and_login_rate_limits.sql añade actividad, expiración por
+inactividad, rate limiting compartido y actualiza la vista de accesos.
+
+Prueba desde base vacía
+-----------------------
+
+npm run test:integration crea una base local temporal con nombre validado, ejecuta
+0001 a 0004 y el seed, comprueba idempotencia, catálogo, integridad, rollback y
+persistencia tras reconectar. La base temporal se elimina al finalizar. La cuenta de
+aplicación no debe conservar CREATEDB fuera de esta verificación controlada.

@@ -11,7 +11,13 @@ async function startServer(): Promise<void> {
   const pool = createPostgresPool(environment);
   const healthProbe = createPostgresHealthProbe(pool);
   const authService = createPostgresAuthService(
-    pool, environment.ORBINODO_SESSION_HOURS,
+    pool, {
+      sessionHours: environment.ORBINODO_SESSION_HOURS,
+      idleMinutes: environment.ORBINODO_SESSION_IDLE_MINUTES,
+      loginMaxAttempts: environment.ORBINODO_LOGIN_MAX_ATTEMPTS,
+      loginWindowMinutes: environment.ORBINODO_LOGIN_WINDOW_MINUTES,
+      loginBlockMinutes: environment.ORBINODO_LOGIN_BLOCK_MINUTES,
+    },
   );
   const cameraService = createPostgresCameraService(pool);
   const auditService = createPostgresAuditService(pool);

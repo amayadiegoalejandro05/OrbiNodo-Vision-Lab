@@ -9,6 +9,7 @@ describe('migraciones SQL de Orbinodo', () => {
       '0001_initial_schema.sql',
       '0002_access_history_view.sql',
       '0003_camera_change_history_view.sql',
+      '0004_session_activity_and_login_rate_limits.sql',
     ]);
     expect(migrations[0]?.checksum).toMatch(/^[a-f0-9]{64}$/);
     const sql = migrations[0]?.sql ?? '';
@@ -45,5 +46,13 @@ describe('migraciones SQL de Orbinodo', () => {
     expect(viewSql).toContain('"Valor anterior"');
     expect(viewSql).toContain("AT TIME ZONE 'America/Bogota'");
     expect(viewSql).not.toMatch(/session_token_hash|password_hash/i);
+  });
+
+  it('versiona actividad de sesión y rate limiting compartido', async () => {
+    const sql = (await loadMigrationFiles())[3]?.sql ?? '';
+    expect(sql).toContain('last_activity_at');
+    expect(sql).toContain('idle_expires_at');
+    expect(sql).toContain('CREATE TABLE login_rate_limits');
+    expect(sql).toContain('CREATE OR REPLACE VIEW vista_historial_accesos');
   });
 });

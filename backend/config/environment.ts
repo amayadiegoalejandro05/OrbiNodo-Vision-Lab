@@ -14,6 +14,10 @@ const environmentSchema = z.object({
   ORBINODO_DATABASE_PASSWORD: z.string().min(1).optional(),
   ORBINODO_DATABASE_SSL: z.enum(['true', 'false']).default('false'),
   ORBINODO_SESSION_HOURS: z.coerce.number().int().min(1).max(168).default(8),
+  ORBINODO_SESSION_IDLE_MINUTES: z.coerce.number().int().min(1).max(480).default(30),
+  ORBINODO_LOGIN_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(50).default(5),
+  ORBINODO_LOGIN_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
+  ORBINODO_LOGIN_BLOCK_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
   ORBINODO_COOKIE_NAME: z.string().regex(/^[A-Za-z0-9_-]+$/).default('orbinodo_session'),
   ORBINODO_COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
 }).superRefine((value, context) => {
@@ -21,6 +25,12 @@ const environmentSchema = z.object({
     context.addIssue({
       code: 'custom', path: ['ORBINODO_DATABASE_PASSWORD'],
       message: 'Falta DATABASE_URL o la contraseña de PostgreSQL local.',
+    });
+  }
+  if (value.ORBINODO_SESSION_IDLE_MINUTES > value.ORBINODO_SESSION_HOURS * 60) {
+    context.addIssue({
+      code: 'custom', path: ['ORBINODO_SESSION_IDLE_MINUTES'],
+      message: 'El timeout por inactividad no puede superar la duración absoluta.',
     });
   }
 });

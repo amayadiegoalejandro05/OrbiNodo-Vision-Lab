@@ -12,8 +12,14 @@ export interface LoginResult {
   expiresAt: Date;
 }
 
+export interface LoginContext {
+  sourceIp: string;
+}
+
 export interface AuthService {
-  login(username: string, password: string): Promise<LoginResult | null>;
+  login(username: string, password: string, context: LoginContext): Promise<LoginResult | null>;
   getSession(token: string): Promise<AuthUser | null>;
   logout(token: string): Promise<void>;
 }
+
+export class LoginRateLimitedError extends Error {}

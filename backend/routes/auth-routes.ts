@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { apiError } from '../api-error.js';
 import type { AuthService } from '../domain/auth-service';
+import { LoginRateLimitedError } from '../domain/auth-service.js';
 
 export interface AuthRouteOptions {
   authService: AuthService;
@@ -28,9 +29,19 @@ export const authRoutes: FastifyPluginAsync<AuthRouteOptions> = async (app, opti
     if (!parsed.success) {
       return reply.code(400).send(apiError('VALIDATION_ERROR', 'Los datos de acceso no son válidos.'));
     }
-    const result = await options.authService.login(
-      parsed.data.username, parsed.data.password,
-    );
+    let result;
+    try {
+      result = await options.authService.login(
+        parsed.data.username, parsed.data.password, { sourceIp: request.ip },
+      );
+    } catch (error) {
+      if (error instanceof LoginRateLimitedError) {
+        return reply.code(429).send(apiError(
+          'LOGIN_RATE_LIMITED', 'Demasiados intentos. Intenta nuevamente más tarde.',
+        ));
+      }
+      throw error;
+    }
     if (!result) return reply.code(401).send(unauthorized);
     reply.setCookie(options.cookieName, result.token, cookieOptions);
     return {

@@ -9,7 +9,13 @@ import { createPostgresPool } from './database/postgres-options.js';
 
 const environment = loadBackendEnvironment();
 const pool = createPostgresPool(environment);
-const authService = createPostgresAuthService(pool, environment.ORBINODO_SESSION_HOURS);
+const authService = createPostgresAuthService(pool, {
+  sessionHours: environment.ORBINODO_SESSION_HOURS,
+  idleMinutes: environment.ORBINODO_SESSION_IDLE_MINUTES,
+  loginMaxAttempts: environment.ORBINODO_LOGIN_MAX_ATTEMPTS,
+  loginWindowMinutes: environment.ORBINODO_LOGIN_WINDOW_MINUTES,
+  loginBlockMinutes: environment.ORBINODO_LOGIN_BLOCK_MINUTES,
+});
 const app = createApiApp({
   healthProbe: createPostgresHealthProbe(pool),
   authService,

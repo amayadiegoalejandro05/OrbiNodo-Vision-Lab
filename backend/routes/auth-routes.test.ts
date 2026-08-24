@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApiApp } from '../app';
 import type { AuthService } from '../domain/auth-service';
+import { LoginRateLimitedError } from '../domain/auth-service.js';
 import type { CameraService } from '../domain/camera-service';
 
 const apps: Array<ReturnType<typeof createApiApp>> = [];
@@ -71,6 +72,24 @@ describe('autenticación HTTP', () => {
     });
     expect(response.statusCode).toBe(400);
     expect(response.json().error).toBe('VALIDATION_ERROR');
+  });
+
+  it('responde 429 cuando PostgreSQL bloquea los intentos de login', async () => {
+    const app = buildApp(fakeService({
+      login: async () => { throw new LoginRateLimitedError(); },
+    }));
+    const response = await app.inject({ method: 'POST', url: '/api/auth/login',
+      payload: { username: 'Jefe', password: '1234567890' } });
+    expect(response.statusCode).toBe(429);
+    expect(response.json().error).toBe('LOGIN_RATE_LIMITED');
+  });
+
+  it('responde 401 cuando la sesión ya expiró', async () => {
+    const app = buildApp(fakeService({ getSession: async () => null }));
+    const response = await app.inject({ method: 'GET', url: '/api/auth/me',
+      headers: { cookie: `orbinodo_session=${'x'.repeat(43)}` } });
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error).toBe('SESSION_REQUIRED');
   });
 
   it('consulta y cierra una sesión usando la cookie', async () => {

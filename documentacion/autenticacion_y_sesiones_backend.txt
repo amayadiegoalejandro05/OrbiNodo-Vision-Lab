@@ -64,3 +64,47 @@ logged_out y CURRENT_TIMESTAMP como salida. No elimina filas ni afecta otros usu
 
 El historial que ve el Jefe se sirve desde /api/audit/access-sessions. La API exige
 la cookie HttpOnly válida y el rol manager; los demás perfiles reciben 403.
+
+CIERRE DE FASE 3
+================
+
+Comportamiento final de sesiones
+---------------------------------
+
+- Cada login genera un token opaco aleatorio de 32 bytes. Solo su SHA-256 se guarda
+  en PostgreSQL; el navegador lo recibe mediante cookie HttpOnly.
+- expires_at conserva el máximo absoluto configurable, 8 horas por defecto, y nunca
+  se extiende por actividad.
+- last_activity_at registra la última petición autenticada. idle_expires_at aplica
+  30 minutos de inactividad por defecto y se renueva sin superar expires_at.
+- Al superar cualquiera de los plazos, la sesión pasa a expired y deja de mostrarse
+  como activa. Al desactivar el usuario, sus sesiones pasan a revoked.
+- Logout conserva el historial con estado logged_out e invalida inmediatamente el token.
+
+Protección del login
+--------------------
+
+El rate limiting se comparte en PostgreSQL y sobrevive reinicios o varias instancias.
+La clave es SHA-256(usuario normalizado + IP), sin guardar la IP en texto. Los valores
+por defecto son 5 intentos en 15 minutos y 15 minutos de bloqueo; un acceso correcto
+limpia el contador. Para usuarios inexistentes se verifica siempre la contraseña contra
+un hash Argon2id ficticio, reduciendo diferencias temporales sin cambiar Argon2id.
+
+Configuración nueva
+-------------------
+
+ORBINODO_SESSION_IDLE_MINUTES=30
+ORBINODO_LOGIN_MAX_ATTEMPTS=5
+ORBINODO_LOGIN_WINDOW_MINUTES=15
+ORBINODO_LOGIN_BLOCK_MINUTES=15
+
+Verificación directa
+--------------------
+
+npm run test
+npm run test:integration
+
+La integración solo admite PostgreSQL local, crea un usuario temporal y lo elimina al
+finalizar. Cubre persistencia tras recrear el servicio, actividad sin ampliar el plazo
+absoluto, expiración absoluta, timeout de inactividad, usuario desactivado y rate limit
+compartido. Las rutas login, logout y /me conservan su contrato y no se usa JWT.
