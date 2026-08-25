@@ -1,0 +1,101 @@
+CONTRATO API FASTIFY - ORBINODO ENTERPRISE v1.0
+===============================================
+
+Base local: http://127.0.0.1:3001
+Prefijo: /api
+Transporte de sesión: cookie HttpOnly, SameSite=Lax y Secure en HTTPS.
+
+ERRORES COMUNES
+---------------
+
+Todos los errores propios usan:
+
+{
+  "error": "CODIGO_ESTABLE",
+  "message": "Mensaje seguro para el usuario."
+}
+
+400 VALIDATION_ERROR o INVALID_JSON
+401 INVALID_CREDENTIALS o SESSION_REQUIRED
+403 FORBIDDEN_ROLE
+404 CAMERA_NOT_FOUND o ROUTE_NOT_FOUND
+409 RESOURCE_CONFLICT
+413 PAYLOAD_TOO_LARGE
+415 UNSUPPORTED_MEDIA_TYPE
+429 LOGIN_RATE_LIMITED
+500 INTERNAL_ERROR
+503 DATABASE_UNAVAILABLE
+
+El código 409 queda reservado para conflictos reales. Los endpoints actuales no
+crean cámaras, usuarios ni otros recursos únicos por HTTP.
+
+AUTENTICACIÓN
+-------------
+
+POST /api/auth/login
+Sesión: no requerida.
+Cuerpo: { "username": string, "password": string }
+Éxito 200: { "user": AuthUser, "expiresAt": ISO-8601 }
+Errores: 400, 401, 413, 415, 429, 500.
+
+GET /api/auth/me
+Sesión: requerida.
+Éxito 200: { "user": AuthUser }
+Errores: 401, 500.
+
+POST /api/auth/logout
+Sesión: opcional; siempre elimina la cookie del navegador.
+Éxito 204: sin cuerpo.
+Errores: 500.
+
+SALUD
+-----
+
+GET /api/health
+Sesión: no requerida.
+Éxito 200: { "status": "ok", "database": "available", "serverTime": ISO-8601 }
+Error 503: DATABASE_UNAVAILABLE.
+
+CÁMARAS
+-------
+
+GET /api/cameras
+Sesión: cualquier perfil autenticado.
+Éxito 200: { "cameras": Camera[] }
+Errores: 401, 500.
+
+GET /api/cameras/:id
+Sesión: cualquier perfil autenticado.
+Éxito 200: { "camera": Camera }
+Errores: 400, 401, 404, 500.
+
+PATCH /api/cameras/:id/operations
+Sesión: Ingeniero 1 o Ingeniero 2.
+Cuerpo: status, lastMaintenanceOn, nextMaintenanceOn, responsibleArea y notes.
+Éxito 200: { "camera": Camera, "changedFields": string[] }
+Errores: 400, 401, 403, 404, 413, 415, 500.
+
+AUDITORÍA
+---------
+
+GET /api/audit/access-sessions
+GET /api/audit/camera-changes
+Sesión: únicamente Jefe/manager.
+Éxito 200: { "accessSessions": Access[] } o { "cameraChanges": Change[] }
+Errores: 401, 403, 500.
+
+ADMINISTRACIÓN
+--------------
+
+v1.0 no publica creación de usuarios, cambio de roles, seed ni reset por HTTP.
+No existe un rol administrador aprobado. Estas operaciones permanecen fuera de la
+API hasta que el alcance y una autoridad administrativa sean aprobados.
+
+PROXY Y RATE LIMIT
+------------------
+
+ORBINODO_TRUSTED_PROXY_HOPS=0 ignora X-Forwarded-For y es el valor local seguro.
+Detrás de un único proxy controlado puede configurarse 1. No debe aumentarse sin
+conocer la cadena real, porque la IP obtenida separa los contadores del login.
+
+FIN DEL CONTRATO API v1.0

@@ -26,6 +26,7 @@ async function startServer(): Promise<void> {
     cookieName: environment.ORBINODO_COOKIE_NAME,
     cookieSecure: environment.ORBINODO_COOKIE_SECURE === 'true',
     sessionHours: environment.ORBINODO_SESSION_HOURS,
+    trustedProxyHops: environment.ORBINODO_TRUSTED_PROXY_HOPS,
   });
 
   const closeGracefully = async () => {

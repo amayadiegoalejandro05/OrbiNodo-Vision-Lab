@@ -7,6 +7,7 @@ const environmentSchema = z.object({
   POSTGRES_URL: z.string().regex(/^postgres(?:ql)?:\/\//).optional(),
   ORBINODO_API_HOST: z.string().min(1).default('127.0.0.1'),
   ORBINODO_API_PORT: z.coerce.number().int().min(1).max(65535).default(3001),
+  ORBINODO_TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
   ORBINODO_DATABASE_HOST: z.string().min(1).default('127.0.0.1'),
   ORBINODO_DATABASE_PORT: z.coerce.number().int().min(1).max(65535).default(5432),
   ORBINODO_DATABASE_NAME: z.string().min(1).default('orbinodo_demo'),

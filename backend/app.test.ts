@@ -100,6 +100,22 @@ describe('estado de la API de Orbinodo', () => {
     expect(response.json().error).toBe('RESOURCE_CONFLICT');
   });
 
+  it('conserva errores 413 y 415 como errores de cliente sanitizados', async () => {
+    const app = createApiApp({
+      ...authOptions, healthProbe: { readServerTime: async () => new Date() },
+    });
+    apps.push(app);
+    const large = await app.inject({ method: 'POST', url: '/api/auth/login',
+      headers: { 'content-type': 'application/json' },
+      payload: JSON.stringify({ username: 'x', password: 'a'.repeat(1_048_576) }) });
+    expect(large.statusCode).toBe(413);
+    expect(large.json().error).toBe('PAYLOAD_TOO_LARGE');
+    const media = await app.inject({ method: 'POST', url: '/api/auth/login',
+      headers: { 'content-type': 'application/xml' }, payload: '<login />' });
+    expect(media.statusCode).toBe(415);
+    expect(media.json().error).toBe('UNSUPPORTED_MEDIA_TYPE');
+  });
+
   it('sanitiza errores inesperados como 500', async () => {
     const app = createApiApp({ ...authOptions, authService: managerAuth,
       cameraService: failingCameras(new Error('secreto interno')),

@@ -23,17 +23,6 @@ function readSession(value: unknown): DemoSession | null {
     : null;
 }
 
-async function readJson(response: Response): Promise<unknown> {
-  try { return await response.json(); }
-  catch { return null; }
-}
-
-function apiMessage(value: unknown, fallback: string): string {
-  if (!value || typeof value !== 'object') return fallback;
-  const message = (value as { message?: unknown }).message;
-  return typeof message === 'string' ? message : fallback;
-}
-
 export async function authenticateWithApi(
   username: string,
   password: string,
@@ -44,9 +33,9 @@ export async function authenticateWithApi(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ username: username.trim(), password }),
   });
-  const value = await readJson(response);
+  const value = await readApiJson(response);
   if (response.status === 401) return null;
-  if (!response.ok) throw new Error(apiMessage(value, 'La API local no está disponible.'));
+  if (!response.ok) throw apiFailure(value, 'La API local no está disponible.');
   const session = readSession(value);
   if (!session) throw new Error('La API devolvió un perfil no válido.');
   return session;
@@ -56,7 +45,7 @@ export async function getActiveApiSession(): Promise<DemoSession | null> {
   const response = await fetch('/api/auth/me', { credentials: 'include' });
   if (response.status === 401) return null;
   if (!response.ok) throw new Error('La API local no está disponible.');
-  const session = readSession(await readJson(response));
+  const session = readSession(await readApiJson(response));
   if (!session) throw new Error('La API devolvió un perfil no válido.');
   return session;
 }
@@ -65,5 +54,8 @@ export async function endApiSession(): Promise<void> {
   const response = await fetch('/api/auth/logout', {
     method: 'POST', credentials: 'include',
   });
-  if (!response.ok) throw new Error('No fue posible cerrar la sesión.');
+  if (!response.ok) throw apiFailure(
+    await readApiJson(response), 'No fue posible cerrar la sesión.',
+  );
 }
+import { apiFailure, readApiJson } from '../api/api-response';

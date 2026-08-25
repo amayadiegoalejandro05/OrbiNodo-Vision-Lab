@@ -17,11 +17,13 @@ export interface ApiAppOptions {
   cookieName: string;
   cookieSecure: boolean;
   sessionHours: number;
+  trustedProxyHops?: number;
   logger?: boolean;
 }
 
 export function createApiApp(options: ApiAppOptions) {
   const app = Fastify({
+    trustProxy: options.trustedProxyHops || false,
     logger: options.logger
       ? {
           level: 'info',
@@ -77,6 +79,16 @@ export function createApiApp(options: ApiAppOptions) {
       ? error.code : undefined;
     if (errorCode === 'FST_ERR_CTP_INVALID_JSON_BODY') {
       return reply.code(400).send(apiError('INVALID_JSON', 'El cuerpo JSON no es válido.'));
+    }
+    if (errorCode === 'FST_ERR_CTP_BODY_TOO_LARGE') {
+      return reply.code(413).send(apiError(
+        'PAYLOAD_TOO_LARGE', 'El cuerpo de la solicitud es demasiado grande.',
+      ));
+    }
+    if (errorCode === 'FST_ERR_CTP_INVALID_MEDIA_TYPE') {
+      return reply.code(415).send(apiError(
+        'UNSUPPORTED_MEDIA_TYPE', 'El tipo de contenido no es compatible.',
+      ));
     }
     if (errorCode === '23505') {
       return reply.code(409).send(apiError('RESOURCE_CONFLICT', 'El recurso entra en conflicto con datos existentes.'));

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApiApp } from '../app';
-import type { AuthService } from '../domain/auth-service';
+import type { AuthService, LoginContext } from '../domain/auth-service';
 import { LoginRateLimitedError } from '../domain/auth-service.js';
 import type { CameraService } from '../domain/camera-service';
 
@@ -12,12 +12,13 @@ const unusedCameras: CameraService = {
   updateOperations: async () => null,
 };
 
-function buildApp(authService: AuthService, cookieSecure = false) {
+function buildApp(authService: AuthService, cookieSecure = false, trustedProxyHops = 0) {
   const app = createApiApp({
     authService, cookieSecure, cookieName: 'orbinodo_session', sessionHours: 8,
     auditService: { listAccessSessions: async () => [], listCameraChanges: async () => [] },
     cameraService: unusedCameras,
     healthProbe: { readServerTime: async () => new Date() },
+    trustedProxyHops,
   });
 
   apps.push(app);
@@ -90,6 +91,26 @@ describe('autenticación HTTP', () => {
       headers: { cookie: `orbinodo_session=${'x'.repeat(43)}` } });
     expect(response.statusCode).toBe(401);
     expect(response.json().error).toBe('SESSION_REQUIRED');
+  });
+
+  it('usa la IP reenviada solo con un proxy configurado', async () => {
+    const login = vi.fn(async (
+      _username: string, _password: string, _context: LoginContext,
+    ) => null);
+    const app = buildApp(fakeService({ login }), false, 1);
+    await app.inject({ method: 'POST', url: '/api/auth/login',
+      headers: { 'x-forwarded-for': '198.51.100.8' },
+      payload: { username: 'Jefe', password: '1234567890' } });
+    expect(login.mock.calls[0]?.[2]).toEqual({ sourceIp: '198.51.100.8' });
+    const directLogin = vi.fn(async (
+      _username: string, _password: string, _context: LoginContext,
+    ) => null);
+    await buildApp(fakeService({ login: directLogin })).inject({
+      method: 'POST', url: '/api/auth/login',
+      headers: { 'x-forwarded-for': '198.51.100.9' },
+      payload: { username: 'Jefe', password: '1234567890' },
+    });
+    expect(directLogin.mock.calls[0]?.[2]?.sourceIp).not.toBe('198.51.100.9');
   });
 
   it('consulta y cierra una sesión usando la cookie', async () => {

@@ -484,6 +484,10 @@ rediseñar la seguridad.
 
 ARCHIVOS Y CÓDIGO AÑADIDOS EN LA FASE 6
 
+NOTA HISTÓRICA: esta sección describe la autenticación antigua de la demo. El flujo
+actual usa Fastify, Argon2id, PostgreSQL y cookie HttpOnly; no calcula contraseñas ni
+guarda sesiones en el navegador. Consulta contrato_api_fastify_v1.txt.
+
 src/auth/demo-auth.ts
 Centraliza la configuración de credenciales, calcula SHA-256 con Web Crypto, compara los datos ingresados y administra la marca de sesión en sessionStorage. Evita guardar una contraseña en texto dentro del código fuente.
 

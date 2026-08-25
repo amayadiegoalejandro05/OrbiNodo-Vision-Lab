@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { AuditHistory } from '../domain/audit.types';
+import { apiFailure, readApiJson } from './api-response';
 
 const roleSchema = z.enum(['programmer', 'manager', 'engineer1', 'engineer2']);
 const accessSchema = z.object({
@@ -19,13 +20,8 @@ const changesResponseSchema = z.object({ cameraChanges: z.array(changeSchema) })
 
 async function requestJson(url: string): Promise<unknown> {
   const response = await fetch(url, { credentials: 'include' });
-  let value: unknown = null;
-  try { value = await response.json(); } catch { /* respuesta inválida */ }
-  if (!response.ok) {
-    const message = value && typeof value === 'object'
-      ? (value as { message?: unknown }).message : null;
-    throw new Error(typeof message === 'string' ? message : 'No fue posible cargar la auditoría.');
-  }
+  const value = await readApiJson(response);
+  if (!response.ok) throw apiFailure(value, 'No fue posible cargar la auditoría.');
   return value;
 }
 

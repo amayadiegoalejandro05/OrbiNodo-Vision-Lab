@@ -32,7 +32,7 @@ local; Vite mostrará la dirección localhost del frontend.
 npm run check
 ```
 
-Este comando ejecuta ESLint, 44 pruebas con Vitest, TypeScript, la construcción de
+Este comando ejecuta ESLint, las pruebas con Vitest, TypeScript, la construcción de
 Vite y pruebas reales en Microsoft Edge.
 
 ## Documentación

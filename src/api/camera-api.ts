@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type {
   CameraOperationalUpdate, CameraUpdateResult, SecurityCameraRecord,
 } from '../domain/security-camera.types';
+import { apiFailure, readApiJson } from './api-response';
 
 const cameraSchema = z.object({
   id: z.string(), assetCode: z.string(), name: z.string(), panoramaId: z.string(),
@@ -21,21 +22,10 @@ const updateSchema = z.object({
   ])),
 }).strict();
 
-async function jsonOrNull(response: Response): Promise<unknown> {
-  try { return await response.json(); }
-  catch { return null; }
-}
-
-function apiMessage(value: unknown, fallback: string): string {
-  if (!value || typeof value !== 'object') return fallback;
-  const message = (value as { message?: unknown }).message;
-  return typeof message === 'string' ? message : fallback;
-}
-
 export async function getCamerasFromApi(): Promise<SecurityCameraRecord[]> {
   const response = await fetch('/api/cameras', { credentials: 'include' });
-  const value = await jsonOrNull(response);
-  if (!response.ok) throw new Error(apiMessage(value, 'No fue posible cargar las cámaras.'));
+  const value = await readApiJson(response);
+  if (!response.ok) throw apiFailure(value, 'No fue posible cargar las cámaras.');
   const parsed = listSchema.safeParse(value);
   if (!parsed.success) throw new Error('La API devolvió cámaras no válidas.');
   return parsed.data.cameras;
@@ -50,9 +40,9 @@ export async function updateCameraOperations(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(update),
   });
-  const value = await jsonOrNull(response);
+  const value = await readApiJson(response);
   if (!response.ok) {
-    throw new Error(apiMessage(value, 'No fue posible guardar los cambios.'));
+    throw apiFailure(value, 'No fue posible guardar los cambios.');
   }
   const parsed = updateSchema.safeParse(value);
   if (!parsed.success) throw new Error('La API devolvió una actualización no válida.');

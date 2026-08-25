@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createApiApp } from '../app';
 import { loadBackendEnvironment } from '../config/environment';
 import type { SeedAccount } from './seed/seed-accounts';
 import { createPostgresAuditService } from './postgres-audit-service';
+import { createPostgresAuthService } from './postgres-auth-service';
 import { createPostgresCameraService } from './postgres-camera-service';
+import { createPostgresHealthProbe } from './postgres-health-probe';
 import { createPostgresOptions } from './postgres-options';
 import { runMigrations } from './migration-runner';
 import { runSeed } from './seed/seed-runner';
@@ -26,6 +29,27 @@ function quotedDatabase(name: string): string {
     throw new Error('Nombre inseguro para la base temporal.');
   }
   return `"${name}"`;
+}
+
+function realApi() {
+  return createApiApp({
+    healthProbe: createPostgresHealthProbe(testPool),
+    authService: createPostgresAuthService(testPool, {
+      sessionHours: 8, idleMinutes: 30, loginMaxAttempts: 5,
+      loginWindowMinutes: 15, loginBlockMinutes: 15,
+    }),
+    cameraService: createPostgresCameraService(testPool),
+    auditService: createPostgresAuditService(testPool),
+    cookieName: 'orbinodo_session', cookieSecure: false, sessionHours: 8,
+    trustedProxyHops: 1,
+  });
+}
+
+async function loginCookie(app: ReturnType<typeof realApi>, username: string): Promise<string> {
+  const response = await app.inject({ method: 'POST', url: '/api/auth/login',
+    payload: { username, password: '1234567890' } });
+  expect(response.statusCode).toBe(200);
+  return String(response.headers['set-cookie']).split(';')[0]!;
 }
 
 beforeAll(async () => {
@@ -149,5 +173,72 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
       'UPDATE camera_change_history SET new_value = old_value WHERE camera_id = $1',
       [camera.id],
     )).rejects.toBeDefined();
+  });
+
+  it('recorre login, me y logout por HTTP real', async () => {
+    const app = realApi();
+    try {
+      const cookie = await loginCookie(app, 'Ingeniero 1');
+      const headers = { cookie };
+      expect((await app.inject({ method: 'GET', url: '/api/auth/me', headers })).statusCode)
+        .toBe(200);
+      expect((await app.inject({ method: 'POST', url: '/api/auth/logout', headers }))
+        .statusCode).toBe(204);
+      expect((await app.inject({ method: 'GET', url: '/api/auth/me', headers })).statusCode)
+        .toBe(401);
+    } finally { await app.close(); }
+  });
+
+  it('lee cámaras y aplica errores HTTP reales', async () => {
+    const app = realApi();
+    try {
+      const headers = { cookie: await loginCookie(app, 'Ingeniero 1') };
+      const list = await app.inject({ method: 'GET', url: '/api/cameras', headers });
+      expect(list.json().cameras).toHaveLength(10);
+      expect((await app.inject({ method: 'GET', url: '/api/cameras/camera-03', headers }))
+        .statusCode).toBe(200);
+      expect((await app.inject({ method: 'GET', url: '/api/cameras/no-existe', headers }))
+        .statusCode).toBe(404);
+      expect((await app.inject({ method: 'GET', url: '/api/no-existe', headers }))
+        .json().error).toBe('ROUTE_NOT_FOUND');
+    } finally { await app.close(); }
+  });
+
+  it('actualiza y consulta auditoría por HTTP real', async () => {
+    const app = realApi();
+    try {
+      const engineer = { cookie: await loginCookie(app, 'Ingeniero 2') };
+      const update = await app.inject({ method: 'PATCH',
+        url: '/api/cameras/camera-03/operations', headers: engineer,
+        payload: { status: 'En mantenimiento', lastMaintenanceOn: '2026-08-01',
+          nextMaintenanceOn: '2026-12-01', responsibleArea: 'Seguridad',
+          notes: 'Integración HTTP de Fase 2.' } });
+      expect(update.statusCode).toBe(200);
+      expect((await app.inject({ method: 'GET', url: '/api/audit/camera-changes',
+        headers: engineer })).statusCode).toBe(403);
+      const manager = { cookie: await loginCookie(app, 'Jefe') };
+      const audit = await app.inject({ method: 'GET', url: '/api/audit/camera-changes',
+        headers: manager });
+      expect(audit.json().cameraChanges[0]).toMatchObject({ cameraId: 'camera-03' });
+      const access = await app.inject({ method: 'GET', url: '/api/audit/access-sessions',
+        headers: manager });
+      expect(access.statusCode).toBe(200);
+      expect(access.json().accessSessions.length).toBeGreaterThanOrEqual(2);
+    } finally { await app.close(); }
+  });
+
+  it('separa rate limit por IP detrás del proxy configurado', async () => {
+    const app = realApi();
+    try {
+      const before = await testPool.query('SELECT count(*)::int AS total FROM login_rate_limits');
+      for (const ip of ['198.51.100.20', '198.51.100.21']) {
+        const response = await app.inject({ method: 'POST', url: '/api/auth/login',
+          headers: { 'x-forwarded-for': ip },
+          payload: { username: '__missing_phase2__', password: '1234567890' } });
+        expect(response.statusCode).toBe(401);
+      }
+      const after = await testPool.query('SELECT count(*)::int AS total FROM login_rate_limits');
+      expect(after.rows[0].total).toBe(before.rows[0].total + 2);
+    } finally { await app.close(); }
   });
 });

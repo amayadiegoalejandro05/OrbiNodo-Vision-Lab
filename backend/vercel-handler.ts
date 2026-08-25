@@ -24,6 +24,7 @@ const app = createApiApp({
   cookieName: environment.ORBINODO_COOKIE_NAME,
   cookieSecure: environment.ORBINODO_COOKIE_SECURE === 'true',
   sessionHours: environment.ORBINODO_SESSION_HOURS,
+  trustedProxyHops: environment.ORBINODO_TRUSTED_PROXY_HOPS,
   logger: true,
 });
 const ready = app.ready();
