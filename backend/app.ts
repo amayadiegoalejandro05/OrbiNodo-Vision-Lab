@@ -74,7 +74,7 @@ export function createApiApp(options: ApiAppOptions) {
   ));
 
   // Los errores inesperados no revelan rutas, consultas ni trazas internas.
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error, request, reply) => {
     const errorCode = error && typeof error === 'object' && 'code' in error
       ? error.code : undefined;
     if (errorCode === 'FST_ERR_CTP_INVALID_JSON_BODY') {
@@ -93,6 +93,13 @@ export function createApiApp(options: ApiAppOptions) {
     if (errorCode === '23505') {
       return reply.code(409).send(apiError('RESOURCE_CONFLICT', 'El recurso entra en conflicto con datos existentes.'));
     }
+    request.log.error({
+      error: {
+        name: error instanceof Error ? error.name : 'UnknownError',
+        code: typeof errorCode === 'string' ? errorCode : undefined,
+        message: error instanceof Error ? error.message : 'Error inesperado sin mensaje.',
+      },
+    }, 'Unexpected API error');
     return reply.code(500).send(apiError('INTERNAL_ERROR', 'No fue posible procesar la solicitud.'));
   });
 
