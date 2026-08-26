@@ -14,7 +14,7 @@ const environmentSchema = z.object({
   ORBINODO_DATABASE_USER: z.string().min(1).default('orbinodo_api'),
   ORBINODO_DATABASE_PASSWORD: z.string().min(1).optional(),
   ORBINODO_DATABASE_SSL: z.enum(['true', 'false']).default('false'),
-  ORBINODO_SESSION_HOURS: z.coerce.number().int().min(1).max(168).default(8),
+  ORBINODO_SESSION_HOURS: z.coerce.number().int().min(1).max(8).default(8),
   ORBINODO_SESSION_IDLE_MINUTES: z.coerce.number().int().min(1).max(480).default(30),
   ORBINODO_LOGIN_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(50).default(5),
   ORBINODO_LOGIN_WINDOW_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
