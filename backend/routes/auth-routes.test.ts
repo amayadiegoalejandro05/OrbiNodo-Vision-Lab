@@ -54,6 +54,20 @@ describe('autenticación HTTP', () => {
     expect(cookie).not.toContain('Secure');
   });
 
+  it('marks the session cookie Secure for HTTPS', async () => {
+    const app = buildApp(fakeService({ login: async () => ({
+      token: 's'.repeat(43), user, expiresAt: new Date('2026-08-14T04:00:00Z'),
+    }) }), true);
+    const response = await app.inject({
+      method: 'POST', url: '/api/auth/login',
+      payload: { username: user.username, password: '1234567890' },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['set-cookie']).toContain('Secure');
+    expect(response.headers['set-cookie']).toContain('HttpOnly');
+    expect(response.headers['set-cookie']).toContain('SameSite=Lax');
+  });
+
   it('usa un error genérico para credenciales inválidas', async () => {
     const app = buildApp(fakeService());
     const response = await app.inject({
@@ -73,6 +87,23 @@ describe('autenticación HTTP', () => {
     });
     expect(response.statusCode).toBe(400);
     expect(response.json().error).toBe('VALIDATION_ERROR');
+  });
+
+  it('rejects unknown login fields and values beyond schema bounds', async () => {
+    const login = vi.fn<AuthService['login']>();
+    const app = buildApp(fakeService({ login }));
+    const cases = [
+      { username: 'Jefe', password: '1234567890', role: 'manager' },
+      { username: 'a'.repeat(81), password: '1234567890' },
+      { username: 'Jefe', password: 'a'.repeat(129) },
+      { username: '   ', password: '1234567890' },
+    ];
+    for (const payload of cases) {
+      const response = await app.inject({ method: 'POST', url: '/api/auth/login', payload });
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error).toBe('VALIDATION_ERROR');
+    }
+    expect(login).not.toHaveBeenCalled();
   });
 
   it('responde 429 cuando PostgreSQL bloquea los intentos de login', async () => {

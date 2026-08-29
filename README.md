@@ -42,6 +42,7 @@ Todos los TXT se conservan en `documentacion/`:
 - `comandos_necesarios.txt`
 - `guia_completa_de_fases.txt`
 - `explicacion_de_archivos_y_codigo.txt`
+- `gestion_secretos_y_rotacion_v1.txt`
 - `preguntas_y_respuestas_por_fase.txt`
 
 ## Privacidad

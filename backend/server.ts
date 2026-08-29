@@ -1,5 +1,5 @@
 import { createApiApp } from './app';
-import { loadBackendEnvironment } from './config/environment';
+import { isProductionDeployment, loadBackendEnvironment } from './config/environment';
 import { createPostgresAuthService } from './database/postgres-auth-service';
 import { createPostgresAuditService } from './database/postgres-audit-service';
 import { createPostgresCameraService } from './database/postgres-camera-service';
@@ -27,6 +27,8 @@ async function startServer(): Promise<void> {
     cookieSecure: environment.ORBINODO_COOKIE_SECURE === 'true',
     sessionHours: environment.ORBINODO_SESSION_HOURS,
     trustedProxyHops: environment.ORBINODO_TRUSTED_PROXY_HOPS,
+    requireHttps: isProductionDeployment(environment),
+    logLevel: environment.ORBINODO_LOG_LEVEL,
   });
 
   const closeGracefully = async () => {

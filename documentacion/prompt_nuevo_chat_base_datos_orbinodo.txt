@@ -1,9 +1,3 @@
-PROMPT PARA CONTINUAR EN OTRO CHAT DE CODEX
-===========================================
-
-Copia desde la línea "INICIO DEL PROMPT" hasta "FIN DEL PROMPT" y pégalo en un
-nuevo chat de Codex abierto sobre la carpeta D:\01_ORBINODO.
-
 
 INICIO DEL PROMPT
 -----------------

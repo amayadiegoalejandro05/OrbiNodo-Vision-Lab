@@ -20,7 +20,7 @@ defecto. Logout cambia el estado de la sesión; no basta con borrar la cookie.
 
 Configuración
 -------------
-ORBINODO_SESSION_HOURS controla la duración (1 a 168 horas).
+ORBINODO_SESSION_HOURS controla la duración (1 a 8 horas).
 ORBINODO_COOKIE_NAME controla el nombre de cookie.
 ORBINODO_COOKIE_SECURE=false se admite únicamente durante HTTP local. En cualquier
 entorno HTTPS debe ser true; producción requiere además HTTPS obligatorio.
@@ -80,6 +80,9 @@ Comportamiento final de sesiones
 - Al superar cualquiera de los plazos, la sesión pasa a expired y deja de mostrarse
   como activa. Al desactivar el usuario, sus sesiones pasan a revoked.
 - Logout conserva el historial con estado logged_out e invalida inmediatamente el token.
+- ended_at conserva la hora terminal para logout, expiración y revocación. La API del
+  Jefe expone status, endedAt y durationSeconds; logoutAt se mantiene como alias
+  compatible del momento terminal.
 
 Protección del login
 --------------------

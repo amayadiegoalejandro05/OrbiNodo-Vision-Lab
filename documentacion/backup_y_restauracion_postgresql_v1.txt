@@ -1,0 +1,58 @@
+# Backups y restauracion de PostgreSQL - OrbiNodo Enterprise v1.0
+
+## Politica aprobada
+
+- Fuente a respaldar: Neon Production.
+- Ubicacion inicial: D:\Backups\OrbiNodo.
+- Formato: dump PostgreSQL custom cifrado con AES-256-GCM.
+- Integridad: cada backup tiene SHA-256 y archivo manifest.
+- Frecuencia: diaria.
+- Retencion: 30 dias.
+- Responsable: Administrador tecnico de OrbiNodo.
+- RPO: 24 horas.
+- RTO: 4 horas.
+
+El archivo sin cifrar existe solo como temporal y se elimina al terminar. La carpeta no pertenece a Git.
+
+## Variables privadas requeridas
+
+No guardar ni compartir en chat, Git o archivos .env versionados:
+
+- DATABASE_URL: cadena Neon Production.
+- ORBINODO_BACKUP_ENCRYPTION_KEY: 64 caracteres hexadecimales, guardados en el gestor de contrasenas institucional.
+- ORBINODO_RESTORE_DATABASE_URL: URL administrativa local para orbinodo_restore_validation.
+- ORBINODO_BACKUP_SOURCE=production: confirmacion explicita para el backup.
+
+## Crear un backup
+
+En PowerShell, desde el proyecto:
+
+    $bytes = New-Object byte[] 32
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    $env:ORBINODO_BACKUP_ENCRYPTION_KEY = [BitConverter]::ToString($bytes).Replace('-', '').ToLowerInvariant()
+    $env:ORBINODO_BACKUP_SOURCE = 'production'
+    $env:DATABASE_URL = 'PEGA_AQUI_LA_CADENA_DE_NEON_PRODUCTION_ENTRE_COMILLAS_SIMPLES'
+    npm run db:backup
+
+Guardar la clave generada en el gestor de contrasenas antes de cerrar la consola. Sin ella, el backup no se puede restaurar.
+
+El comando muestra la ruta del .dump.enc, su SHA-256 y el manifest. Nunca muestra la cadena de Neon.
+
+## Restauracion de prueba segura
+
+El restore solo admite localhost y la base exacta orbinodo_restore_validation. Se niega a sobrescribir una base existente.
+
+    $env:ORBINODO_RESTORE_DATABASE_URL = 'postgresql://USUARIO_LOCAL:CLAVE_LOCAL@127.0.0.1:5432/orbinodo_restore_validation?sslmode=disable'
+    npm run db:restore:validate -- 'D:\Backups\OrbiNodo\NOMBRE_DEL_ARCHIVO.dump.enc'
+
+La validacion comprueba checksum, descifra, restaura y confirma migraciones, usuarios, camaras y estados. No toca Neon.
+
+Si falla despues de crear la base aislada, no ejecutar borrados automaticos. Registrar el error y pedir revision al responsable.
+
+## Retencion y copia secundaria
+
+El responsable conserva los ultimos 30 dias. El directorio local es la primera ubicacion. Copiar cada .dump.enc y su manifest a almacenamiento institucional cifrado con control de acceso. Nunca copiar .dump.tmp.
+
+## Registro de prueba
+
+Registrar fecha UTC, archivo, SHA-256, resultado del restore, responsable y duracion. Prueba real ejecutada el 2026-08-28 UTC: backup cifrado y restore validados con 7 migraciones, 4 usuarios, 10 camaras y 10 estados.

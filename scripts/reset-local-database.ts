@@ -22,7 +22,8 @@ try {
     console.log(
       'Base reiniciada: ' + result.users + ' usuarios, '
       + result.cameras + ' cámaras, ' + result.operationalStates
-      + ' estados, 0 sesiones y 0 cambios.',
+      + ' estados, 0 sesiones y ' + result.cameraChanges
+      + ' cambios históricos conservados.',
     );
   } finally {
     client.release();

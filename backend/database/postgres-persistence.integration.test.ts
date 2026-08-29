@@ -67,6 +67,9 @@ beforeAll(async () => {
     '0001_initial_schema.sql', '0002_access_history_view.sql',
     '0003_camera_change_history_view.sql',
     '0004_session_activity_and_login_rate_limits.sql',
+    '0005_harden_camera_change_history.sql',
+    '0006_session_history_consistency.sql',
+    '0007_session_history_view_expiration.sql',
   ]);
   await runSeed(testEnvironment, accounts);
   testPool = new Pool(createPostgresOptions(testEnvironment));
@@ -114,7 +117,7 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
       (SELECT count(*)::int FROM schema_migrations) AS migrations,
       (SELECT count(*)::int FROM users) AS users,
       (SELECT count(*)::int FROM cameras) AS cameras`);
-    expect(result.rows[0]).toEqual({ migrations: 4, users: 4, cameras: 10 });
+    expect(result.rows[0]).toEqual({ migrations: 7, users: 4, cameras: 10 });
   });
 
   it('crea integridad, índices y protección append-only', async () => {
@@ -127,7 +130,7 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
       (SELECT count(*)::int FROM pg_trigger WHERE NOT tgisinternal
         AND tgrelid = 'camera_change_history'::regclass) AS history_triggers`);
     expect(result.rows[0]).toMatchObject({
-      primary_keys: 7, foreign_keys: 5, history_triggers: 1,
+      primary_keys: 7, foreign_keys: 5, history_triggers: 2,
     });
     expect(result.rows[0].indexes).toBeGreaterThanOrEqual(13);
   });
@@ -144,7 +147,9 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
     });
     expect(result?.changedFields).toEqual(['status', 'notes']);
     const audit = await createPostgresAuditService(testPool).listCameraChanges();
-    expect(audit[0]).toMatchObject({ actorName: 'Ingeniero 1', cameraId: camera.id });
+    expect(audit[0]).toMatchObject({
+      actorName: 'Ingeniero 1', actorRole: 'engineer1', cameraId: camera.id,
+    });
     await testPool.end();
     testPool = new Pool(createPostgresOptions(testEnvironment));
     expect(await createPostgresCameraService(testPool).getCamera(camera.id))
@@ -173,6 +178,10 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
       'UPDATE camera_change_history SET new_value = old_value WHERE camera_id = $1',
       [camera.id],
     )).rejects.toBeDefined();
+    await expect(testPool.query(
+      'DELETE FROM camera_change_history WHERE camera_id = $1', [camera.id],
+    )).rejects.toBeDefined();
+    await expect(testPool.query('TRUNCATE camera_change_history')).rejects.toBeDefined();
   });
 
   it('recorre login, me y logout por HTTP real', async () => {
@@ -239,6 +248,28 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
       }
       const after = await testPool.query('SELECT count(*)::int AS total FROM login_rate_limits');
       expect(after.rows[0].total).toBe(before.rows[0].total + 2);
+    } finally { await app.close(); }
+  });
+
+  it('rechaza payload manipulado sin modificar PostgreSQL', async () => {
+    const app = realApi();
+    try {
+      const headers = { cookie: await loginCookie(app, 'Ingeniero 1') };
+      const sql = `SELECT o.status, o.notes,
+        (SELECT count(*)::int FROM camera_change_history WHERE camera_id = 'camera-04') AS history
+        FROM camera_operational_state o WHERE o.camera_id = 'camera-04'`;
+      const before = await testPool.query(sql);
+      const response = await app.inject({
+        method: 'PATCH', url: '/api/cameras/camera-04/operations', headers,
+        payload: {
+          status: 'En mantenimiento', lastMaintenanceOn: '2026-08-01',
+          nextMaintenanceOn: '2026-12-01', responsibleArea: 'Seguridad', notes: 'No debe guardar.',
+          assetCode: 'CCTV-ALTERADO', role: 'manager', username: 'Jefe', yaw: 180,
+        },
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error).toBe('VALIDATION_ERROR');
+      expect((await testPool.query(sql)).rows).toEqual(before.rows);
     } finally { await app.close(); }
   });
 });

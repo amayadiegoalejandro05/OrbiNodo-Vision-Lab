@@ -1,0 +1,26 @@
+POLITICA DE RETENCION DE SESIONES - ORBINODO ENTERPRISE v1.0
+===========================================================
+
+Alcance
+-------
+
+Esta politica aplica a access_sessions y a vista_historial_accesos. Aunque la
+aplicacion usa datos de demostracion, el historial se trata como evidencia operativa.
+
+Regla vigente
+-------------
+
+- La retencion vigente es indefinida: v1.0 no elimina automaticamente sesiones
+  cerradas, expiradas ni revocadas.
+- El limite de 500 elementos de GET /api/audit/access-sessions es solamente de
+  presentacion; no borra ni modifica registros en PostgreSQL.
+- db:reset es una herramienta local de demostracion. Nunca debe ejecutarse contra
+  Neon, Vercel ni una base con evidencia operativa.
+
+Revision y cambio futuro
+------------------------
+
+El responsable tecnico revisara trimestralmente el volumen y obligaciones aplicables.
+Una eliminacion futura exige aprobacion escrita, respaldo verificable, prueba en una
+copia aislada, registro del rango eliminado y validacion de restauracion. No se
+autoriza un purge automatico hasta que exista esa aprobacion.

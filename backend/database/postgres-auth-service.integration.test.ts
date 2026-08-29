@@ -5,6 +5,7 @@ import { loadBackendEnvironment } from '../config/environment';
 import { LoginRateLimitedError } from '../domain/auth-service.js';
 import { hashPassword } from '../security/password-hash.js';
 import { createPostgresAuthService, type PostgresAuthOptions } from './postgres-auth-service';
+import { createPostgresAuditService } from './postgres-audit-service';
 import { createPostgresOptions } from './postgres-options';
 
 const USERNAME = '__orbinodo_auth_integration__';
@@ -139,11 +140,20 @@ describe('sesiones PostgreSQL reales', () => {
       idle_expires_at = CURRENT_TIMESTAMP - interval '1 minute'
       WHERE session_token_hash = $1`, [tokenHash(created!.token)]);
     expect(await createPostgresAuthService(pool, options).getSession(created!.token)).toBeNull();
-    const state = await pool.query<{ status: string }>(
-      'SELECT status FROM access_sessions WHERE session_token_hash = $1',
+    const state = await pool.query<{ status: string; ended_at: Date }>(
+      'SELECT status, ended_at FROM access_sessions WHERE session_token_hash = $1',
       [tokenHash(created!.token)],
     );
     expect(state.rows[0]?.status).toBe('expired');
+    expect(state.rows[0]?.ended_at).toBeInstanceOf(Date);
+
+    const view = await pool.query<{ salida: string; estado: string; duracion: string }>(
+      'SELECT salida, estado, duracion FROM vista_historial_accesos WHERE usuario = $1 LIMIT 1',
+      ['Integración Auth'],
+    );
+    expect(view.rows[0]?.salida).not.toBe('Sesion abierta');
+    expect(view.rows[0]?.estado).toBe('Expirada');
+    expect(view.rows[0]?.duracion).not.toBe('En curso');
   });
 
   it('aplica el timeout por inactividad sin esperar ocho horas', async () => {
@@ -152,6 +162,37 @@ describe('sesiones PostgreSQL reales', () => {
     const service = createPostgresAuthService(pool, options);
     expect(await service.getSession(created!.token)).toBeNull();
     expect(await sessionStatus(created!.token)).toBe('expired');
+  });
+
+  it('shows a due session as expired in the administrative view before API cleanup', async () => {
+    const created = await login();
+    await forceIdleExpiration(created!.token);
+    const view = await pool.query<{ salida: string; estado: string; duracion: string }>(
+      'SELECT salida, estado, duracion FROM vista_historial_accesos WHERE usuario = $1 LIMIT 1',
+      ['Integración Auth'],
+    );
+    expect(view.rows[0]?.salida).not.toBe('Sesion abierta');
+    expect(view.rows[0]?.estado).toBe('Expirada');
+    expect(view.rows[0]?.duracion).not.toBe('En curso');
+  });
+
+  it('persists logout as a terminal audit event with duration', async () => {
+    const created = await login();
+    const service = createPostgresAuthService(pool, options);
+    await service.logout(created!.token);
+    const stored = await pool.query<{ id: string; status: string; logout_at: Date; ended_at: Date }>(
+      'SELECT id, status, logout_at, ended_at FROM access_sessions WHERE session_token_hash = $1',
+      [tokenHash(created!.token)],
+    );
+    expect(stored.rows[0]).toMatchObject({ status: 'logged_out' });
+    expect(stored.rows[0]?.logout_at).toBeInstanceOf(Date);
+    expect(stored.rows[0]?.ended_at).toBeInstanceOf(Date);
+
+    const auditEntry = (await createPostgresAuditService(pool).listAccessSessions())
+      .find((item) => item.id === stored.rows[0]?.id);
+    expect(auditEntry).toMatchObject({ status: 'logged_out' });
+    expect(auditEntry?.endedAt).toBeDefined();
+    expect(auditEntry?.durationSeconds).toBeGreaterThanOrEqual(0);
   });
 
   it('revoca la sesión cuando el usuario fue desactivado', async () => {

@@ -18,19 +18,33 @@ export interface ApiAppOptions {
   cookieSecure: boolean;
   sessionHours: number;
   trustedProxyHops?: number;
+  requireHttps?: boolean;
   logger?: boolean;
+  logLevel?: 'info' | 'warn' | 'error';
 }
+
+export const API_BODY_LIMIT_BYTES = 16 * 1024;
 
 export function createApiApp(options: ApiAppOptions) {
   const app = Fastify({
+    bodyLimit: API_BODY_LIMIT_BYTES,
     trustProxy: options.trustedProxyHops || false,
     logger: options.logger
       ? {
-          level: 'info',
+          level: options.logLevel ?? 'info',
           redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'],
         }
       : false,
   });
+
+  if (options.requireHttps) {
+    app.addHook('onRequest', async (request, reply) => {
+      if (request.protocol === 'https') return;
+      return reply.code(426).send(apiError(
+        'HTTPS_REQUIRED', 'La API solo acepta conexiones HTTPS.',
+      ));
+    });
+  }
 
   // Las sesiones futuras usarán cookies HttpOnly; ninguna ruta debe analizarlas a mano.
   void app.register(cookie);
@@ -54,7 +68,7 @@ export function createApiApp(options: ApiAppOptions) {
     cookieName: options.cookieName,
   });
 
-  app.get('/api/health', async (_request, reply) => {
+  app.get('/api/health', async (request, reply) => {
     try {
       const serverTime = await options.healthProbe.readServerTime();
       return {
@@ -62,7 +76,10 @@ export function createApiApp(options: ApiAppOptions) {
         database: 'available',
         serverTime: serverTime.toISOString(),
       };
-    } catch {
+    } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error
+        && typeof error.code === 'string' ? error.code : undefined;
+      request.log.error({ event: 'database.health', code }, 'PostgreSQL health probe failed');
       return reply.code(503).send(apiError(
         'DATABASE_UNAVAILABLE', 'La base de datos no está disponible.',
       ));
@@ -79,6 +96,11 @@ export function createApiApp(options: ApiAppOptions) {
       ? error.code : undefined;
     if (errorCode === 'FST_ERR_CTP_INVALID_JSON_BODY') {
       return reply.code(400).send(apiError('INVALID_JSON', 'El cuerpo JSON no es válido.'));
+    }
+    if (errorCode === 'FST_ERR_VALIDATION') {
+      return reply.code(400).send(apiError(
+        'VALIDATION_ERROR', 'Los datos de la solicitud no son validos.',
+      ));
     }
     if (errorCode === 'FST_ERR_CTP_BODY_TOO_LARGE') {
       return reply.code(413).send(apiError(
@@ -97,7 +119,6 @@ export function createApiApp(options: ApiAppOptions) {
       error: {
         name: error instanceof Error ? error.name : 'UnknownError',
         code: typeof errorCode === 'string' ? errorCode : undefined,
-        message: error instanceof Error ? error.message : 'Error inesperado sin mensaje.',
       },
     }, 'Unexpected API error');
     return reply.code(500).send(apiError('INTERNAL_ERROR', 'No fue posible procesar la solicitud.'));

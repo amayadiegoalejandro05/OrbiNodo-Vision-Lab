@@ -8,7 +8,7 @@ const pool = createPostgresPool(loadBackendEnvironment());
 try {
   const result = await pool.query({
     text: `UPDATE access_sessions s
-      SET status = 'logged_out', logout_at = CURRENT_TIMESTAMP
+      SET status = 'logged_out', logout_at = CURRENT_TIMESTAMP, ended_at = CURRENT_TIMESTAMP
       FROM users u
       WHERE u.id = s.user_id AND lower(u.username) = lower($1)
         AND s.status = 'active' AND s.expires_at > CURRENT_TIMESTAMP

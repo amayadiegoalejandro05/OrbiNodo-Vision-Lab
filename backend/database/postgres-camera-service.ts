@@ -3,6 +3,7 @@ import type { Pool, PoolClient } from 'pg';
 import type {
   CameraOperationsUpdate, CameraRecord, CameraService, CameraUpdateResult,
 } from '../domain/camera-service';
+import type { AuthRole } from '../domain/auth-service';
 import { CameraActorNotAllowedError } from '../domain/camera-service.js';
 
 interface CameraRow {
@@ -57,11 +58,11 @@ const operationFields: Array<keyof CameraOperationsUpdate> = [
   'status', 'lastMaintenanceOn', 'nextMaintenanceOn', 'responsibleArea', 'notes',
 ];
 
-interface ActorRow { id: string; username: string; display_name: string }
+interface ActorRow { id: string; username: string; display_name: string; role: AuthRole }
 
 async function lockActor(client: PoolClient, username: string): Promise<ActorRow | null> {
   const result = await client.query<ActorRow>({
-    text: `SELECT id, username, display_name FROM users
+    text: `SELECT id, username, display_name, role FROM users
       WHERE lower(username) = lower($1) AND is_active = true
         AND role IN ('engineer1', 'engineer2') FOR UPDATE`,
     values: [username],
@@ -126,11 +127,12 @@ export function createPostgresCameraService(pool: Pool): CameraService {
         await client.query({
           text: `INSERT INTO camera_change_history
             (change_set_id, camera_id, actor_user_id, actor_username,
-             actor_display_name, field_name, old_value, new_value)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+             actor_display_name, actor_role, field_name, old_value, new_value)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           values: [
             changeSetId, cameraId, activeActor.id, activeActor.username,
-            activeActor.display_name, field, current[field], update[field],
+            activeActor.display_name, activeActor.role, field, current[field],
+            update[field],
           ],
         });
       }

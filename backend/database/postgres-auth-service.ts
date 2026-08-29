@@ -93,14 +93,16 @@ function publicUser(row: UserRow): AuthUser {
 }
 
 async function expireAbsoluteOrIdle(pool: Pool): Promise<void> {
-  await pool.query(`UPDATE access_sessions SET status = 'expired'
+  await pool.query(`UPDATE access_sessions SET status = 'expired',
+      ended_at = COALESCE(ended_at, LEAST(expires_at, idle_expires_at))
     WHERE status = 'active'
       AND LEAST(expires_at, idle_expires_at) <= CURRENT_TIMESTAMP`);
 }
 
 async function revokeInactiveUsers(pool: Pool): Promise<void> {
   await pool.query(`UPDATE access_sessions s SET status = 'revoked',
-      revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
+      revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP),
+      ended_at = COALESCE(ended_at, CURRENT_TIMESTAMP)
     FROM users u WHERE u.id = s.user_id AND u.is_active = false
       AND s.status = 'active'`);
 }
@@ -187,6 +189,8 @@ export function createPostgresAuthService(pool: Pool, options: PostgresAuthOptio
           THEN 'expired' ELSE 'logged_out' END,
           logout_at = CASE WHEN LEAST(expires_at, idle_expires_at) > CURRENT_TIMESTAMP
             THEN CURRENT_TIMESTAMP ELSE logout_at END
+          , ended_at = CASE WHEN LEAST(expires_at, idle_expires_at) > CURRENT_TIMESTAMP
+            THEN CURRENT_TIMESTAMP ELSE COALESCE(ended_at, LEAST(expires_at, idle_expires_at)) END
         WHERE session_token_hash = $1 AND status = 'active'`,
       values: [tokenHash(token)],
     });

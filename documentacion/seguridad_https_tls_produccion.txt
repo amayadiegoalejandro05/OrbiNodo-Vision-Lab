@@ -1,0 +1,37 @@
+SEGURIDAD HTTPS / TLS EN PRODUCCION - ORBINODO ENTERPRISE v1.0
+=============================================================
+
+ALCANCE
+-------
+Vercel termina TLS para el frontend Vite y la API Fastify de OrbiNodo.
+
+CONTROLES
+---------
+- Vercel redirige el dominio publicado desde HTTP hacia HTTPS.
+- Vercel entrega HSTS en el borde; no se sobreescribe con una politica local mas debil.
+- Produccion exige ORBINODO_COOKIE_SECURE=true.
+- Vercel es el punto que obliga HTTPS para el trafico publico. La Function no
+  rechaza solicitudes validas solo porque falte una cabecera de proxy.
+- La Function confia exactamente en un proxy Vercel.
+- PostgreSQL usa TLS verificable: sslmode=verify-full.
+
+CERTIFICADOS
+------------
+Vercel gestiona el certificado del dominio publicado. El repositorio no guarda
+certificados, claves privadas ni archivos PEM. Para un dominio propio, validar el
+dominio y su certificado en Vercel antes de dirigir trafico de usuarios.
+
+AIR PRODUCTS
+------------
+Air Products no forma parte de esta arquitectura TLS. No comparte certificados,
+proxies, variables ni base de datos con el despliegue Vercel de OrbiNodo.
+
+VERIFICACION POSTERIOR AL DESPLIEGUE
+-----------------------------------
+1. Comprobar en Vercel que DATABASE_URL usa SSL y ORBINODO_COOKIE_SECURE=true.
+2. Antes de desplegar, ejecutar db:preflight contra la misma DATABASE_URL de Vercel.
+3. Desplegar: npx vercel --prod
+
+El preflight requiere una URL PostgreSQL real en el entorno de la consola. Las
+referencias protegidas descargadas por Vercel CLI no siempre se pueden reutilizar
+fuera de una Function. Nunca pegar la URL ni su contrasena en el repositorio.

@@ -11,7 +11,9 @@ export interface CameraRouteOptions {
   cookieName: string;
 }
 
-const routeParams = z.object({ id: z.string().trim().min(1).max(80) }).strict();
+const routeParams = z.object({
+  id: z.string().trim().regex(/^camera-\d{2}$/),
+}).strict();
 function isIsoDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [year, month, day] = value.split('-').map(Number);

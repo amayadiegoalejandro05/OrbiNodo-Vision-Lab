@@ -9,7 +9,7 @@ describe('cliente HTTP de auditoría', () => {
       url.endsWith('access-sessions')
         ? { accessSessions: [{
             id: 'session-1', timestamp: '2026-08-14T04:00:00.000Z',
-            role: 'manager', displayName: 'Jefe', username: 'Jefe',
+            role: 'manager', displayName: 'Jefe', username: 'Jefe', status: 'active',
           }] }
         : { cameraChanges: [] },
     ), { status: 200 }));

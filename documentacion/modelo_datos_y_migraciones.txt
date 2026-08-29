@@ -23,7 +23,9 @@ ser NULL solo para la importación inicial; toda edición futura tendrá autor.
 camera_change_history registra una fila por campo cambiado. change_set_id agrupa los
 campos de una misma solicitud y los snapshots del autor conservan la atribución.
 
-access_sessions conserva acceso, cierre, expiración, revocación y estado. El token
+access_sessions conserva acceso, cierre, expiración, revocación, estado y ended_at.
+ended_at representa el momento terminal de cualquier desenlace; es NULL solo cuando
+la sesión continúa activa. El token
 aleatorio no se almacena: se guarda un hash binario de 32 bytes. Esto no equivale a
 usar SHA-256 para contraseñas; las contraseñas usarán Argon2id.
 
@@ -45,11 +47,15 @@ Vistas administrativas
 español y hora de Colombia. Las vistas no exponen hashes de contraseña ni de sesión.
 0004_session_activity_and_login_rate_limits.sql añade actividad, expiración por
 inactividad, rate limiting compartido y actualiza la vista de accesos.
+0006_session_history_consistency.sql normaliza ended_at, corrige la salida de la
+vista de accesos para expiraciones y revocaciones, e indexa el listado cronológico.
+0007_session_history_view_expiration.sql conserva esa corrección para sesiones que
+vencen mientras no hay solicitudes a la API.
 
 Prueba desde base vacía
 -----------------------
 
 npm run test:integration crea una base local temporal con nombre validado, ejecuta
-0001 a 0004 y el seed, comprueba idempotencia, catálogo, integridad, rollback y
+0001 a 0007 y el seed, comprueba idempotencia, catálogo, integridad, rollback y
 persistencia tras reconectar. La base temporal se elimina al finalizar. La cuenta de
 aplicación no debe conservar CREATEDB fuera de esta verificación controlada.

@@ -1,5 +1,5 @@
 import { Pool, type PoolConfig } from 'pg';
-import type { BackendEnvironment } from '../config/environment';
+import { isProductionDeployment, type BackendEnvironment } from '../config/environment.js';
 
 // Centralizar estas opciones evita que salud, migraciones y rutas construyan
 // conexiones distintas o impriman una URL que contenga la contraseña.
@@ -8,7 +8,7 @@ export function createPostgresOptions(env: BackendEnvironment): PoolConfig {
   if (connectionString) {
     const url = new URL(connectionString);
     const sslMode = url.searchParams.get('sslmode');
-    if (sslMode === 'prefer' || sslMode === 'require' || sslMode === 'verify-ca') {
+    if (isProductionDeployment(env) || sslMode === 'prefer' || sslMode === 'require' || sslMode === 'verify-ca') {
       url.searchParams.set('sslmode', 'verify-full');
     }
     return {
@@ -24,7 +24,8 @@ export function createPostgresOptions(env: BackendEnvironment): PoolConfig {
     database: env.ORBINODO_DATABASE_NAME,
     user: env.ORBINODO_DATABASE_USER,
     password: env.ORBINODO_DATABASE_PASSWORD,
-    ssl: env.ORBINODO_DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : false,
+    ssl: isProductionDeployment(env) || env.ORBINODO_DATABASE_SSL === 'true'
+      ? { rejectUnauthorized: true } : false,
     max: 10,
     connectionTimeoutMillis: 3_000,
     idleTimeoutMillis: 30_000,

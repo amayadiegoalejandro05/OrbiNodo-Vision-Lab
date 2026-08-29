@@ -40,6 +40,13 @@ function formatDuration(entry: AccessHistoryEntry): string {
   return hours + (hours === 1 ? ' hora ' : ' horas ') + minutes + (minutes === 1 ? ' minuto' : ' minutos');
 }
 
+function formatSessionStatus(entry: AccessHistoryEntry): string {
+  const labels = {
+    active: 'Activa', logged_out: 'Cerrada', expired: 'Expirada', revoked: 'Revocada',
+  } as const;
+  return labels[entry.status];
+}
+
 function createAccessEntry(entry: AccessHistoryEntry): HTMLElement {
   const article = document.createElement('article');
   article.className = 'audit-entry audit-access-entry';
@@ -50,7 +57,9 @@ function createAccessEntry(entry: AccessHistoryEntry): HTMLElement {
   const duration = document.createElement('p');
   duration.className = 'audit-duration';
   duration.textContent = 'Duración: ' + formatDuration(entry);
-  article.append(heading, detail, duration);
+  const status = document.createElement('p');
+  status.textContent = 'Estado: ' + formatSessionStatus(entry);
+  article.append(heading, detail, status, duration);
   return article;
 }
 

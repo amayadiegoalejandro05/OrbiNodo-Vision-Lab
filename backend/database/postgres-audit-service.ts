@@ -5,13 +5,15 @@ import type {
   AccessAuditEntry,
   AuditFieldChange,
   AuditService,
+  CameraChangeFilters,
   CameraChangeAuditEntry,
 } from '../domain/audit-service';
 
 interface AccessRow {
   id: string;
   login_at: Date;
-  logout_at: Date | null;
+  ended_at: Date | null;
+  status: 'active' | 'logged_out' | 'expired' | 'revoked';
   role: AuthRole;
   display_name: string;
   username: string;
@@ -21,6 +23,7 @@ interface ChangeRow {
   change_set_id: string;
   changed_at: Date;
   actor_role: AuthRole;
+  actor_username: string;
   actor_display_name: string;
   camera_id: string;
   camera_name: string;
@@ -43,10 +46,7 @@ export function createPostgresAuditService(pool: Pool): AuditService {
     async listAccessSessions(): Promise<AccessAuditEntry[]> {
       await expireDueSessions(pool);
       const result = await pool.query<AccessRow>(`
-        SELECT s.id, s.login_at,
-          COALESCE(s.logout_at, s.revoked_at,
-            CASE WHEN s.status = 'expired'
-              THEN LEAST(s.expires_at, s.idle_expires_at) END) AS logout_at,
+        SELECT s.id, s.login_at, s.ended_at, s.status,
           u.role, u.display_name, u.username
         FROM access_sessions s
         JOIN users u ON u.id = s.user_id
@@ -56,31 +56,35 @@ export function createPostgresAuditService(pool: Pool): AuditService {
       return result.rows.map((row) => ({
         id: row.id,
         timestamp: row.login_at.toISOString(),
-        ...(row.logout_at ? {
-          logoutAt: row.logout_at.toISOString(),
+        ...(row.ended_at ? {
+          endedAt: row.ended_at.toISOString(),
+          logoutAt: row.ended_at.toISOString(),
           durationSeconds: Math.max(0, Math.floor(
-            (row.logout_at.getTime() - row.login_at.getTime()) / 1000,
+            (row.ended_at.getTime() - row.login_at.getTime()) / 1000,
           )),
         } : {}),
+        status: row.status,
         role: row.role,
         displayName: row.display_name,
         username: row.username,
       }));
     },
 
-    async listCameraChanges(): Promise<CameraChangeAuditEntry[]> {
+    async listCameraChanges(filters: CameraChangeFilters = {}): Promise<CameraChangeAuditEntry[]> {
       const result = await pool.query<ChangeRow>(`
-        SELECT h.change_set_id, h.changed_at, u.role AS actor_role,
+        SELECT h.change_set_id, h.changed_at, h.actor_role, h.actor_username,
           h.actor_display_name, h.camera_id, c.name AS camera_name,
           c.asset_code, h.field_name, h.old_value, h.new_value
         FROM camera_change_history h
-        JOIN users u ON u.id = h.actor_user_id
         JOIN cameras c ON c.id = h.camera_id
         ORDER BY h.changed_at DESC, h.id ASC
         LIMIT 1000
       `);
       const grouped = new Map<string, CameraChangeAuditEntry>();
-      for (const row of result.rows) {
+      for (const row of result.rows.filter((item) => (
+        !filters.username || item.actor_username.toLocaleLowerCase('es')
+          === filters.username.toLocaleLowerCase('es')
+      ))) {
         let entry = grouped.get(row.change_set_id);
         if (!entry) {
           entry = {
@@ -102,7 +106,10 @@ export function createPostgresAuditService(pool: Pool): AuditService {
           after: row.new_value,
         });
       }
-      return [...grouped.values()];
+      return [...grouped.values()].filter((entry) => (
+        (!filters.cameraId || entry.cameraId === filters.cameraId)
+        && (!filters.assetCode || entry.assetCode === filters.assetCode)
+      ));
     },
   };
 }

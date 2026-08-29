@@ -1,0 +1,38 @@
+LOGGING TECNICO - ORBINODO ENTERPRISE v1.0
+==========================================
+
+FORMATO Y NIVELES
+-----------------
+- Fastify/Pino emite logs estructurados JSON.
+- ORBINODO_LOG_LEVEL controla info, warn o error; info es el valor predeterminado.
+- Desarrollo usa info; produccion puede usar info o warn segun volumen.
+- Fastify incluye reqId automatico para correlacion.
+
+EVENTOS
+-------
+- auth.login con outcome success, failure o rate_limited.
+- auth.logout con outcome success.
+- database.health cuando PostgreSQL no responde.
+- Errores inesperados con nombre y codigo tecnico, sin mensaje libre.
+
+DATOS PROHIBIDOS
+----------------
+Nunca registrar contrasenas, tokens, hashes, cookies, DATABASE_URL, SQL,
+stack traces, cuerpos de peticion ni datos operativos completos. Fastify redacta
+authorization, cookie y set-cookie; las rutas no registran el body.
+
+SEPARACION Y RETENCION
+----------------------
+El logging tecnico diagnostica ejecucion. La auditoria empresarial permanece en
+camera_change_history y access_sessions; un log no sustituye ese historial.
+Vercel/Fastify es el destino tecnico actual. El responsable debe configurar el
+plazo de retencion en Vercel conforme al plan y politica corporativa; no guardar
+logs indefinidamente.
+
+VERIFICACION
+------------
+- npm run typecheck
+- npm run lint
+- npm test
+- npm run build
+- Revisar muestras y confirmar reqId, nivel, evento y ausencia de datos prohibidos.

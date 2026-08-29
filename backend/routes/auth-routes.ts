@@ -36,13 +36,18 @@ export const authRoutes: FastifyPluginAsync<AuthRouteOptions> = async (app, opti
       );
     } catch (error) {
       if (error instanceof LoginRateLimitedError) {
+        request.log.warn({ event: 'auth.login', outcome: 'rate_limited' }, 'Login rate limited');
         return reply.code(429).send(apiError(
           'LOGIN_RATE_LIMITED', 'Demasiados intentos. Intenta nuevamente más tarde.',
         ));
       }
       throw error;
     }
-    if (!result) return reply.code(401).send(unauthorized);
+    if (!result) {
+      request.log.warn({ event: 'auth.login', outcome: 'failure', reason: 'invalid_credentials' }, 'Login failed');
+      return reply.code(401).send(unauthorized);
+    }
+    request.log.info({ event: 'auth.login', outcome: 'success', role: result.user.role }, 'Login succeeded');
     reply.setCookie(options.cookieName, result.token, cookieOptions);
     return {
       user: result.user,
@@ -61,7 +66,10 @@ export const authRoutes: FastifyPluginAsync<AuthRouteOptions> = async (app, opti
 
   app.post('/logout', async (request, reply) => {
     const token = request.cookies[options.cookieName];
-    if (token) await options.authService.logout(token);
+    if (token) {
+      await options.authService.logout(token);
+      request.log.info({ event: 'auth.logout', outcome: 'success' }, 'Logout completed');
+    }
     reply.clearCookie(options.cookieName, cookieOptions);
     return reply.code(204).send();
   });

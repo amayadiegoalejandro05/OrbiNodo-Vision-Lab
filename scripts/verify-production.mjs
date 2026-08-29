@@ -25,7 +25,10 @@ async function verifyProfile(username, password, expectedRole, auditStatus) {
   ensure(login.response.status === 200, 'Falló el acceso de ' + username + ' (HTTP ' + login.response.status + ').');
   ensure(login.body, 'El acceso no devolvió JSON para ' + username + '.');
   ensure(login.body.user.role === expectedRole, 'Rol inesperado para ' + username + '.');
-  const cookie = (login.response.headers.get('set-cookie') || '').split(';')[0];
+  const setCookie = login.response.headers.get('set-cookie') || '';
+  ensure(setCookie.includes('Secure') && setCookie.includes('HttpOnly')
+    && setCookie.includes('SameSite=Lax'), 'La cookie productiva no tiene las protecciones esperadas.');
+  const cookie = setCookie.split(';')[0];
   ensure(cookie, 'La API no entregó cookie de sesión para ' + username + '.');
 
   const me = await request('/api/auth/me', {}, cookie);
@@ -48,6 +51,15 @@ try {
   const health = await request('/api/health');
   ensure(health.response.status === 200, 'La salud de producción no responde 200.');
   ensure(health.body.database === 'available', 'Neon no está disponible.');
+  ensure(new URL(baseUrl).protocol === 'https:', 'La verificacion exige una URL HTTPS.');
+  ensure((health.response.headers.get('strict-transport-security') || '').includes('max-age='),
+    'Produccion no entrego Strict-Transport-Security.');
+  const httpUrl = new URL(baseUrl);
+  httpUrl.protocol = 'http:';
+  const redirect = await fetch(httpUrl, { redirect: 'manual' });
+  ensure([301, 302, 307, 308].includes(redirect.status), 'HTTP no redirige a HTTPS.');
+  ensure((redirect.headers.get('location') || '').startsWith('https://'),
+    'La redireccion HTTP no apunta a HTTPS.');
   await verifyProfile('Jefe', process.env.ORBINODO_SEED_MANAGER_PASSWORD, 'manager', 200);
   await verifyProfile('Ingeniero 1', process.env.ORBINODO_SEED_ENGINEER1_PASSWORD, 'engineer1', 403);
   console.log('Producción verificada: salud, Neon, 10 cámaras, sesiones y permisos.');

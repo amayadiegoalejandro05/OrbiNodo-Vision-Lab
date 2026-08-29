@@ -5,6 +5,7 @@ Base local: http://127.0.0.1:3001
 Prefijo: /api
 Transporte de sesión: cookie HttpOnly, SameSite=Lax y Secure en HTTPS.
 
+Produccion responde 426 HTTPS_REQUIRED si la API recibe HTTP.
 ERRORES COMUNES
 ---------------
 
@@ -20,11 +21,14 @@ Todos los errores propios usan:
 403 FORBIDDEN_ROLE
 404 CAMERA_NOT_FOUND o ROUTE_NOT_FOUND
 409 RESOURCE_CONFLICT
+426 HTTPS_REQUIRED
 413 PAYLOAD_TOO_LARGE
 415 UNSUPPORTED_MEDIA_TYPE
 429 LOGIN_RATE_LIMITED
 500 INTERNAL_ERROR
 503 DATABASE_UNAVAILABLE
+
+El cuerpo JSON de cualquier endpoint tiene un límite explícito de 16 KiB.
 
 El código 409 queda reservado para conflictos reales. Los endpoints actuales no
 crean cámaras, usuarios ni otros recursos únicos por HTTP.
@@ -65,6 +69,7 @@ Sesión: cualquier perfil autenticado.
 Errores: 401, 500.
 
 GET /api/cameras/:id
+Formato de id: camera- seguido de exactamente dos dígitos, por ejemplo camera-01.
 Sesión: cualquier perfil autenticado.
 Éxito 200: { "camera": Camera }
 Errores: 400, 401, 404, 500.
@@ -82,7 +87,15 @@ GET /api/audit/access-sessions
 GET /api/audit/camera-changes
 Sesión: únicamente Jefe/manager.
 Éxito 200: { "accessSessions": Access[] } o { "cameraChanges": Change[] }
-Errores: 401, 403, 500.
+Errores: 400, 401, 403, 500.
+
+Cada elemento de accessSessions contiene username, displayName, role, timestamp y
+status (active, logged_out, expired o revoked). Las sesiones terminadas incluyen
+endedAt y durationSeconds; logoutAt se conserva como alias compatible de endedAt.
+
+GET /api/audit/camera-changes acepta opcionalmente los filtros exactos
+cameraId, assetCode y username. Solo se aplican después de validar la sesión
+manager; filtros desconocidos o inválidos responden 400 VALIDATION_ERROR.
 
 ADMINISTRACIÓN
 --------------

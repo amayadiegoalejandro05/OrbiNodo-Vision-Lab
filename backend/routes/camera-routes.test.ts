@@ -44,6 +44,11 @@ function service(overrides: Partial<CameraService> = {}): CameraService {
 }
 
 const cookie = { cookie: `orbinodo_session=${'a'.repeat(43)}` };
+const operations = {
+  status: 'En mantenimiento' as const,
+  lastMaintenanceOn: '2026-02-01', nextMaintenanceOn: '2026-07-01',
+  responsibleArea: 'Mantenimiento', notes: 'Revisión programada',
+};
 
 describe('rutas de cámaras', () => {
   it('exige sesión y permite leer cámaras a un perfil autenticado', async () => {
@@ -56,6 +61,20 @@ describe('rutas de cámaras', () => {
     });
     expect(allowed.statusCode).toBe(200);
     expect(allowed.json()).toEqual({ cameras: [camera] });
+  });
+
+  it('permite consultar cámaras a los cuatro roles autenticados', async () => {
+    const users: AuthUser[] = [
+      { username: 'Orbinodo', displayName: 'Orbinodo', role: 'programmer' },
+      { username: 'Jefe', displayName: 'Jefe', role: 'manager' }, engineer,
+      { username: 'Ingeniero 2', displayName: 'Ingeniero 2', role: 'engineer2' },
+    ];
+    for (const user of users) {
+      const response = await buildApp(user, service()).inject({
+        method: 'GET', url: '/api/cameras/camera-01', headers: cookie,
+      });
+      expect(response.statusCode, user.role).toBe(200);
+    }
   });
 
   it('consulta una cámara individual autenticada', async () => {
@@ -98,11 +117,6 @@ describe('rutas de cámaras', () => {
   });
 
   it('entrega una actualización válida del Ingeniero al servicio', async () => {
-    const operations = {
-      status: 'En mantenimiento' as const,
-      lastMaintenanceOn: '2026-02-01', nextMaintenanceOn: '2026-07-01',
-      responsibleArea: 'Mantenimiento', notes: 'Revisión programada',
-    };
     const update = vi.fn<CameraService['updateOperations']>(async () => ({
       camera: { ...camera, ...operations }, changedFields: ['status'],
     }));
@@ -116,6 +130,44 @@ describe('rutas de cámaras', () => {
     expect(response.json().changedFields).toEqual(['status']);
   });
 
+  it('permite PATCH al Ingeniero 2 y bloquea al rol Orbinodo', async () => {
+    const engineer2: AuthUser = {
+      username: 'Ingeniero 2', displayName: 'Ingeniero 2', role: 'engineer2',
+    };
+    const accepted = vi.fn<CameraService['updateOperations']>(async () => ({
+      camera: { ...camera, ...operations }, changedFields: ['status'],
+    }));
+    const acceptedResponse = await buildApp(engineer2, service({ updateOperations: accepted })).inject({
+      method: 'PATCH', url: '/api/cameras/camera-01/operations', headers: cookie, payload: operations,
+    });
+    expect(acceptedResponse.statusCode).toBe(200);
+    expect(accepted).toHaveBeenCalledWith('camera-01', engineer2, operations);
+
+    const denied = vi.fn<CameraService['updateOperations']>();
+    const deniedResponse = await buildApp({
+      username: 'Orbinodo', displayName: 'Orbinodo', role: 'programmer',
+    }, service({ updateOperations: denied })).inject({
+      method: 'PATCH', url: '/api/cameras/camera-01/operations', headers: cookie, payload: operations,
+    });
+    expect(deniedResponse.statusCode).toBe(403);
+    expect(denied).not.toHaveBeenCalled();
+  });
+
+  it('rechaza payload manipulado y no alcanza PostgreSQL', async () => {
+    const update = vi.fn<CameraService['updateOperations']>();
+    const response = await buildApp(engineer, service({ updateOperations: update })).inject({
+      method: 'PATCH', url: '/api/cameras/camera-01/operations', headers: cookie,
+      payload: {
+        ...operations,
+        assetCode: 'CCTV-ALTERADO', location: 'Ubicación alterada',
+        yaw: 180, role: 'manager', username: 'Jefe', userId: 'otro-usuario',
+      },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error).toBe('VALIDATION_ERROR');
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it('rechaza fechas imposibles antes de consultar PostgreSQL', async () => {
     const update = vi.fn<CameraService['updateOperations']>();
     const app = buildApp(engineer, service({ updateOperations: update }));
@@ -127,6 +179,38 @@ describe('rutas de cámaras', () => {
       },
     });
     expect(response.statusCode).toBe(400);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid camera IDs before the service', async () => {
+    const getCamera = vi.fn<CameraService['getCamera']>();
+    const app = buildApp(engineer, service({ getCamera }));
+    for (const id of ['camera-1', 'camera-001', 'camera-ab', 'camera-01%27%20OR%201%3D1--']) {
+      const response = await app.inject({ method: 'GET', url: '/api/cameras/' + id, headers: cookie });
+      expect(response.statusCode, id).toBe(400);
+      expect(response.json().error).toBe('VALIDATION_ERROR');
+    }
+    expect(getCamera).not.toHaveBeenCalled();
+  });
+
+  it('rejects required fields, empty values, enums and bounds before the service', async () => {
+    const update = vi.fn<CameraService['updateOperations']>();
+    const app = buildApp(engineer, service({ updateOperations: update }));
+    const cases = [
+      { ...operations, notes: undefined },
+      { ...operations, notes: '   ' },
+      { ...operations, status: 'Desconocido' },
+      { ...operations, responsibleArea: 'a'.repeat(101) },
+      { ...operations, notes: 'a'.repeat(501) },
+      { ...operations, lastMaintenanceOn: '2026-07-01', nextMaintenanceOn: '2026-02-01' },
+    ];
+    for (const payload of cases) {
+      const response = await app.inject({
+        method: 'PATCH', url: '/api/cameras/camera-01/operations', headers: cookie, payload,
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error).toBe('VALIDATION_ERROR');
+    }
     expect(update).not.toHaveBeenCalled();
   });
 });

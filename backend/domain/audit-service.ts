@@ -3,8 +3,10 @@ import type { AuthRole } from './auth-service';
 export interface AccessAuditEntry {
   id: string;
   timestamp: string;
+  endedAt?: string;
   logoutAt?: string;
   durationSeconds?: number;
+  status: 'active' | 'logged_out' | 'expired' | 'revoked';
   role: AuthRole;
   displayName: string;
   username: string;
@@ -28,7 +30,13 @@ export interface CameraChangeAuditEntry {
   changes: AuditFieldChange[];
 }
 
+export interface CameraChangeFilters {
+  cameraId?: string;
+  assetCode?: string;
+  username?: string;
+}
+
 export interface AuditService {
   listAccessSessions(): Promise<AccessAuditEntry[]>;
-  listCameraChanges(): Promise<CameraChangeAuditEntry[]>;
+  listCameraChanges(filters?: CameraChangeFilters): Promise<CameraChangeAuditEntry[]>;
 }

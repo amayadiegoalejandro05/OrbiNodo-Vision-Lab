@@ -27,4 +27,13 @@ describe('opciones PostgreSQL', () => {
     expect(options).not.toHaveProperty('host');
     expect(options).not.toHaveProperty('password');
   });
+  it('requires verified TLS for a production URL', () => {
+    const options = createPostgresOptions({
+      ...localEnvironment, NODE_ENV: 'production',
+      DATABASE_URL: 'postgresql://usuario:clave@db.example/base',
+    });
+    expect(options).toMatchObject({
+      connectionString: 'postgresql://usuario:clave@db.example/base?sslmode=verify-full',
+    });
 });
+  });

@@ -13,7 +13,8 @@ export async function resetDemoData(client: PoolClient): Promise<ResetResult> {
   try {
     await client.query('BEGIN');
     await client.query('SELECT pg_advisory_xact_lock($1)', [1_849_042_028]);
-    await client.query('TRUNCATE access_sessions, camera_change_history RESTART IDENTITY');
+    const before = await readDatabaseState(client);
+    await client.query('TRUNCATE access_sessions RESTART IDENTITY');
     for (const camera of demoSecurityCameras) {
       const updated = await client.query({
         text: `UPDATE camera_operational_state SET
@@ -31,7 +32,7 @@ export async function resetDemoData(client: PoolClient): Promise<ResetResult> {
     }
     const result = await readDatabaseState(client);
     if (result.users !== 4 || result.cameras !== 10 || result.operationalStates !== 10
-        || result.accessSessions !== 0 || result.cameraChanges !== 0) {
+        || result.accessSessions !== 0 || result.cameraChanges !== before.cameraChanges) {
       throw new Error('La base no quedó en el estado inicial esperado.');
     }
     await client.query('COMMIT');

@@ -11,6 +11,10 @@
     "db:seed": "tsx backend/database/seed.ts",
     "db:reset": "tsx scripts/reset-local-database.ts",
     "db:check": "tsx scripts/check-database-connection.ts",
+    "db:backup": "node scripts/backup-postgres.mjs",
+    "db:restore:validate": "node scripts/restore-postgres.mjs",
+    "secrets:check": "node scripts/check-secrets.mjs",
+    "db:preflight": "tsx scripts/check-production-readiness.ts",
     "sessions:close": "tsx scripts/close-active-sessions.ts",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.backend.json",
     "lint": "eslint src eslint.config.js",
@@ -20,6 +24,7 @@
     "test": "vitest run --exclude **/*.integration.test.ts",
     "test:integration": "node --env-file=.env.backend.local node_modules/vitest/vitest.mjs run backend/database/postgres-auth-service.integration.test.ts backend/database/postgres-persistence.integration.test.ts",
     "verify:browser": "node scripts/verify-browser.mjs",
+    "verify:reproducible": "node scripts/verify-reproducible.mjs",
     "verify:production": "node --env-file=.env.backend.local scripts/verify-production.mjs",
     "verify:production:browser": "node --env-file=.env.backend.local scripts/verify-production-browser.mjs"
   },

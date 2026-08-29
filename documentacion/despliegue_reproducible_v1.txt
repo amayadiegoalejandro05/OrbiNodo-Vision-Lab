@@ -1,0 +1,56 @@
+# Despliegue reproducible - OrbiNodo Enterprise v1.0
+
+## Versiones y artefactos
+
+- Node.js fijado en .nvmrc: 24.18.1.
+- Dependencias reproducibles mediante package-lock.json.
+- Vercel ejecuta npm run build y publica dist, según vercel.json.
+- Los secretos se entregan por variables del entorno; nunca se copian al repositorio.
+
+## Instalacion desde cero
+
+1. Clonar el repositorio y entrar en su carpeta.
+2. Seleccionar Node 24.18.1 con el gestor de versiones disponible.
+3. Ejecutar npm ci.
+4. Ejecutar npm run verify:reproducible. Copia el proyecto a una carpeta temporal sin Git, env, node_modules ni dist; vuelve a ejecutar npm ci y npm run build.
+5. Ejecutar npm run check para las pruebas y verificaciones del proyecto.
+
+## Arranque local
+
+Terminal 1: npm run api:dev
+Terminal 2: npm run dev
+
+PostgreSQL local debe estar iniciado y .env.backend.local debe existir fuera de Git. Para una base vacia: npm run db:migrate y luego npm run db:seed.
+
+## Release de produccion
+
+1. Configurar en Vercel las variables de Production, incluida DATABASE_URL y ORBINODO_COOKIE_SECURE=true.
+2. Ejecutar npm run db:migrate contra la misma base administrada que usara Vercel.
+3. Ejecutar npm run db:preflight.
+4. Ejecutar npm run verify:reproducible.
+5. Ejecutar npm run check.
+6. Ejecutar npx vercel --prod.
+7. Ejecutar npm run verify:production y, si corresponde, npm run verify:production:browser.
+
+Cada deployment debe corresponder a un commit identificado. No publicar unicamente cambios sin confirmar en Git.
+
+## Rollback de aplicacion
+
+1. Ir a Vercel -> Deployments.
+2. Identificar el deployment de produccion conocido como bueno.
+3. Abrir su menu y seleccionar la opcion para promoverlo a Production.
+4. Confirmar que el dominio publico, /api/health, login, /me, logout y permisos funcionan.
+5. Registrar fecha, deployment promovido, motivo y responsable.
+
+El rollback de la aplicacion no revierte automaticamente cambios de PostgreSQL. Las migraciones son acumulativas y no se deben editar ni borrar. Si un cambio de esquema requiere recuperacion, detener el release y usar el backup/restauracion documentado en documentacion/backup_y_restauracion_postgresql_v1.txt con aprobacion del responsable; no ejecutar un borrado automatico de Production.
+
+## Separacion de entornos
+
+- Local: PostgreSQL en localhost y variables .env.backend.local.
+- Preview: variables y base/rama Neon de Preview.
+- Production: variables y base Neon Production.
+- Air Products no forma parte de este deployment y no comparte secretos, certificados ni base.
+
+## Verificacion y registro
+
+Conservar la salida de verify:reproducible, db:preflight y verify:production asociada al commit y deployment. No registrar valores de DATABASE_URL, contrasenas, tokens ni hashes.

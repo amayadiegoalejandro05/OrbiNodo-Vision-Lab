@@ -4,8 +4,8 @@ import { apiFailure, readApiJson } from './api-response';
 
 const roleSchema = z.enum(['programmer', 'manager', 'engineer1', 'engineer2']);
 const accessSchema = z.object({
-  id: z.string(), timestamp: z.string(), logoutAt: z.string().optional(),
-  durationSeconds: z.number().nonnegative().optional(), role: roleSchema,
+  id: z.string(), timestamp: z.string(), endedAt: z.string().optional(), logoutAt: z.string().optional(),
+  durationSeconds: z.number().nonnegative().optional(), status: z.enum(['active', 'logged_out', 'expired', 'revoked']), role: roleSchema,
   displayName: z.string(), username: z.string(),
 }).strict();
 const changeSchema = z.object({

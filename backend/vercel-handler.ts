@@ -24,8 +24,14 @@ const app = createApiApp({
   cookieName: environment.ORBINODO_COOKIE_NAME,
   cookieSecure: environment.ORBINODO_COOKIE_SECURE === 'true',
   sessionHours: environment.ORBINODO_SESSION_HOURS,
-  trustedProxyHops: environment.ORBINODO_TRUSTED_PROXY_HOPS,
+  // Vercel is the single trusted proxy in front of this Function.
+  trustedProxyHops: 1,
+  // TLS and HTTP-to-HTTPS redirection belong to Vercel's edge. Do not reject a
+  // valid Function request solely because an intermediary omitted a forwarded
+  // protocol header; that previously risks making the API look unavailable.
+  requireHttps: false,
   logger: true,
+  logLevel: environment.ORBINODO_LOG_LEVEL,
 });
 const ready = app.ready();
 

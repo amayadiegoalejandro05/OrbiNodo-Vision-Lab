@@ -4,6 +4,8 @@ import type { BackendEnvironment } from '../config/environment';
 import { loadMigrationFiles } from './migration-files';
 import { createPostgresOptions } from './postgres-options';
 
+const HISTORY_ROLE_BACKFILL_MIGRATION = '0005_harden_camera_change_history.sql';
+
 // La transacción evita esquemas parciales y el bloqueo impide ejecuciones paralelas.
 export async function runMigrations(env: BackendEnvironment): Promise<string[]> {
   const pool = new Pool(createPostgresOptions(env));
@@ -43,6 +45,7 @@ async function applyPending(client: PoolClient): Promise<string[]> {
   return applyFiles(client, applied);
 }
 
+
 async function applyFiles(client: PoolClient, applied: Map<string, string>): Promise<string[]> {
   const completed: string[] = [];
   for (const migration of await loadMigrationFiles()) {
@@ -51,7 +54,16 @@ async function applyFiles(client: PoolClient, applied: Map<string, string>): Pro
       throw new Error('Una migración aplicada fue modificada: ' + migration.version);
     }
     if (previousChecksum) continue;
-    await client.query(migration.sql);
+    if (migration.version === HISTORY_ROLE_BACKFILL_MIGRATION) {
+      await client.query('ALTER TABLE camera_change_history DISABLE TRIGGER camera_change_history_append_only');
+      try {
+        await client.query(migration.sql);
+      } finally {
+        await client.query('ALTER TABLE camera_change_history ENABLE TRIGGER camera_change_history_append_only');
+      }
+    } else {
+      await client.query(migration.sql);
+    }
     await client.query(
       'INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2)',
       [migration.version, migration.checksum],

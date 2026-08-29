@@ -10,6 +10,9 @@ describe('migraciones SQL de Orbinodo', () => {
       '0002_access_history_view.sql',
       '0003_camera_change_history_view.sql',
       '0004_session_activity_and_login_rate_limits.sql',
+      '0005_harden_camera_change_history.sql',
+      '0006_session_history_consistency.sql',
+      '0007_session_history_view_expiration.sql',
     ]);
     expect(migrations[0]?.checksum).toMatch(/^[a-f0-9]{64}$/);
     const sql = migrations[0]?.sql ?? '';
@@ -54,5 +57,19 @@ describe('migraciones SQL de Orbinodo', () => {
     expect(sql).toContain('idle_expires_at');
     expect(sql).toContain('CREATE TABLE login_rate_limits');
     expect(sql).toContain('CREATE OR REPLACE VIEW vista_historial_accesos');
+  });
+
+  it('protege el historial contra truncamiento y conserva el rol histórico', async () => {
+    const sql = (await loadMigrationFiles())[4]?.sql ?? '';
+    expect(sql).toContain('actor_role');
+    expect(sql).toContain('BEFORE TRUNCATE ON camera_change_history');
+  });
+
+  it('includes a consistent session end history', async () => {
+    const sql = (await loadMigrationFiles())[5]?.sql ?? '';
+    expect(sql).toContain('ended_at');
+    expect(sql).toContain('access_session_terminal_end');
+    expect(sql).toContain('access_sessions_login_history_idx');
+    expect(sql).toContain('CREATE VIEW vista_historial_accesos');
   });
 });
