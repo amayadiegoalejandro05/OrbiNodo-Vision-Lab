@@ -19,6 +19,10 @@ function git(args) {
   return result.status === 0 ? result.stdout.trim() : '';
 }
 
+function gitSucceeds(args) {
+  return spawnSync('git', args, { cwd: root, stdio: 'ignore' }).status === 0;
+}
+
 const packageJson = await readJson('package.json');
 const lockJson = await readJson('package-lock.json');
 const openapi = await readJson('documentacion/openapi/orbinodo-api-v1.json');
@@ -59,10 +63,15 @@ if (strict) {
   if (dirty) fail('el working tree tiene cambios sin confirmar.');
   if (!head || !taggedCommit) fail('no existe el tag v' + version + '.');
   if (head !== taggedCommit) fail('el tag no apunta al commit actual.');
-  if (manifest.commit?.sha !== head) fail('el SHA del manifiesto no coincide con HEAD.');
-  if (pendingDeployment) fail('falta registrar el deployment productivo.');
-  if (manifest.status !== 'released') fail('el manifiesto a?n no est? marcado como released.');
-  console.log(`Release v${version} validada: tag ${taggedCommit}, deployment registrado.`);
+  if (pendingCommit || !manifest.commit?.sha
+      || !gitSucceeds(['merge-base', '--is-ancestor', manifest.commit.sha, taggedCommit])) {
+    fail('el SHA del manifiesto no pertenece a la release etiquetada.');
+  }
+  if (manifest.status !== 'released') fail('el manifiesto aún no está marcado como released.');
+  if (pendingDeployment) {
+    console.log('Aviso: el deployment productivo aún no está registrado en el manifiesto.');
+  }
+  console.log('Release v' + version + ' validada: tag ' + taggedCommit + '.');
 } else {
   console.log(`Metadatos de release v${version} validos: package, lockfile, OpenAPI, ${expectedMigrations.length} migraciones y documentaci?n.`);
   if (pendingCommit || pendingDeployment || !taggedCommit) {

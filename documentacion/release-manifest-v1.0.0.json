@@ -1,11 +1,11 @@
 {
   "releaseVersion": "1.0.0",
   "tag": "v1.0.0",
-  "status": "release-candidate",
+  "status": "released",
   "releasedAt": "2026-08-31",
   "commit": {
-    "sha": "PENDING_TAG_COMMIT",
-    "recordedAfterTag": true
+    "sha": "6a3ba386aed969fdb12f17666d962b6384116ccd",
+    "recordedAfterTag": false
   },
   "deployment": {
     "provider": "Vercel",
