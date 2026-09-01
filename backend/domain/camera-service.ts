@@ -10,8 +10,13 @@ export interface CameraOperationsUpdate {
   notes: string;
 }
 
+export interface CameraUpdateCommand extends CameraOperationsUpdate {
+  expectedVersion?: number;
+}
+
 export interface CameraRecord extends CameraOperationsUpdate {
   id: string;
+  version: number;
   assetCode: string;
   name: string;
   panoramaId: string;
@@ -38,8 +43,10 @@ export interface CameraService {
   updateOperations(
     cameraId: string,
     actor: AuthUser,
-    update: CameraOperationsUpdate,
+    update: CameraUpdateCommand,
   ): Promise<CameraUpdateResult | null>;
 }
 
 export class CameraActorNotAllowedError extends Error {}
+
+export class CameraVersionConflictError extends Error {}

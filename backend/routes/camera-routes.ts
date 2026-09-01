@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { apiError } from '../api-error.js';
 import type { AuthService } from '../domain/auth-service';
 import type { CameraService } from '../domain/camera-service';
-import { CameraActorNotAllowedError } from '../domain/camera-service.js';
+import { CameraActorNotAllowedError, CameraVersionConflictError } from '../domain/camera-service.js';
 
 export interface CameraRouteOptions {
   authService: AuthService;
@@ -29,6 +29,7 @@ const operationsBody = z.object({
   nextMaintenanceOn: isoDate,
   responsibleArea: z.string().trim().min(1).max(100),
   notes: z.string().trim().min(1).max(500),
+  expectedVersion: z.number().int().nonnegative(),
 }).strict().refine(
   (value) => value.nextMaintenanceOn >= value.lastMaintenanceOn,
   { message: 'La próxima fecha no puede ser anterior.' },
@@ -78,6 +79,9 @@ export const cameraRoutes: FastifyPluginAsync<CameraRouteOptions> = async (app, 
     } catch (error) {
       if (error instanceof CameraActorNotAllowedError) {
         return reply.code(403).send(apiError('FORBIDDEN_ROLE', 'Este perfil no puede editar cámaras.'));
+      }
+      if (error instanceof CameraVersionConflictError) {
+        return reply.code(409).send(apiError('RESOURCE_CONFLICT', 'La cámara fue modificada por otro usuario. Recarga los datos e inténtalo de nuevo.'));
       }
       throw error;
     }

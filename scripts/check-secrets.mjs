@@ -23,7 +23,10 @@ function inspect(file, content) {
   if (/\bnpg_[A-Za-z0-9_-]{12,}\b/.test(content)) findings.push(file + ': Neon password');
   if (/\bvercel_[A-Za-z0-9_-]{20,}\b/.test(content)) findings.push(file + ': Vercel token');
   for (const url of content.match(/postgres(?:ql)?:\/\/[^\s'"`]+/g) ?? []) {
-    if (!/usuario:clave@(?:host|db\.example)/.test(url)) {
+    const placeholder = /usuario:clave@(?:host|db\.example)|\[REDACTED\]|PEGA_AQUI/.test(url);
+    const safeExample = url.includes('usuario:secreto@db.interna')
+      || url.includes('USUARIO_LOCAL:CLAVE_LOCAL@127.0.0.1');
+    if (!placeholder && !safeExample) {
       findings.push(file + ': PostgreSQL URL');
       break;
     }
@@ -43,7 +46,9 @@ const historyPattern = 'npg_|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|ver
 for (const commit of git(['rev-list', '--all']).trim().split(/\r?\n/).filter(Boolean)) {
   const files = git(['grep', '-l', '-I', '-E', historyPattern, commit, '--'], true)
     .trim().split(/\r?\n/).filter(Boolean);
-  for (const file of files) {
+  for (const hit of files) {
+    const separator = hit.indexOf(':');
+    const file = separator >= 0 ? hit.slice(separator + 1) : hit;
     if (file !== scannerFile) findings.push('historial ' + commit.slice(0, 7) + ': ' + file);
   }
 }

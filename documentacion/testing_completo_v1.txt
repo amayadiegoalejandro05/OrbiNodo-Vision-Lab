@@ -1,0 +1,34 @@
+# Testing completo - OrbiNodo Enterprise v1.0
+
+## Comandos
+
+- npm test: pruebas unitarias y de componentes; excluye deliberadamente los archivos *.integration.test.ts.
+- npm run test:integration: pruebas reales de Fastify y PostgreSQL; usa las variables del entorno actual y crea una base temporal validada.
+- npm run test:all: comando unico para unitarias mas integracion PostgreSQL.
+- npm run verify:reproducible: copia el repositorio a una carpeta temporal sin .env, node_modules, dist ni Git; ejecuta npm ci, npm test y npm run build.
+- npm run check: lint, pruebas unitarias, build y verificacion del navegador local.
+- npm run verify:production: smoke test contra Production; requiere credenciales privadas y no forma parte de CI.
+
+## Entorno de integracion
+
+Las pruebas PostgreSQL requieren una instancia local o temporal accesible con:
+
+- ORBINODO_DATABASE_HOST
+- ORBINODO_DATABASE_PORT
+- ORBINODO_DATABASE_NAME
+- ORBINODO_DATABASE_USER
+- ORBINODO_DATABASE_PASSWORD
+- ORBINODO_DATABASE_SSL=false
+- ORBINODO_TEST_ADMIN_USER y ORBINODO_TEST_ADMIN_PASSWORD: cuenta administrativa temporal solo para crear/eliminar la base de prueba.
+
+El runner crea y elimina una base temporal con nombre validado. No debe ejecutarse contra Neon ni Production. En local, .env.backend.local puede proporcionar las variables de la aplicacion y ORBINODO_TEST_ADMIN_USER/ORBINODO_TEST_ADMIN_PASSWORD deben apuntar a una cuenta local con CREATEDB. En CI se usa PostgreSQL de servicio con la cuenta postgres. Nunca se concede CREATEDB a orbinodo_api.
+
+## CI reproducible
+
+.github/workflows/ci.yml usa Node indicado por .nvmrc, instala con npm ci, ejecuta npm run test:all y luego verify:reproducible. Los resultados quedan en los logs del commit o pull request.
+
+## Cobertura
+
+La suite cubre autenticacion, autorizacion, sesiones, auditoria, validacion, errores, PostgreSQL, migraciones, persistencia, recorrido, regresiones y casos limite. Las pruebas del legado localStorage se mantienen separadas y production-persistence.test.ts confirma que no forman parte del grafo productivo.
+
+No registrar credenciales en salidas ni activar npm audit fix --force automaticamente.

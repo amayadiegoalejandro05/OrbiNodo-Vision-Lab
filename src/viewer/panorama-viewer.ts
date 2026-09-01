@@ -38,6 +38,7 @@ export interface PanoramaViewerOptions {
   cameras: SecurityCameraRecord[];
   saveCameraOperations: (
     cameraId: string, update: CameraOperationalUpdate,
+    expectedVersion: number,
   ) => Promise<CameraUpdateResult>;
   onCameraUpdated?: (camera: SecurityCameraRecord) => void;
 }
@@ -172,8 +173,10 @@ export function createPanoramaViewer(
         responsibleArea: readRequiredFormValue(formData, 'responsibleArea'),
         notes: readRequiredFormValue(formData, 'notes'),
       };
+      const cameraId = form.dataset.cameraId ?? '';
+      const currentCamera = cameraRecordsById.get(cameraId);
       const result = await options.saveCameraOperations(
-        form.dataset.cameraId ?? '', update,
+        cameraId, update, currentCamera?.version ?? 0,
       );
       cameraRecordsById.set(result.camera.id, result.camera);
       camerasByPanorama.set(result.camera.panoramaId, result.camera);

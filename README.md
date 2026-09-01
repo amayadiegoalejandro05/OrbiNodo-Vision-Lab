@@ -19,7 +19,7 @@ la ubicaci贸n activa y funciona con teclado y en pantallas m贸viles.
 ## Uso local
 
 ```bash
-npm install
+npm ci
 npm run api:dev
 ```
 
@@ -44,7 +44,13 @@ Todos los TXT se conservan en `documentacion/`:
 - `explicacion_de_archivos_y_codigo.txt`
 - `gestion_secretos_y_rotacion_v1.txt`
 - `preguntas_y_respuestas_por_fase.txt`
+- `openapi/orbinodo-api-v1.json` (contrato OpenAPI 3.1 verificable)
+- `arquitectura_orbinodo_enterprise_v1.txt` (mapa arquitect贸nico y l铆mites)
+- `dossier_comercial_orbinodo_enterprise_v1.txt` (presentaci贸n comercial y t茅cnica)
+- `manual_instalacion_orbinodo_enterprise_v1.txt` (instalaci贸n paso a paso y troubleshooting)
 
+- `manual_operacion_orbinodo_enterprise_v1.txt` (operacion diaria, incidentes, backups, despliegues y escalamiento)
+- `health_checks_y_monitoreo_v1.txt` (liveness, readiness, m倀ricas, alertas y runbook)
 ## Privacidad
 
 Los ocho panoramas actuales son ficticios. Las fotograf铆as reales deben guardarse

@@ -22,6 +22,7 @@ const databaseName = 'orbinodo_phase1_test_' + randomUUID().replaceAll('-', '');
 let adminPool: Pool;
 let testPool: Pool;
 let testEnvironment: ReturnType<typeof loadBackendEnvironment>;
+let adminTestEnvironment: ReturnType<typeof loadBackendEnvironment>;
 let databaseCreated = false;
 
 function quotedDatabase(name: string): string {
@@ -29,6 +30,11 @@ function quotedDatabase(name: string): string {
     throw new Error('Nombre inseguro para la base temporal.');
   }
   return `"${name}"`;
+}
+
+function quotedIdentifier(name: string): string {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error('Identificador inseguro.');
+  return '"' + name + '"';
 }
 
 function realApi() {
@@ -59,19 +65,30 @@ beforeAll(async () => {
     throw new Error('La prueba de Fase 1 solo puede ejecutarse contra PostgreSQL local.');
   }
   const options = createPostgresOptions(environment);
-  adminPool = new Pool({ ...options, database: 'postgres', max: 1 });
+  const adminUser = process.env.ORBINODO_TEST_ADMIN_USER ?? environment.ORBINODO_DATABASE_USER;
+  const adminPassword = process.env.ORBINODO_TEST_ADMIN_PASSWORD ?? environment.ORBINODO_DATABASE_PASSWORD;
+  adminTestEnvironment = { ...environment, ORBINODO_DATABASE_USER: adminUser, ORBINODO_DATABASE_PASSWORD: adminPassword };
+  adminPool = new Pool({ ...options, database: 'postgres', user: adminUser, password: adminPassword, max: 1 });
   await adminPool.query(`CREATE DATABASE ${quotedDatabase(databaseName)}`);
   databaseCreated = true;
   testEnvironment = { ...environment, ORBINODO_DATABASE_NAME: databaseName };
-  expect(await runMigrations(testEnvironment)).toEqual([
+  adminTestEnvironment = { ...adminTestEnvironment, ORBINODO_DATABASE_NAME: databaseName };
+  expect(await runMigrations(adminTestEnvironment)).toEqual([
     '0001_initial_schema.sql', '0002_access_history_view.sql',
     '0003_camera_change_history_view.sql',
     '0004_session_activity_and_login_rate_limits.sql',
     '0005_harden_camera_change_history.sql',
     '0006_session_history_consistency.sql',
     '0007_session_history_view_expiration.sql',
+    '0008_camera_operational_lock_version.sql',
   ]);
-  await runSeed(testEnvironment, accounts);
+  await runSeed(adminTestEnvironment, accounts);
+  const grantPool = new Pool(createPostgresOptions(adminTestEnvironment));
+  const appRole = quotedIdentifier(environment.ORBINODO_DATABASE_USER);
+  await grantPool.query('GRANT USAGE ON SCHEMA public TO ' + appRole);
+  await grantPool.query('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ' + appRole);
+  await grantPool.query('GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO ' + appRole);
+  await grantPool.end();
   testPool = new Pool(createPostgresOptions(testEnvironment));
 }, 30_000);
 
@@ -111,13 +128,13 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
   });
 
   it('es idempotente para migraciones y seed', async () => {
-    expect(await runMigrations(testEnvironment)).toEqual([]);
-    await runSeed(testEnvironment, accounts);
+    expect(await runMigrations(adminTestEnvironment)).toEqual([]);
+    await runSeed(adminTestEnvironment, accounts);
     const result = await testPool.query(`SELECT
       (SELECT count(*)::int FROM schema_migrations) AS migrations,
       (SELECT count(*)::int FROM users) AS users,
       (SELECT count(*)::int FROM cameras) AS cameras`);
-    expect(result.rows[0]).toEqual({ migrations: 7, users: 4, cameras: 10 });
+    expect(result.rows[0]).toEqual({ migrations: 8, users: 4, cameras: 10 });
   });
 
   it('crea integridad, índices y protección append-only', async () => {
@@ -206,8 +223,12 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
       expect(list.json().cameras).toHaveLength(10);
       expect((await app.inject({ method: 'GET', url: '/api/cameras/camera-03', headers }))
         .statusCode).toBe(200);
-      expect((await app.inject({ method: 'GET', url: '/api/cameras/no-existe', headers }))
-        .statusCode).toBe(404);
+      const invalidId = await app.inject({ method: 'GET', url: '/api/cameras/no-existe', headers });
+      expect(invalidId.statusCode).toBe(400);
+      expect(invalidId.json().error).toBe('VALIDATION_ERROR');
+      const missingCamera = await app.inject({ method: 'GET', url: '/api/cameras/camera-99', headers });
+      expect(missingCamera.statusCode).toBe(404);
+      expect(missingCamera.json().error).toBe('CAMERA_NOT_FOUND');
       expect((await app.inject({ method: 'GET', url: '/api/no-existe', headers }))
         .json().error).toBe('ROUTE_NOT_FOUND');
     } finally { await app.close(); }
@@ -220,6 +241,7 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
       const update = await app.inject({ method: 'PATCH',
         url: '/api/cameras/camera-03/operations', headers: engineer,
         payload: { status: 'En mantenimiento', lastMaintenanceOn: '2026-08-01',
+          expectedVersion: 0,
           nextMaintenanceOn: '2026-12-01', responsibleArea: 'Seguridad',
           notes: 'Integración HTTP de Fase 2.' } });
       expect(update.statusCode).toBe(200);
@@ -251,6 +273,35 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
     } finally { await app.close(); }
   });
 
+  it('concurrent camera updates use optimistic versioning', async () => {
+    const camera = (await createPostgresCameraService(testPool).listCameras()).find((item) => item.id === 'camera-07')!
+    const service = createPostgresCameraService(testPool)
+    const base = { status: camera.status, lastMaintenanceOn: camera.lastMaintenanceOn, nextMaintenanceOn: camera.nextMaintenanceOn, responsibleArea: camera.responsibleArea, notes: camera.notes, expectedVersion: camera.version }
+    const results = await Promise.allSettled([
+      service.updateOperations('camera-07', { username: 'Ingeniero 1', displayName: 'Ingeniero 1', role: 'engineer1' }, { ...base, status: 'En mantenimiento', notes: 'Carrera A' }),
+      service.updateOperations('camera-07', { username: 'Ingeniero 2', displayName: 'Ingeniero 2', role: 'engineer2' }, { ...base, status: 'Fuera de servicio', notes: 'Carrera B' }),
+    ])
+    expect(results.filter((item) => item.status === 'fulfilled')).toHaveLength(1)
+    expect(results.filter((item) => item.status === 'rejected')).toHaveLength(1)
+    const fresh = await createPostgresCameraService(testPool).getCamera('camera-07')
+    expect(fresh?.version).toBe(camera.version + 1)
+  })
+  it('concurrent HTTP updates return one conflict', async () => {
+    const app = realApi()
+    try {
+      const first = { cookie: await loginCookie(app, 'Ingeniero 1') }
+      const second = { cookie: await loginCookie(app, 'Ingeniero 2') }
+      const snapshot = await app.inject({ method: 'GET', url: '/api/cameras/camera-08', headers: first })
+      const camera = snapshot.json().camera as { version: number; lastMaintenanceOn: string; nextMaintenanceOn: string; responsibleArea: string }
+      const common = { lastMaintenanceOn: camera.lastMaintenanceOn, nextMaintenanceOn: camera.nextMaintenanceOn, responsibleArea: camera.responsibleArea, expectedVersion: camera.version }
+      const responses = await Promise.all([
+        app.inject({ method: 'PATCH', url: '/api/cameras/camera-08/operations', headers: first, payload: { ...common, status: 'En mantenimiento', notes: 'HTTP Carrera A' } }),
+        app.inject({ method: 'PATCH', url: '/api/cameras/camera-08/operations', headers: second, payload: { ...common, status: 'Fuera de servicio', notes: 'HTTP Carrera B' } }),
+      ])
+      expect(responses.map((response) => response.statusCode).sort()).toEqual([200, 409])
+      expect(responses.find((response) => response.statusCode === 409)?.json().error).toBe('RESOURCE_CONFLICT')
+    } finally { await app.close() }
+  })
   it('rechaza payload manipulado sin modificar PostgreSQL', async () => {
     const app = realApi();
     try {
@@ -263,6 +314,7 @@ describe.sequential('reconstrucción PostgreSQL de Fase 1', () => {
         method: 'PATCH', url: '/api/cameras/camera-04/operations', headers,
         payload: {
           status: 'En mantenimiento', lastMaintenanceOn: '2026-08-01',
+          expectedVersion: 0,
           nextMaintenanceOn: '2026-12-01', responsibleArea: 'Seguridad', notes: 'No debe guardar.',
           assetCode: 'CCTV-ALTERADO', role: 'manager', username: 'Jefe', yaw: 180,
         },

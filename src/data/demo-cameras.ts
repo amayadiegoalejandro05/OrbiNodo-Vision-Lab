@@ -5,6 +5,7 @@ import type { SecurityCameraRecord } from '../domain/security-camera.types';
 export const demoSecurityCameras: SecurityCameraRecord[] = [
   {
     id: 'camera-01',
+    version: 0,
     assetCode: 'CCTV-DEM-001',
     name: 'Cámara 1 - Sótano',
     panoramaId: 'sotano-01',
@@ -26,6 +27,7 @@ export const demoSecurityCameras: SecurityCameraRecord[] = [
   },
   {
     id: 'camera-02',
+    version: 0,
     assetCode: 'CCTV-DEM-002',
     name: 'Cámara 2 - Parqueadero',
     panoramaId: 'parqueadero-01',
@@ -47,6 +49,7 @@ export const demoSecurityCameras: SecurityCameraRecord[] = [
   },
   {
     id: 'camera-03',
+    version: 0,
     assetCode: 'CCTV-DEM-003',
     name: 'Cámara 3 - Pasillo',
     panoramaId: 'pasillo-01',
@@ -68,6 +71,7 @@ export const demoSecurityCameras: SecurityCameraRecord[] = [
   },
   {
     id: 'camera-04',
+    version: 0,
     assetCode: 'CCTV-DEM-004',
     name: 'Cámara 4 - Cocina',
     panoramaId: 'cocina-01',
@@ -89,6 +93,7 @@ export const demoSecurityCameras: SecurityCameraRecord[] = [
   },
   {
     id: 'camera-05',
+    version: 0,
     assetCode: 'CCTV-DEM-005',
     name: 'Cámara 5 - Jardín',
     panoramaId: 'jardin-01',
@@ -110,6 +115,7 @@ export const demoSecurityCameras: SecurityCameraRecord[] = [
   },
   {
     id: 'camera-06',
+    version: 0,
     assetCode: 'CCTV-DEM-006',
     name: 'Cámara 6 - Escalera inferior',
     panoramaId: 'escalera-inferior-01',
@@ -131,6 +137,7 @@ export const demoSecurityCameras: SecurityCameraRecord[] = [
   },
   {
     id: 'camera-07',
+    version: 0,
     assetCode: 'CCTV-DEM-007',
     name: 'Cámara 7 - Escalera superior',
     panoramaId: 'escalera-superior-01',
@@ -152,6 +159,7 @@ export const demoSecurityCameras: SecurityCameraRecord[] = [
   },
   {
     id: 'camera-08',
+    version: 0,
     assetCode: 'CCTV-DEM-008',
     name: 'Cámara 8 - Cuarto 1',
     panoramaId: 'cuarto-derecho-01',
@@ -173,6 +181,7 @@ export const demoSecurityCameras: SecurityCameraRecord[] = [
   },
   {
     id: 'camera-09',
+    version: 0,
     assetCode: 'CCTV-DEM-009',
     name: 'Cámara 9 - Cuarto 2',
     panoramaId: 'cuarto-izquierdo-01',
@@ -194,6 +203,7 @@ export const demoSecurityCameras: SecurityCameraRecord[] = [
   },
   {
     id: 'camera-10',
+    version: 0,
     assetCode: 'CCTV-DEM-010',
     name: 'Cámara 10 - Estudio',
     panoramaId: 'estudio-01',

@@ -5,7 +5,7 @@ import type {
 import { apiFailure, readApiJson } from './api-response';
 
 const cameraSchema = z.object({
-  id: z.string(), assetCode: z.string(), name: z.string(), panoramaId: z.string(),
+  id: z.string(), version: z.number().int().nonnegative(), assetCode: z.string(), name: z.string(), panoramaId: z.string(),
   location: z.string(), brand: z.string(), model: z.string(),
   type: z.enum(['360°', 'Fija']), yaw: z.number(), pitch: z.number(),
   status: z.enum(['Operativa', 'En mantenimiento', 'Fuera de servicio']),
@@ -34,11 +34,12 @@ export async function getCamerasFromApi(): Promise<SecurityCameraRecord[]> {
 export async function updateCameraOperations(
   cameraId: string,
   update: CameraOperationalUpdate,
+  expectedVersion: number,
 ): Promise<CameraUpdateResult> {
   const response = await fetch(`/api/cameras/${encodeURIComponent(cameraId)}/operations`, {
     method: 'PATCH', credentials: 'include',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(update),
+    body: JSON.stringify({ ...update, expectedVersion }),
   });
   const value = await readApiJson(response);
   if (!response.ok) {

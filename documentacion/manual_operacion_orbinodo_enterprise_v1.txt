@@ -1,0 +1,133 @@
+MANUAL DE OPERACION - ORBINODO ENTERPRISE v1.0
+==============================================
+
+Estado: operativo.
+Audiencia: administrador funcional y administrador tecnico.
+Alcance: operacion de la version desplegada; complementa el manual de instalacion.
+
+1. RESPONSABILIDADES
+
+- Administrador funcional: consulta camaras, historial y sesiones con el rol Jefe.
+- Administrador tecnico: opera Vercel, Neon/PostgreSQL, backups, restauraciones y despliegues.
+- Equipo de desarrollo: aprueba cambios de esquema, funciones administrativas y arquitectura.
+
+2. OPERACION DIARIA
+
+2.1 Verificar disponibilidad
+
+Abra https://orbinodo-demo.vercel.app/api/health. El resultado esperado contiene
+"status":"ok" y "database":"available".
+
+Desde la carpeta del proyecto ejecute:
+  npm run verify:production
+
+La comprobacion revisa salud, Neon, camaras, sesiones y permisos; no modifica datos.
+
+2.2 Consultar camaras e historial
+
+- Las camaras disponibles se consultan desde la aplicacion o con GET /api/cameras.
+- El Jefe consulta historial de cambios y sesiones desde las vistas de auditoria.
+- La API disponible incluye GET /api/cameras/:id, GET /api/audit/camera-changes y
+  GET /api/audit/access-sessions.
+
+El historial es append-only: no se debe editar ni borrar directamente en PostgreSQL.
+
+2.3 Modificar una camara
+
+Los ingenieros autorizados modifican estado, mantenimiento, area responsable y observaciones.
+Cada cambio registra usuario, fecha, valor anterior y valor nuevo. Si dos personas modifican la
+misma camara, una puede recibir HTTP 409: recargue los datos, revise el cambio aplicado y reintente.
+
+3. USUARIOS, ROLES Y SESIONES
+
+La API v1.0 no publica endpoints para crear usuarios, desactivarlos ni cambiar roles. No use
+consultas improvisadas ni modifique hashes de contrasena manualmente.
+
+Para un alta, baja o cambio de rol, registre usuario, rol requerido, justificacion, aprobador y
+fecha. El administrador tecnico aplica el procedimiento controlado por el equipo de desarrollo y
+conserva la evidencia.
+
+Para una desactivacion por incidente: abra un incidente, solicite la desactivacion al administrador
+tecnico, confirme que el usuario no puede iniciar sesion y registre autorizador, responsable y hora.
+
+Para cerrar sesiones activas, en PowerShell y con las variables de base de datos configuradas:
+  npm run sessions:close -- NOMBRE_DE_USUARIO
+
+El comando invalida las sesiones activas. Confirme el resultado desde el historial de sesiones.
+Nunca comparta cookies ni tokens.
+
+4. BACKUP Y RESTAURACION
+
+Configure DATABASE_URL y ORBINODO_BACKUP_ENCRYPTION_KEY en una sesion segura. Para crear un backup:
+  npm run db:backup
+
+Se genera un dump cifrado AES-256-GCM, un manifest y una suma SHA-256. Conserve ambos archivos.
+La politica actual: backup diario, retencion de 30 dias, RPO de 24 horas y RTO de 4 horas.
+
+No restaure sobre produccion por rutina. Para validar una copia de forma segura:
+  npm run db:restore:validate -- RUTA_DEL_ARCHIVO_DUMP_ENC
+
+El script solo admite orbinodo_restore_validation, evita sobrescribir una base existente y valida
+migraciones, usuarios, camaras y estados. Una restauracion productiva necesita aprobacion explicita,
+ventana de mantenimiento y un backup adicional previo.
+
+5. VERSIONES, DESPLIEGUE Y ROLLBACK
+
+1. Revise cambios y ejecute npm ci.
+2. Ejecute npm run check y npm run test:all.
+3. Despliegue Preview con npx vercel y verifique salud, login, camaras, permisos e historial.
+4. Con aprobacion ejecute npx vercel --prod.
+5. Ejecute npm run verify:production y registre el resultado.
+
+Para rollback: Vercel > Project > Deployments > deployment conocido como correcto > menu de tres
+puntos > Promote to Production. Luego ejecute npm run verify:production.
+
+Un rollback de aplicacion no revierte datos ni migraciones. La recuperacion de datos usa backup y
+restauracion con aprobacion tecnica.
+
+6. LOGS Y DIAGNOSTICO
+
+En Vercel abra Project > Deployments > deployment > Logs o Runtime Logs. Busque Request ID (reqId),
+ruta, codigo HTTP y hora. Los logs usan info, warn y error. No copie contrasenas, DATABASE_URL,
+cookies, tokens ni hashes en tickets o chats.
+
+7. INCIDENTES FRECUENTES
+
+- HTTP 500: conserve reqId, codigo y hora; confirme /api/health y escale.
+- Login falla para todos: verifique salud de Neon y que el usuario este activo.
+- HTTP 401: la sesion no existe, vencio o fue invalidada; vuelva a iniciar sesion.
+- HTTP 403: el usuario no tiene el rol requerido; no cambie roles desde el navegador.
+- HTTP 409: recargue la camara y resuelva el conflicto de version.
+- Base no disponible: no haga migraciones ni reset; preserve evidencia y escale.
+- Despliegue incorrecto: haga rollback en Vercel y valide produccion.
+
+8. ACCIONES PROHIBIDAS
+
+- No ejecutar reset-local-database contra produccion.
+- No editar ni borrar camera_change_history ni historial de sesiones.
+- No poner DATABASE_URL, claves de backup, tokens o contrasenas en Git, frontend o logs.
+- No aplicar migraciones ni restauraciones en produccion sin backup y aprobacion.
+
+9. ESCALAMIENTO TECNICO
+
+Nivel 1 - Administrador funcional: registra problema, hora, usuario afectado, URL y reqId.
+Nivel 2 - Administrador tecnico: revisa Vercel, Neon, sesiones, backup y rollback.
+Nivel 3 - Equipo de desarrollo: analiza codigo, migraciones, seguridad o recuperacion.
+
+Critico: indisponibilidad total, acceso no autorizado sospechado o perdida potencial de datos.
+Escalar de inmediato a Nivel 2 y Nivel 3; no modificar produccion antes de preservar evidencia.
+Alto: funciones esenciales degradadas para varios usuarios. Escalar a Nivel 2 en la misma jornada.
+Normal: error aislado, solicitud de usuario o mejora. Registrar para seguimiento.
+
+10. REGISTRO OPERATIVO MINIMO
+
+Para cada backup, restore, rollback, desactivacion o incidente registre fecha/hora, responsable,
+aprobador, accion, resultado, reqId cuando exista y enlace a la evidencia.
+
+Documentos relacionados:
+- manual_instalacion_orbinodo_enterprise_v1.txt
+- despliegue_reproducible_v1.txt
+- backup_y_restauracion_postgresql_v1.txt
+- logging_tecnico_v1.txt
+- politica_retencion_sesiones_v1.txt
+- gestion_secretos_y_rotacion_v1.txt

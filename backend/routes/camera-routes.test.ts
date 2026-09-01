@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApiApp } from '../app';
 import type { AuthService, AuthUser } from '../domain/auth-service';
+import { CameraVersionConflictError } from '../domain/camera-service.js';
 import type { CameraRecord, CameraService } from '../domain/camera-service';
 
 const apps: Array<ReturnType<typeof createApiApp>> = [];
@@ -10,7 +11,8 @@ const engineer: AuthUser = {
   username: 'Ingeniero 1', displayName: 'Ingeniero 1', role: 'engineer1',
 };
 const camera: CameraRecord = {
-  id: 'camera-01', assetCode: 'CCTV-001', name: 'Cámara 1',
+  id: 'camera-01',
+  version: 0, assetCode: 'CCTV-001', name: 'Cámara 1',
   panoramaId: 'sotano-01', location: 'Sótano', brand: 'Demo', model: 'X1',
   type: '360°', yaw: 10, pitch: 5, installedOn: '2025-01-01',
   coverage: 'Acceso', recordingMode: 'Continua', retention: '30 días',
@@ -46,6 +48,7 @@ function service(overrides: Partial<CameraService> = {}): CameraService {
 const cookie = { cookie: `orbinodo_session=${'a'.repeat(43)}` };
 const operations = {
   status: 'En mantenimiento' as const,
+  expectedVersion: 0,
   lastMaintenanceOn: '2026-02-01', nextMaintenanceOn: '2026-07-01',
   responsibleArea: 'Mantenimiento', notes: 'Revisión programada',
 };
@@ -153,6 +156,17 @@ describe('rutas de cámaras', () => {
     expect(denied).not.toHaveBeenCalled();
   });
 
+  it('version conflict returns 409', async () => {
+    const update = vi.fn<CameraService['updateOperations']>(async () => {
+      throw new CameraVersionConflictError();
+    });
+    const app = buildApp(engineer, service({ updateOperations: update }));
+    const response = await app.inject({
+      method: 'PATCH', url: '/api/cameras/camera-01/operations', headers: cookie, payload: operations,
+    });
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error).toBe('RESOURCE_CONFLICT');
+  });
   it('rechaza payload manipulado y no alcanza PostgreSQL', async () => {
     const update = vi.fn<CameraService['updateOperations']>();
     const response = await buildApp(engineer, service({ updateOperations: update })).inject({

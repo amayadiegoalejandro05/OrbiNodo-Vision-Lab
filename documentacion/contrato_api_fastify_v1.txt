@@ -30,6 +30,8 @@ Todos los errores propios usan:
 
 El cuerpo JSON de cualquier endpoint tiene un límite explícito de 16 KiB.
 
+Las cámaras exponen `version` en GET. PATCH exige expectedVersion. Si otro usuario ya guardó una versión posterior, responde 409 RESOURCE_CONFLICT y no escribe ni historial.
+
 El código 409 queda reservado para conflictos reales. Los endpoints actuales no
 crean cámaras, usuarios ni otros recursos únicos por HTTP.
 
@@ -60,6 +62,11 @@ Sesión: no requerida.
 Éxito 200: { "status": "ok", "database": "available", "serverTime": ISO-8601 }
 Error 503: DATABASE_UNAVAILABLE.
 
+GET /api/live
+Sesion: no requerida.
+Exito 200: { "status": "ok", "service": "api" }.
+No consulta PostgreSQL; se usa como liveness.
+
 CÁMARAS
 -------
 
@@ -76,9 +83,9 @@ Errores: 400, 401, 404, 500.
 
 PATCH /api/cameras/:id/operations
 Sesión: Ingeniero 1 o Ingeniero 2.
-Cuerpo: status, lastMaintenanceOn, nextMaintenanceOn, responsibleArea y notes.
+Cuerpo: status, lastMaintenanceOn, nextMaintenanceOn, responsibleArea, notes y expectedVersion (entero de la versión leída).
 Éxito 200: { "camera": Camera, "changedFields": string[] }
-Errores: 400, 401, 403, 404, 413, 415, 500.
+Errores: 400, 401, 403, 404, 409, 413, 415, 500.
 
 AUDITORÍA
 ---------
@@ -112,3 +119,49 @@ Detrás de un único proxy controlado puede configurarse 1. No debe aumentarse s
 conocer la cadena real, porque la IP obtenida separa los contadores del login.
 
 FIN DEL CONTRATO API v1.0
+
+
+HARDENING DEL SERVIDOR/API
+--------------------------
+
+CORS:
+- La API aplica una politica explicita de mismo origen.
+- Solicitudes sin cabecera Origin siguen permitidas para verificaciones servidor a servidor.
+- Si Origin no coincide exactamente con Host, la API responde 403 CORS_ORIGIN_FORBIDDEN.
+- La API no emite Access-Control-Allow-Origin ni habilita cookies para otros dominios.
+
+CABECERAS:
+- Todas las respuestas API incluyen Cache-Control: no-store.
+- Todas las respuestas API incluyen Content-Security-Policy, Cross-Origin-Resource-Policy,
+  Permissions-Policy, Referrer-Policy, X-Content-Type-Options y X-Frame-Options.
+- Vercel mantiene HSTS y la redireccion HTTP a HTTPS en el borde.
+- La API no expone X-Powered-By.
+
+METODOS:
+- Las rutas conocidas rechazan metodos no permitidos con 405 METHOD_NOT_ALLOWED
+  e incluyen la cabecera Allow.
+- Rutas desconocidas conservan 404 ROUTE_NOT_FOUND.
+
+LIMITES Y TIMEOUTS:
+- El cuerpo JSON maximo es 16 KiB.
+- ORBINODO_API_CONNECTION_TIMEOUT_MS tiene valor seguro predeterminado de 10000.
+- ORBINODO_API_KEEP_ALIVE_TIMEOUT_MS tiene valor seguro predeterminado de 5000.
+- ORBINODO_API_REQUEST_TIMEOUT_MS tiene valor seguro predeterminado de 25000,
+  por debajo del maximo de 30 segundos de Vercel.
+- ORBINODO_API_RATE_LIMIT_MAX_REQUESTS y ORBINODO_API_RATE_LIMIT_WINDOW_SECONDS
+  protegen cada instancia Fastify contra repeticion basica de solicitudes.
+- Login conserva adicionalmente su rate limiting compartido y persistente en PostgreSQL.
+
+OPENAPI VERSIONADO
+------------------
+
+- El contrato legible para operaci?n se conserva en este archivo.
+- El contrato de integraci?n, legible por herramientas y equipos externos, es
+  `documentacion/openapi/orbinodo-api-v1.json` (OpenAPI 3.1.0).
+- Incluye rutas, m?todos, par?metros, cuerpos, schemas, cookie de sesi?n,
+  roles necesarios, respuestas, errores y ejemplos de uso.
+- El comando `npm run openapi:check` compara autom?ticamente las rutas Fastify,
+  las respuestas esperadas y todos los c?digos de error p?blicos contra OpenAPI.
+- CI y `npm run verify:reproducible` ejecutan esa comprobaci?n; una diferencia
+  entre c?digo y contrato hace fallar la validaci?n antes del despliegue.
+- No hay endpoints administrativos p?blicos adicionales a los documentados.

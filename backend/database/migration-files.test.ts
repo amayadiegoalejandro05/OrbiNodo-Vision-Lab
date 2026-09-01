@@ -13,6 +13,7 @@ describe('migraciones SQL de Orbinodo', () => {
       '0005_harden_camera_change_history.sql',
       '0006_session_history_consistency.sql',
       '0007_session_history_view_expiration.sql',
+      '0008_camera_operational_lock_version.sql',
     ]);
     expect(migrations[0]?.checksum).toMatch(/^[a-f0-9]{64}$/);
     const sql = migrations[0]?.sql ?? '';

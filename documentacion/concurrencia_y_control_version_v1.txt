@@ -1,0 +1,36 @@
+ORBINODO v1.0 - CONCURRENCIA Y CONTROL DE VERSION
+
+ALCANCE
+
+Describe el comportamiento de concurrencia de actualizaciones operacionales de camaras y sesiones. PostgreSQL es la autoridad de persistencia.
+
+ACTUALIZACION DE CAMARAS
+
+1. GET /api/cameras y GET /api/cameras/:id devuelven version.
+2. PATCH /api/cameras/:id/operations recibe expectedVersion.
+3. El backend inicia una transaccion y bloquea la fila con SELECT FOR UPDATE.
+4. Si la version coincide, actualiza, incrementa lock_version y registra el historial.
+5. Si no coincide, revierte y responde 409 RESOURCE_CONFLICT.
+6. El cliente debe recargar la camara antes de reintentar.
+
+GARANTIAS
+
+- No hay sobrescritura silenciosa.
+- Un conflicto no modifica estado ni historial.
+- Estado e historial se confirman o revierten juntos.
+- El lock se limita a la camara modificada.
+- Camaras distintas pueden actualizarse independientemente.
+
+SESIONES
+
+Cada login crea un token opaco y una sesion independiente. Varias sesiones validas del mismo usuario pueden coexistir. Expiracion, inactividad, logout y desactivacion se evaluan segun las reglas existentes.
+
+PRUEBAS
+
+- Carrera directa entre dos actualizaciones PostgreSQL.
+- Carrera HTTP entre dos ingenieros con igual version inicial.
+- Creacion y validacion de sesiones concurrentes.
+
+CIERRE
+
+El 29 de agosto de 2026 se aprobaron 23 pruebas de integracion PostgreSQL/Fastify, 84 pruebas no integrales, typecheck y lint.

@@ -30,6 +30,11 @@ const app = createApiApp({
   // valid Function request solely because an intermediary omitted a forwarded
   // protocol header; that previously risks making the API look unavailable.
   requireHttps: false,
+  connectionTimeoutMs: environment.ORBINODO_API_CONNECTION_TIMEOUT_MS,
+  keepAliveTimeoutMs: environment.ORBINODO_API_KEEP_ALIVE_TIMEOUT_MS,
+  requestTimeoutMs: environment.ORBINODO_API_REQUEST_TIMEOUT_MS,
+  apiRateLimitMaxRequests: environment.ORBINODO_API_RATE_LIMIT_MAX_REQUESTS,
+  apiRateLimitWindowMs: environment.ORBINODO_API_RATE_LIMIT_WINDOW_SECONDS * 1_000,
   logger: true,
   logLevel: environment.ORBINODO_LOG_LEVEL,
 });

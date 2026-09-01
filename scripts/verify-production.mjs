@@ -49,11 +49,25 @@ async function verifyProfile(username, password, expectedRole, auditStatus) {
 
 try {
   const health = await request('/api/health');
+  const live = await request('/api/live');
+  ensure(live.response.status === 200, 'Liveness de produccion no responde 200.');
+  ensure(live.body?.status === 'ok' && live.body?.service === 'api',
+    'Liveness de produccion no devolvio el estado esperado.');
   ensure(health.response.status === 200, 'La salud de producción no responde 200.');
   ensure(health.body.database === 'available', 'Neon no está disponible.');
   ensure(new URL(baseUrl).protocol === 'https:', 'La verificacion exige una URL HTTPS.');
   ensure((health.response.headers.get('strict-transport-security') || '').includes('max-age='),
     'Produccion no entrego Strict-Transport-Security.');
+  for (const [header, expected] of [
+    ['cache-control', 'no-store'],
+    ['x-content-type-options', 'nosniff'],
+    ['x-frame-options', 'DENY'],
+    ['referrer-policy', 'no-referrer'],
+    ['cross-origin-resource-policy', 'same-origin'],
+  ]) {
+    ensure((health.response.headers.get(header) || '').includes(expected),
+      'Produccion no entrego el header de seguridad ' + header + '.');
+  }
   const httpUrl = new URL(baseUrl);
   httpUrl.protocol = 'http:';
   const redirect = await fetch(httpUrl, { redirect: 'manual' });

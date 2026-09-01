@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { API_BODY_LIMIT_BYTES, createApiApp } from './app';
+import {
+  API_BODY_LIMIT_BYTES,
+  API_CONNECTION_TIMEOUT_MS,
+  API_KEEP_ALIVE_TIMEOUT_MS,
+  API_REQUEST_TIMEOUT_MS,
+  createApiApp,
+} from './app';
 import type { AuthService } from './domain/auth-service';
 import type { CameraService } from './domain/camera-service';
 
@@ -50,6 +56,20 @@ describe('estado de la API de Orbinodo', () => {
       database: 'available',
       serverTime: '2026-08-13T20:00:00.000Z',
     });
+  });
+
+  it('confirma liveness aunque PostgreSQL no este disponible', async () => {
+    const app = createApiApp({
+      ...authOptions,
+      healthProbe: { readServerTime: async () => { throw new Error('database unavailable'); } },
+    });
+    apps.push(app);
+
+    const response = await app.inject({ method: 'GET', url: '/api/live' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ status: 'ok', service: 'api' });
+    expect((await app.inject({ method: 'GET', url: '/api/health' })).statusCode).toBe(503);
   });
 
   it('rejects HTTP when production HTTPS is required', async () => {
@@ -176,4 +196,84 @@ describe('estado de la API de Orbinodo', () => {
       expect(response.body).not.toContain(forbidden);
     }
   });
+  it('aplica cabeceras seguras y no expone powered-by', async () => {
+    const app = createApiApp({
+      ...authOptions, healthProbe: { readServerTime: async () => new Date() },
+    });
+    apps.push(app);
+    const response = await app.inject({ method: 'GET', url: '/api/health' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.headers['content-security-policy']).toContain("default-src 'none'");
+    expect(response.headers['cross-origin-resource-policy']).toBe('same-origin');
+    expect(response.headers['permissions-policy']).toContain('camera=()');
+    expect(response.headers['referrer-policy']).toBe('no-referrer');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['x-frame-options']).toBe('DENY');
+    expect(response.headers['x-powered-by']).toBeUndefined();
+  });
+
+  it('acepta mismo origen y bloquea origen externo', async () => {
+    const app = createApiApp({
+      ...authOptions, healthProbe: { readServerTime: async () => new Date() },
+    });
+    apps.push(app);
+    const sameOrigin = await app.inject({
+      method: 'GET', url: '/api/health',
+      headers: { host: 'api.orbinodo.test', origin: 'https://api.orbinodo.test' },
+    });
+    expect(sameOrigin.statusCode).toBe(200);
+
+    const external = await app.inject({
+      method: 'GET', url: '/api/health',
+      headers: { host: 'api.orbinodo.test', origin: 'https://externo.example' },
+    });
+    expect(external.statusCode).toBe(403);
+    expect(external.json().error).toBe('CORS_ORIGIN_FORBIDDEN');
+  });
+
+  it('rechaza metodos no permitidos con 405 y Allow', async () => {
+    const app = createApiApp({
+      ...authOptions, healthProbe: { readServerTime: async () => new Date() },
+    });
+    apps.push(app);
+    const response = await app.inject({ method: 'DELETE', url: '/api/auth/login' });
+
+    expect(response.statusCode).toBe(405);
+    expect(response.headers.allow).toBe('POST');
+    expect(response.json().error).toBe('METHOD_NOT_ALLOWED');
+  });
+
+  it('limita solicitudes repetidas por instancia sin afectar salud', async () => {
+    const app = createApiApp({
+      ...authOptions,
+      apiRateLimitMaxRequests: 1,
+      apiRateLimitWindowMs: 60_000,
+      healthProbe: { readServerTime: async () => new Date() },
+    });
+    apps.push(app);
+    const first = await app.inject({
+      method: 'POST', url: '/api/auth/login', payload: { username: 'Jefe', password: '1234567890' },
+    });
+    expect(first.statusCode).toBe(401);
+    const limited = await app.inject({
+      method: 'POST', url: '/api/auth/login', payload: { username: 'Jefe', password: '1234567890' },
+    });
+    expect(limited.statusCode).toBe(429);
+    expect(limited.json().error).toBe('API_RATE_LIMITED');
+    expect((await app.inject({ method: 'GET', url: '/api/health' })).statusCode).toBe(200);
+  });
+
+  it('configura timeouts HTTP seguros por defecto', async () => {
+    const app = createApiApp({
+      ...authOptions, healthProbe: { readServerTime: async () => new Date() },
+    });
+    apps.push(app);
+
+    expect(app.server.timeout).toBe(API_CONNECTION_TIMEOUT_MS);
+    expect(app.server.keepAliveTimeout).toBe(API_KEEP_ALIVE_TIMEOUT_MS);
+    expect(app.server.requestTimeout).toBe(API_REQUEST_TIMEOUT_MS);
+  });
+
 });

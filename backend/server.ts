@@ -28,6 +28,11 @@ async function startServer(): Promise<void> {
     sessionHours: environment.ORBINODO_SESSION_HOURS,
     trustedProxyHops: environment.ORBINODO_TRUSTED_PROXY_HOPS,
     requireHttps: isProductionDeployment(environment),
+    connectionTimeoutMs: environment.ORBINODO_API_CONNECTION_TIMEOUT_MS,
+    keepAliveTimeoutMs: environment.ORBINODO_API_KEEP_ALIVE_TIMEOUT_MS,
+    requestTimeoutMs: environment.ORBINODO_API_REQUEST_TIMEOUT_MS,
+    apiRateLimitMaxRequests: environment.ORBINODO_API_RATE_LIMIT_MAX_REQUESTS,
+    apiRateLimitWindowMs: environment.ORBINODO_API_RATE_LIMIT_WINDOW_SECONDS * 1_000,
     logLevel: environment.ORBINODO_LOG_LEVEL,
   });
 

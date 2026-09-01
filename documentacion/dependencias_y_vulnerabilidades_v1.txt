@@ -1,0 +1,73 @@
+# Dependencias y vulnerabilidades - OrbiNodo Enterprise v1.0
+
+## Alcance
+
+Proyecto B usa las dependencias de produccion de package.json para Fastify,
+PostgreSQL, cookies, validacion y recorrido 360. Proyecto A conserva el legado del
+navegador, incluido localStorage, pero production-persistence.test.ts comprueba que
+no entra en el grafo productivo. Las herramientas de build, pruebas y despliegue
+estan en devDependencies.
+
+## Inventario directo y licencias aprobadas
+
+Produccion:
+
+- @fastify/cookie, Fastify, pg, Zod y Photo Sphere Viewer: MIT.
+- dotenv: BSD-2-Clause.
+
+Desarrollo:
+
+- ESLint, TypeScript ESLint, TSX, Vite y Vitest: MIT.
+- @types/node y @types/pg: MIT.
+- TypeScript, Playwright Core y Vercel CLI: Apache-2.0.
+
+La politica permite para dependencias directas MIT, BSD-2-Clause, Apache-2.0 e ISC.
+Una licencia distinta requiere revision y aprobacion documentada antes de entrar al
+lockfile. scripts/check-dependencies.mjs verifica lockfileVersion 3, integridad y
+licencia de cada dependencia directa instalada.
+
+## Inventario transitivo y CVEs
+
+package-lock.json conserva versiones e integridad de dependencias transitivas. Para
+inspeccionarlas se usan los comandos npm ls --all, npm audit --omit=dev, npm audit y
+npm outdated.
+
+El control obligatorio de CI es npm run deps:check. Falla si una dependencia de
+produccion tiene una vulnerabilidad conocida. La auditoria de desarrollo se revisa
+en cada actualizacion mensual y antes de desplegar.
+
+Al cierre de Fase 17, npm audit --omit=dev informa cero vulnerabilidades. La auditoria
+completa mantiene avisos transitivos de Vercel CLI 58.4.4, incluida tar@7.5.7. Vercel
+fija varias de esas versiones y npm audit fix --dry-run no ofrece una correccion
+compatible. No se usa npm audit fix --force.
+
+## Riesgo aceptado R-DEV-VERCEL-2026-08-31
+
+- Alcance: solo Vercel CLI y dependencias de desarrollo; no son parte de la API ni del
+  runtime productivo de OrbiNodo.
+- Impacto: un equipo que ejecute la CLI podria verse afectado al procesar archivos no
+  confiables mediante una dependencia vulnerable.
+- Mitigacion: usar la CLI oficial, no extraer archivos no confiables durante despliegue,
+  mantener Node actualizado, usar npm ci y ejecutar npm run deps:check antes de publicar.
+- Criterio de salida: retirar esta aceptacion cuando Vercel publique un arbol sin esos
+  avisos, despues de npm run test:all, npm run build y npm run verify:reproducible.
+- Aprobacion: cierre de Fase 17 solicitado por el propietario el 2026-08-31.
+
+## Dependencias innecesarias, abandonadas y actualizaciones
+
+La revision mensual compara package.json con imports, scripts y vercel.json; ejecuta
+npm ls --all y npm outdated; revisa soporte, avisos y licencia de nuevas dependencias.
+Ningun paquete se elimina sin una rama, npm ci, npm run test:all, npm run build y
+npm run verify:reproducible aprobados.
+
+Responsable: mantenedor tecnico de OrbiNodo. Una alerta critica se evalua en 24 horas
+y se corrige o mitiga en 72; una alta se evalua en 7 dias y se corrige o acepta en 14.
+Moderadas y bajas se revisan en la siguiente ventana mensual.
+
+## Comandos de cierre
+
+    npm ci
+    npm run deps:check
+    npm run test:all
+    npm run build
+    npm run verify:reproducible

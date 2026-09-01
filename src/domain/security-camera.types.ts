@@ -4,6 +4,7 @@ export type SecurityCameraType = '360°' | 'Fija';
 
 export interface SecurityCameraRecord {
   id: string;
+  version: number;
   assetCode: string;
   name: string;
   panoramaId: string;

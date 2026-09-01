@@ -1,20 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import type {
-  CameraOperationsUpdate, CameraRecord, CameraService, CameraUpdateResult,
+  CameraOperationsUpdate, CameraRecord, CameraService, CameraUpdateCommand, CameraUpdateResult,
 } from '../domain/camera-service';
 import type { AuthRole } from '../domain/auth-service';
-import { CameraActorNotAllowedError } from '../domain/camera-service.js';
+import { CameraActorNotAllowedError, CameraVersionConflictError } from '../domain/camera-service.js';
 
 interface CameraRow {
   id: string;
+  version: number;
   asset_code: string;
   name: string;
   panorama_id: string;
   location: string;
   brand: string;
   model: string;
-  camera_type: '360°' | 'Fija';
+  camera_type: CameraRecord['type'];
   yaw: number;
   pitch: number;
   installed_on: string | Date;
@@ -32,7 +33,7 @@ const CAMERA_SELECT = `SELECT c.id, c.asset_code, c.name, c.panorama_id,
   c.location, c.brand, c.model, c.camera_type, c.yaw, c.pitch,
   c.installed_on, c.coverage, c.recording_mode, c.retention,
   o.status, o.last_maintenance_on, o.next_maintenance_on,
-  o.responsible_area, o.notes
+  o.lock_version AS version, o.responsible_area, o.notes
   FROM cameras c JOIN camera_operational_state o ON o.camera_id = c.id`;
 
 function dateOnly(value: string | Date): string {
@@ -43,7 +44,7 @@ function dateOnly(value: string | Date): string {
 
 function cameraRecord(row: CameraRow): CameraRecord {
   return {
-    id: row.id, assetCode: row.asset_code, name: row.name,
+    id: row.id, version: row.version, assetCode: row.asset_code, name: row.name,
     panoramaId: row.panorama_id, location: row.location, brand: row.brand,
     model: row.model, type: row.camera_type, yaw: row.yaw, pitch: row.pitch,
     installedOn: dateOnly(row.installed_on), coverage: row.coverage,
@@ -87,7 +88,7 @@ export function createPostgresCameraService(pool: Pool): CameraService {
   async function updateOperations(
     cameraId: string,
     actor: Parameters<CameraService['updateOperations']>[1],
-    update: CameraOperationsUpdate,
+    update: CameraUpdateCommand,
   ): Promise<CameraUpdateResult | null> {
     const client = await pool.connect();
     try {
@@ -104,6 +105,9 @@ export function createPostgresCameraService(pool: Pool): CameraService {
         return null;
       }
       const current = cameraRecord(row);
+      if (update.expectedVersion !== undefined && current.version !== update.expectedVersion) {
+        throw new CameraVersionConflictError();
+      }
       const changedFields = operationFields.filter(
         (field) => current[field] !== update[field],
       );
@@ -111,17 +115,21 @@ export function createPostgresCameraService(pool: Pool): CameraService {
         await client.query('COMMIT');
         return { camera: current, changedFields };
       }
-      await client.query({
+      const updated = await client.query<{ lock_version: number }>({
         text: `UPDATE camera_operational_state SET
           status = $2, last_maintenance_on = $3, next_maintenance_on = $4,
-          responsible_area = $5, notes = $6, updated_by = $7
-          WHERE camera_id = $1`,
+          responsible_area = $5, notes = $6, updated_by = $7,
+          lock_version = lock_version + 1
+          WHERE camera_id = $1 AND lock_version = $8
+          RETURNING lock_version`,
         values: [
           cameraId, update.status, update.lastMaintenanceOn,
           update.nextMaintenanceOn, update.responsibleArea, update.notes,
-          activeActor.id,
+          activeActor.id, update.expectedVersion ?? current.version,
         ],
       });
+      if (updated.rowCount !== 1) throw new CameraVersionConflictError();
+      const nextVersion = updated.rows[0]?.lock_version ?? current.version + 1;
       const changeSetId = randomUUID();
       for (const field of changedFields) {
         await client.query({
@@ -137,7 +145,15 @@ export function createPostgresCameraService(pool: Pool): CameraService {
         });
       }
       await client.query('COMMIT');
-      return { camera: { ...current, ...update }, changedFields };
+      return { camera: {
+        ...current,
+        status: update.status,
+        lastMaintenanceOn: update.lastMaintenanceOn,
+        nextMaintenanceOn: update.nextMaintenanceOn,
+        responsibleArea: update.responsibleArea,
+        notes: update.notes,
+        version: nextVersion,
+      }, changedFields };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;

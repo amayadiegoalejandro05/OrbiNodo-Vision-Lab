@@ -203,6 +203,19 @@ describe('sesiones PostgreSQL reales', () => {
     expect(await sessionStatus(created!.token)).toBe('revoked');
   });
 
+  it('mantiene consistentes varias sesiones concurrentes', async () => {
+    const service = createPostgresAuthService(pool, options)
+    const results = await Promise.all([
+      service.login(USERNAME, PASSWORD, { sourceIp: SOURCE_IP }),
+      service.login(USERNAME, PASSWORD, { sourceIp: '198.51.100.78' }),
+      service.login(USERNAME, PASSWORD, { sourceIp: '198.51.100.79' }),
+    ])
+    expect(results.every((item) => item !== null)).toBe(true)
+    const tokens = results.map((item) => item!.token)
+    expect(new Set(tokens).size).toBe(3)
+    await expect(Promise.all(tokens.map((token) => service.getSession(token))))
+      .resolves.toHaveLength(3)
+  })
   it('comparte el rate limiting entre instancias del servicio', async () => {
     const limitedOptions = { ...options, loginMaxAttempts: 2 };
     const firstService = createPostgresAuthService(pool, limitedOptions);

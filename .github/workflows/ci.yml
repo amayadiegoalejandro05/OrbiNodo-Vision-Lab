@@ -1,0 +1,65 @@
+name: OrbiNodo CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  full-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      ORBINODO_DATABASE_HOST: 127.0.0.1
+      ORBINODO_DATABASE_PORT: 5432
+      ORBINODO_DATABASE_NAME: postgres
+      ORBINODO_DATABASE_USER: postgres
+      ORBINODO_DATABASE_PASSWORD: postgres
+      ORBINODO_TEST_ADMIN_USER: postgres
+      ORBINODO_TEST_ADMIN_PASSWORD: postgres
+      ORBINODO_DATABASE_SSL: false
+      ORBINODO_SESSION_HOURS: 8
+      ORBINODO_SESSION_IDLE_MINUTES: 30
+      ORBINODO_LOGIN_MAX_ATTEMPTS: 5
+      ORBINODO_LOGIN_WINDOW_MINUTES: 15
+      ORBINODO_LOGIN_BLOCK_MINUTES: 15
+      ORBINODO_COOKIE_NAME: orbinodo_session
+      ORBINODO_COOKIE_SECURE: false
+      ORBINODO_LOG_LEVEL: info
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install exact dependencies
+        run: npm ci
+      - name: Architecture documentation correspondence
+        run: npm run architecture:check
+      - name: Installation manual correspondence
+        run: npm run installation:check
+      - name: OpenAPI contract correspondence
+        run: npm run openapi:check
+      - name: Release metadata correspondence
+        run: npm run release:check
+      - name: Production dependency and license policy
+        run: npm run deps:check
+      - name: Full unit and PostgreSQL integration suite
+        run: npm run test:all
+      - name: Clean reproducibility check
+        run: npm run verify:reproducible

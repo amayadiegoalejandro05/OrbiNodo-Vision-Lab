@@ -1,0 +1,56 @@
+{
+  "releaseVersion": "1.0.0",
+  "tag": "v1.0.0",
+  "status": "release-candidate",
+  "releasedAt": "2026-08-31",
+  "commit": {
+    "sha": "PENDING_TAG_COMMIT",
+    "recordedAfterTag": true
+  },
+  "deployment": {
+    "provider": "Vercel",
+    "environment": "production",
+    "id": "PENDING_DEPLOYMENT_ID",
+    "url": "https://orbinodo-demo.vercel.app"
+  },
+  "runtime": {
+    "node": "24.18.1",
+    "buildCommand": "npm run build",
+    "installCommand": "npm ci"
+  },
+  "database": {
+    "engine": "PostgreSQL",
+    "minimumMigration": "0001_initial_schema.sql",
+    "maximumMigration": "0008_camera_operational_lock_version.sql",
+    "migrations": [
+      "0001_initial_schema.sql",
+      "0002_access_history_view.sql",
+      "0003_camera_change_history_view.sql",
+      "0004_session_activity_and_login_rate_limits.sql",
+      "0005_harden_camera_change_history.sql",
+      "0006_session_history_consistency.sql",
+      "0007_session_history_view_expiration.sql",
+      "0008_camera_operational_lock_version.sql"
+    ],
+    "compatibility": "Aplicar migraciones acumulativas 0001-0008 antes de ejecutar v1.0.0."
+  },
+  "artifacts": {
+    "checksumAlgorithm": "SHA-256",
+    "releaseChecksum": "OPTIONAL_NOT_RECORDED"
+  },
+  "documentation": [
+    "CHANGELOG.md",
+    "documentacion/despliegue_reproducible_v1.txt",
+    "documentacion/manual_instalacion_orbinodo_enterprise_v1.txt",
+    "documentacion/manual_operacion_orbinodo_enterprise_v1.txt",
+    "documentacion/arquitectura_orbinodo_enterprise_v1.txt",
+    "documentacion/contrato_api_fastify_v1.txt",
+    "documentacion/modelo_datos_y_migraciones.txt",
+    "documentacion/health_checks_y_monitoreo_v1.txt",
+    "documentacion/backup_y_restauracion_postgresql_v1.txt",
+    "documentacion/gestion_secretos_y_rotacion_v1.txt",
+    "documentacion/seguridad_https_tls_produccion.txt",
+    "documentacion/dependencias_y_vulnerabilidades_v1.txt",
+    "documentacion/testing_completo_v1.txt"
+  ]
+}

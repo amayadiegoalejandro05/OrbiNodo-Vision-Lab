@@ -1,0 +1,164 @@
+ARQUITECTURA ORBINODO ENTERPRISE v1.0
+=====================================
+
+Proposito
+---------
+Este documento es el mapa arquitectonico canonico de OrbiNodo v1.0. Describe los
+componentes que existen hoy, sus limites y el flujo real de datos. No documenta
+funcionalidades futuras como si estuvieran disponibles.
+
+PROYECTO A Y PROYECTO B
+-----------------------
+
+Proyecto A - Recorrido Virtual:
+- Frontend Vite en src/.
+- Recorrido 360, mapas, hotspots, marcadores y activos publicos de demostracion.
+- src/persistence/demo-operations-store.ts conserva el legado localStorage/sessionStorage
+  para escenarios historicos y pruebas aisladas.
+
+Proyecto B - Migracion PostgreSQL (proyecto prioritario):
+- backend/ contiene Fastify, dominios, servicios PostgreSQL y migraciones.
+- api/ contiene adaptadores de Vercel que dirigen las rutas al mismo handler Fastify.
+- PostgreSQL es la fuente central para usuarios, camaras, estados, sesiones e historial.
+- El flujo productivo no usa localStorage como fuente de datos. Esta frontera queda
+  protegida por src/persistence/production-persistence.test.ts.
+
+DIAGRAMA DE COMPONENTES Y CONFIANZA
+------------------------------------
+
+```mermaid
+flowchart LR
+  A[Proyecto A: navegador y frontend Vite] -->|/api mismo origen| E[Vercel Edge HTTPS]
+  L[Desarrollo local: Vite proxy] -->|/api| F[Fastify API]
+  E --> F[Fastify API / backend/vercel-handler]
+  F --> R[Rutas auth, cameras, audit]
+  R --> D[Servicios de dominio]
+  D --> P[Pool pg / PostgreSQL]
+  P --> N[(Neon Production o PostgreSQL local)]
+  S[Variables de entorno y secretos] -.-> F
+  B[Backups cifrados] -.-> N
+```
+
+En local, Vite reenvia /api a 127.0.0.1:3001 y Fastify usa PostgreSQL local.
+En Vercel, el borde termina TLS y el handler crea la misma aplicacion Fastify; el
+pool usa DATABASE_URL o POSTGRES_URL para Neon. El navegador nunca recibe ni usa
+credenciales PostgreSQL.
+
+FLUJO DE DATOS
+--------------
+
+```mermaid
+sequenceDiagram
+  participant U as Navegador
+  participant V as Vercel/Vite
+  participant F as Fastify
+  participant S as Servicio de dominio
+  participant P as PostgreSQL/Neon
+  U->>V: GET/POST/PATCH /api
+  V->>F: Solicitud same-origin o proxy local
+  F->>F: Cookie, rol, schema, limites y permisos
+  F->>S: Operacion tipada
+  S->>P: SQL parametrizado/transaccion
+  P-->>S: Resultado y CURRENT_TIMESTAMP
+  S-->>F: Modelo de dominio
+  F-->>U: JSON {data} o {error,message}
+```
+
+Login crea una sesion opaca: solo el hash del token se guarda en PostgreSQL y el
+token viaja en cookie HttpOnly. Una actualizacion operacional valida el rol, usa
+optimistic locking con version, modifica el estado y escribe camera_change_history
+en la misma transaccion. Las consultas del Jefe leen access_sessions y
+camera_change_history mediante endpoints protegidos.
+
+FRONTEND Y API
+---------------
+
+- src/auth/demo-auth.ts llama login, me y logout con credentials include.
+- src/api/camera-api.ts lee y actualiza camaras exclusivamente mediante /api.
+- src/api/audit-api.ts consulta los dos historiales mediante /api.
+- backend/app.ts ensambla hooks, limites, errores y rutas.
+- backend/routes/auth-routes.ts, camera-routes.ts y audit-routes.ts aplican schemas,
+  autenticacion y autorizacion antes de llamar a los servicios.
+- documentacion/openapi/orbinodo-api-v1.json es el contrato de integracion.
+
+BASE DE DATOS Y MIGRACIONES
+---------------------------
+
+Las ocho migraciones versionadas actuales son:
+
+1. 0001_initial_schema.sql: entidades principales, claves, restricciones e indices.
+2. 0002_access_history_view.sql: vista de sesiones.
+3. 0003_camera_change_history_view.sql: vista de cambios.
+4. 0004_session_activity_and_login_rate_limits.sql: actividad, inactividad y rate limit.
+5. 0005_harden_camera_change_history.sql: proteccion append-only.
+6. 0006_session_history_consistency.sql: consistencia de cierres e indices.
+7. 0007_session_history_view_expiration.sql: sesiones vencidas fuera de activas.
+8. 0008_camera_operational_lock_version.sql: versionado para concurrencia.
+
+backend/database/migration-runner.ts las aplica con checksum, bloqueo y transaccion.
+Un error produce ROLLBACK. El seed es separado y controlado por
+backend/database/seed/seed-runner.ts.
+
+SEGURIDAD, AUTENTICACION Y AUTORIZACION
+---------------------------------------
+
+- TLS publico y redireccion HTTP->HTTPS pertenecen al borde de Vercel.
+- El handler confia solo en el proxy Vercel configurado; local usa la configuracion
+  de trust proxy indicada por el entorno.
+- Cookies de produccion son Secure, HttpOnly, SameSite=Lax y Path=/.
+- Argon2id protege contrasenas; los hashes y tokens no se exponen al frontend.
+- Roles: Orbinodo, Jefe (manager), Ingeniero 1 e Ingeniero 2.
+- Jefe consulta datos e historiales, pero no edita operaciones.
+- Ingenieros solo modifican estado, mantenimiento, area responsable y observaciones;
+  la whitelist se aplica en servidor.
+- Errores publicos usan {error,message}; los detalles SQL, rutas internas, secretos
+  y stack traces solo se registran de forma tecnica y controlada.
+
+OPERACION Y DEPLOYMENT
+----------------------
+
+- Vercel ejecuta npm run build y publica dist; las Functions usan maximo 30 segundos.
+- Local se inicia con npm run api:dev y npm run dev.
+- Production requiere migraciones, db:preflight, verify:reproducible y
+  verify:production antes de promover un deployment.
+- El rollback de aplicacion se hace promoviendo un deployment bueno en Vercel; no
+  revierte automaticamente PostgreSQL. Cambios de esquema requieren backup y aprobacion.
+- Air Products no forma parte de la arquitectura actual y no comparte secretos,
+  certificados ni base de datos.
+
+SECRETOS Y BACKUPS
+------------------
+
+- DATABASE_URL/POSTGRES_URL solo viven en el entorno del backend o Vercel.
+- ORBINODO_COOKIE_SECURE, limites, sesiones y logging se configuran por entorno.
+- Los backups de Neon Production son diarios, se retienen 30 dias, se cifran con
+  AES-256-GCM y se validan con SHA-256/manifest. RPO 24 horas y RTO 4 horas.
+- El restore de prueba solo acepta localhost y orbinodo_restore_validation.
+
+LIMITES DEL SISTEMA
+-------------------
+
+- Cuerpo JSON maximo: 16 KiB.
+- Timeout de conexion: 10 s; keep-alive: 5 s; solicitud: 25 s.
+- Rate limit general por instancia: 120 solicitudes por minuto por IP (salud excluida).
+- Login: 5 fallos en 15 minutos y bloqueo de 15 minutos, compartido en PostgreSQL.
+- Sesion: maximo absoluto 8 horas y timeout de inactividad de 30 minutos.
+- Concurrencia: optimistic locking devuelve 409 ante version obsoleta.
+- Retencion de sesiones y auditoria se rige por las politicas documentadas; los
+  limites de Vercel no se superan con el timeout de 25 s.
+
+DECISIONES ARQUITECTONICAS
+--------------------------
+
+1. Fastify es la unica capa de acceso; el frontend no conecta a PostgreSQL.
+2. PostgreSQL/Neon es la fuente central y las migraciones son acumulativas.
+3. Sesiones opacas en cookie sustituyen cualquier JWT en v1.0.
+4. Auditoria empresarial vive en PostgreSQL y es append-only.
+5. Optimistic locking evita lost updates sin reconstruir la API.
+6. Vercel es el deployment actual; Air Products queda separado hasta aprobacion.
+
+REFERENCIAS
+-----------
+
+- API: documentacion/contrato_api_fastify_v1.txt y documentacion/openapi/orbinodo-api-v1.json
+- Datos: documentacion/modelo_datos_y_migraciones.txt

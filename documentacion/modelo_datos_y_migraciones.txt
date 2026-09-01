@@ -51,11 +51,12 @@ inactividad, rate limiting compartido y actualiza la vista de accesos.
 vista de accesos para expiraciones y revocaciones, e indexa el listado cronológico.
 0007_session_history_view_expiration.sql conserva esa corrección para sesiones que
 vencen mientras no hay solicitudes a la API.
+0008_camera_operational_lock_version.sql agrega versionado optimista para concurrencia.
 
 Prueba desde base vacía
 -----------------------
 
 npm run test:integration crea una base local temporal con nombre validado, ejecuta
-0001 a 0007 y el seed, comprueba idempotencia, catálogo, integridad, rollback y
+0001 a 0008 y el seed, comprueba idempotencia, catálogo, integridad, rollback y
 persistencia tras reconectar. La base temporal se elimina al finalizar. La cuenta de
 aplicación no debe conservar CREATEDB fuera de esta verificación controlada.

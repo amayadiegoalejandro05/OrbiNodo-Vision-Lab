@@ -32,6 +32,13 @@ try {
   await cp(root, temporary, { recursive: true, filter: shouldCopy });
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   await run(npm, ['ci', '--ignore-scripts']);
+  await run(npm, ['run', 'architecture:check']);
+  await run(npm, ['run', 'installation:check']);
+  await run(npm, ['run', 'openapi:check']);
+  await run(npm, ['run', 'operation:check']);
+  await run(npm, ['run', 'health:check']);
+  await run(npm, ['run', 'release:check']);
+  await run(npm, ['test']);
   await run(npm, ['run', 'build']);
   console.log('Entorno limpio verificado: npm ci y build completados.');
 } finally {

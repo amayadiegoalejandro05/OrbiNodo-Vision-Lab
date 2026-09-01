@@ -1,0 +1,39 @@
+ORBINODO ENTERPRISE v1.0 - HARDENING FASTIFY/API
+
+POLITICA DE ORIGEN
+
+La API acepta solicitudes sin Origin para verificaciones servidor a servidor y solicitudes cuyo Origin coincide con el Host. Un origen externo recibe 403 CORS_ORIGIN_FORBIDDEN. No se habilitan credenciales CORS para dominios externos.
+
+CABECERAS API
+
+Todas las respuestas incluyen Cache-Control no-store, Content-Security-Policy, Cross-Origin-Resource-Policy same-origin, Permissions-Policy restrictiva, Referrer-Policy no-referrer, X-Content-Type-Options nosniff y X-Frame-Options DENY. HSTS y HTTP a HTTPS pertenecen al edge de Vercel y se comprueban en produccion.
+
+METODOS
+
+Las rutas conocidas declaran sus metodos permitidos. Un metodo no permitido recibe 405 METHOD_NOT_ALLOWED y la cabecera Allow. Una ruta desconocida recibe 404 ROUTE_NOT_FOUND.
+
+LIMITES
+
+El cuerpo maximo es 16 KiB. Los timeouts predeterminados son:
+- conexion: 10000 ms
+- keep-alive: 5000 ms
+- solicitud: 25000 ms
+
+El limite general basico es 120 solicitudes por 60 segundos y se configura con ORBINODO_API_RATE_LIMIT_MAX_REQUESTS y ORBINODO_API_RATE_LIMIT_WINDOW_SECONDS. Este limite es por instancia Fastify. El login conserva el rate limiting compartido en PostgreSQL para funcionar entre instancias.
+
+PROXY Y PRODUCCION
+
+Local usa ORBINODO_TRUSTED_PROXY_HOPS=0. Vercel usa exactamente un proxy confiable. Produccion exige cookie Secure y PostgreSQL TLS. No se publican X-Powered-By ni endpoints de version.
+
+VERIFICACION
+
+npm test
+npm run test:integration
+npm run typecheck
+npm run lint
+npm run build
+npm run verify:production
+
+CIERRE
+
+La Fase 16 fue cerrada con 112 pruebas aprobadas: 89 unitarias y 23 de integracion.

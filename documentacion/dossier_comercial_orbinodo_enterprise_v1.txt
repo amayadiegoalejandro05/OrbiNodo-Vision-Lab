@@ -1,0 +1,290 @@
+DOSSIER COMERCIAL Y TECNICO
+ORBINODO ENTERPRISE v1.0
+================================
+
+Version del documento: 1.0
+Estado: documentacion consolidada hasta la Fase 19 de auditoria
+Proxima fase: Fase 20, pendiente de iniciar
+
+1. QUE ES ORBINODO
+------------------
+
+OrbiNodo es una plataforma web para presentar recorridos virtuales 360 grados y
+supervisar informacion operacional de camaras CCTV dentro de una experiencia visual.
+Combina una interfaz inmersiva con una API segura y una base de datos centralizada.
+
+El producto esta pensado para equipos que necesitan:
+
+- Recorrer espacios de forma visual y ordenada.
+- Consultar camaras, ubicaciones, cobertura y estado operativo.
+- Permitir que ingenieros actualicen solo la informacion que les corresponde.
+- Dar a un jefe una vista confiable de sesiones y cambios.
+- Conservar trazabilidad para revisar quien cambio que, cuando y como.
+- Desplegar la solucion sin depender del computador del desarrollador original.
+
+2. VALOR PARA EL COMPRADOR
+--------------------------
+
+OrbiNodo entrega tres capacidades en una sola experiencia:
+
+EXPERIENCIA VISUAL
+El usuario navega por panoramas 360, mapas, hotspots y marcadores de camaras.
+
+CONTROL OPERACIONAL
+Los datos se consultan y actualizan mediante una API central; no dependen del
+navegador ni de archivos locales para el funcionamiento productivo.
+
+GOBIERNO Y TRAZABILIDAD
+Cada acceso y cambio operacional queda asociado a un usuario, fecha, recurso,
+campo, valor anterior y valor nuevo en PostgreSQL.
+
+El resultado es una demo empresarial funcional que puede evolucionar hacia una
+implementacion corporativa con nuevos recorridos, activos, integraciones y politicas.
+
+3. COMO FUNCIONA EN LENGUAJE SIMPLE
+-----------------------------------
+
+```text
+Usuario abre la web
+        |
+        v
+Frontend del recorrido 360
+        |
+        v
+API Fastify (valida sesion, rol y datos)
+        |
+        v
+PostgreSQL / Neon (fuente central)
+        |
+        +--> camaras y estados
+        +--> sesiones de acceso
+        +--> historial inmutable de cambios
+```
+
+El navegador nunca se conecta directamente a PostgreSQL. En desarrollo, Vite reenvia
+las llamadas `/api` a Fastify local. En produccion, Vercel recibe HTTPS y ejecuta el
+mismo handler Fastify conectado a Neon.
+
+4. QUE PUEDE HACER CADA PERFIL
+------------------------------
+
+ORBINODO
+- Abrir el recorrido y consultar el mapa.
+- Consultar fichas de camaras.
+- Usar el calibrador visual cuando corresponda.
+- No editar informacion operativa.
+- No consultar historiales restringidos.
+
+JEFE DE SEGURIDAD
+- Consultar camaras y datos asociados.
+- Consultar historial de accesos.
+- Consultar historial de cambios.
+- Revisar quien modifico cada campo.
+- No editar informacion operacional.
+
+INGENIERO 1 E INGENIERO 2
+- Consultar camaras.
+- Modificar estado, mantenimiento, area responsable y observaciones.
+- Sus cambios quedan registrados automaticamente.
+- No pueden editar campos de inventario ni borrar historial.
+
+5. FUNCIONES DISPONIBLES
+------------------------
+
+RECORRIDO Y MAPA
+- Navegacion 360 grados.
+- Transiciones entre espacios.
+- Minimapa y ubicaciones.
+- Hotspots y marcadores de seguridad.
+- Fichas de camaras CCTV.
+
+API
+- Salud del sistema y disponibilidad de base de datos.
+- Login, sesion actual y logout.
+- Listado de camaras.
+- Consulta individual de camara.
+- Actualizacion operacional controlada.
+- Historial de sesiones.
+- Historial de modificaciones.
+
+La interfaz de integracion esta documentada en OpenAPI 3.1:
+`documentacion/openapi/orbinodo-api-v1.json`.
+
+6. SEGURIDAD EXPLICADA PARA NEGOCIO
+-----------------------------------
+
+- Las contrasenas se validan en servidor y se almacenan con Argon2id.
+- Las sesiones usan tokens opacos en cookies HttpOnly.
+- La cookie es Secure en produccion y usa SameSite=Lax.
+- El token real no se guarda en PostgreSQL; se guarda solamente su hash.
+- Los permisos se comprueban en Fastify, aunque el usuario intente llamar la API
+  manualmente o manipule el formulario.
+- Los campos editables tienen whitelist server-side.
+- Las entradas tienen schemas, limites y valores permitidos.
+- Los errores publicos no muestran SQL, rutas internas, secretos ni stack traces.
+- HTTPS y redireccion HTTP a HTTPS son gestionados por Vercel en produccion.
+- El historial empresarial es append-only: no se permite editarlo ni borrarlo.
+- PostgreSQL usa transacciones y control de version para evitar sobrescrituras.
+
+7. TRAZABILIDAD
+---------------
+
+Una modificacion de camara genera evidencia de:
+
+- Usuario que realiza el cambio.
+- Rol del usuario.
+- Camara o activo afectado.
+- Fecha y hora calculadas por PostgreSQL.
+- Campo modificado.
+- Valor anterior.
+- Valor nuevo.
+- Identificador del conjunto de cambios.
+
+Las sesiones registran inicio, cierre, duracion, estado, logout explicito, expiracion
+y revocacion. Las sesiones vencidas dejan de mostrarse como activas.
+
+8. ARQUITECTURA TECNICA SIN JERGA
+----------------------------------
+
+PROYECTO A - RECORRIDO VIRTUAL
+Contiene la interfaz, panoramas, mapas, hotspots, marcadores y activos de la
+experiencia. El legado localStorage/sessionStorage se conserva aislado para pruebas
+historicas; no es la fuente productiva.
+
+PROYECTO B - MIGRACION POSTGRESQL
+Contiene Fastify, rutas, servicios de dominio, autenticacion, sesiones, auditoria,
+migraciones y conexion PostgreSQL. Es el proyecto prioritario para la operacion.
+
+COMPONENTES PRINCIPALES
+- Frontend: Vite y TypeScript.
+- API: Fastify y TypeScript.
+- Persistencia: PostgreSQL local o Neon Production.
+- Publicacion: Vercel Functions.
+- Visor: Photo Sphere Viewer.
+- Validacion: Zod.
+- Conexion: pg.
+
+Documento tecnico completo:
+`documentacion/arquitectura_orbinodo_enterprise_v1.txt`.
+
+9. OPERACION Y DESPLIEGUE
+-------------------------
+
+LOCAL
+1. Configurar PostgreSQL local y variables privadas.
+2. Ejecutar `npm ci`.
+3. Ejecutar `npm run db:migrate` y `npm run db:seed` para una base vacia.
+4. Iniciar API con `npm run api:dev`.
+5. Iniciar frontend con `npm run dev`.
+
+PRODUCCION
+1. Configurar variables de Production en Vercel.
+2. Ejecutar migraciones contra Neon Production.
+3. Ejecutar `npm run db:preflight`.
+4. Ejecutar `npm run verify:reproducible`.
+5. Ejecutar `npm run check`.
+6. Publicar con `npx vercel --prod`.
+7. Ejecutar `npm run verify:production`.
+
+La aplicacion y la base de datos tienen procedimientos separados de rollback. Un
+rollback de Vercel no deshace automaticamente una migracion PostgreSQL.
+
+10. CONTINUIDAD OPERATIVA
+-------------------------
+
+- Backup diario de Neon Production.
+- Retencion inicial de 30 dias.
+- Backup cifrado con AES-256-GCM.
+- Integridad comprobada con SHA-256 y manifest.
+- Restore de prueba en una base aislada.
+- RPO definido: 24 horas.
+- RTO definido: 4 horas.
+- Responsable: administrador tecnico de OrbiNodo.
+
+La guia operativa esta en `documentacion/backup_y_restauracion_postgresql_v1.txt`.
+
+11. EVIDENCIA DE CALIDAD
+------------------------
+
+Las Fases 0 a 19 de auditoria estan cerradas dentro del alcance OrbiNodo Enterprise
+v1.0. La cobertura se resume asi:
+
+- Fases 0-2: alcance, base de datos y API.
+- Fases 3-4: autenticacion, sesiones y roles.
+- Fases 5-7: auditoria, historial y validacion de entradas.
+- Fases 8-10: secretos, HTTPS/TLS y errores seguros.
+- Fases 11-13: logging, backups y deployment reproducible.
+- Fases 14-16: testing, concurrencia y hardening.
+- Fase 17: dependencias y vulnerabilidades.
+- Fase 18: OpenAPI y correspondencia API-documentacion.
+- Fase 19: arquitectura, flujo de datos y limites.
+
+Comandos de evidencia:
+
+- `npm test`: pruebas unitarias.
+- `npm run test:integration`: Fastify y PostgreSQL reales.
+- `npm run openapi:check`: contrato API.
+- `npm run architecture:check`: arquitectura y migraciones documentadas.
+- `npm run deps:check`: politica de dependencias.
+- `npm run verify:reproducible`: instalacion y build en entorno limpio.
+- `npm run verify:production`: smoke test de produccion.
+
+Resultados registrados al cierre de esta documentacion:
+
+- Suite unitaria: 20 archivos y 89 pruebas aprobadas.
+- Integracion PostgreSQL/Fastify: 2 archivos y 23 pruebas aprobadas.
+- OpenAPI: 9 rutas Fastify y 17 codigos de error verificados.
+- Arquitectura: 8 migraciones y referencias operativas verificadas.
+- Build y typecheck: aprobados.
+
+12. QUE RECIBE EL COMPRADOR
+---------------------------
+
+- Aplicacion web del recorrido virtual.
+- Backend Fastify y rutas documentadas.
+- Esquema PostgreSQL con migraciones versionadas.
+- Gestion de usuarios, roles y sesiones.
+- Historial de accesos y cambios.
+- Contrato OpenAPI para integraciones.
+- Scripts de migracion, backup, restore y verificacion.
+- Documentacion tecnica y operativa.
+- Procedimiento reproducible de instalacion y despliegue.
+
+13. LIMITES ACTUALES DE v1.0
+-----------------------------
+
+- Los panoramas actuales son de demostracion.
+- La informacion de camaras es ficticia y debe sustituirse por inventario aprobado.
+- No hay integracion activa con Air Products.
+- No se incluyen endpoints administrativos de alta de usuarios o camaras sin un
+  requerimiento de negocio aprobado.
+- Vercel y Neon son las opciones actuales de publicacion y persistencia.
+- La Fase 20 aun no ha comenzado.
+
+Estos limites son explicitos para que una propuesta comercial no prometa capacidades
+que todavia no forman parte del producto v1.0.
+
+14. POSIBLES EXTENSIONES FUTURAS
+--------------------------------
+
+Sujetas a alcance, presupuesto y aprobacion:
+
+- Importacion de inventario real.
+- Integracion con identidad corporativa SSO/OIDC.
+- Endpoints administrativos con segregacion adicional.
+- Integracion aprobada con Air Products.
+- Alertas operativas y paneles avanzados.
+- Almacenamiento corporativo de panoramas privados.
+- Retencion y exportacion empresarial de auditoria.
+- Automatizacion de backups en almacenamiento institucional.
+
+15. MENSAJE COMERCIAL RESUMIDO
+------------------------------
+
+OrbiNodo no es solamente un visor 360. Es una experiencia visual conectada a una
+API segura y a una base PostgreSQL central, con roles, sesiones, control de cambios,
+trazabilidad y procedimientos de operacion. El comprador recibe una base funcional,
+verificable y documentada para continuar creciendo sin depender del conocimiento
+oculto del desarrollador original.
+
+FIN DEL DOSSIER ORBINODO ENTERPRISE v1.0

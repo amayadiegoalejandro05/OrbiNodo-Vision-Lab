@@ -2,20 +2,25 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { loadBackendEnvironment } from './environment';
 
 const originalHours = process.env.ORBINODO_SESSION_HOURS;
+const originalDatabasePassword = process.env.ORBINODO_DATABASE_PASSWORD;
 
 afterEach(() => {
   if (originalHours === undefined) delete process.env.ORBINODO_SESSION_HOURS;
   else process.env.ORBINODO_SESSION_HOURS = originalHours;
+  if (originalDatabasePassword === undefined) delete process.env.ORBINODO_DATABASE_PASSWORD;
+  else process.env.ORBINODO_DATABASE_PASSWORD = originalDatabasePassword;
 });
 
 describe('límite absoluto de sesión', () => {
   it('acepta como máximo ocho horas', () => {
     process.env.ORBINODO_SESSION_HOURS = '8';
+    process.env.ORBINODO_DATABASE_PASSWORD = 'test-only-placeholder';
     expect(loadBackendEnvironment().ORBINODO_SESSION_HOURS).toBe(8);
   });
 
   it('rechaza una duración superior a ocho horas', () => {
     process.env.ORBINODO_SESSION_HOURS = '9';
+    process.env.ORBINODO_DATABASE_PASSWORD = 'test-only-placeholder';
     expect(() => loadBackendEnvironment()).toThrow(/ORBINODO_SESSION_HOURS/);
   });
 });

@@ -4,7 +4,8 @@ import { CameraActorNotAllowedError } from '../domain/camera-service.js';
 import { createPostgresCameraService } from './postgres-camera-service';
 
 const row = {
-  id: 'camera-01', asset_code: 'CCTV-001', name: 'Cámara 1',
+  id: 'camera-01',
+  version: 0, asset_code: 'CCTV-001', name: 'Cámara 1',
   panorama_id: 'sotano-01', location: 'Sótano', brand: 'Demo', model: 'X1',
   camera_type: '360°', yaw: 10, pitch: 5,
   installed_on: new Date('2025-01-01T00:00:00.000Z'),
@@ -44,7 +45,7 @@ describe('transacción operativa PostgreSQL', () => {
         id: '7', username: actor.username, display_name: actor.displayName, role: actor.role,
       }] })
       .mockResolvedValueOnce({ rows: [row] })
-      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ lock_version: 1 }] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });

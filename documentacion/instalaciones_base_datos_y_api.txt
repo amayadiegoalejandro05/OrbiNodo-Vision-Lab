@@ -19,7 +19,7 @@ Dependencias Node.js del backend
 --------------------------------
 
 - fastify: servidor HTTP y enrutamiento de la API.
-- @fastify/cookie: futuras cookies HttpOnly.
+- @fastify/cookie: cookies HttpOnly para las sesiones actuales.
 - pg: pool y consultas parametrizadas para PostgreSQL.
 - zod: validación de configuración y entradas.
 - dotenv: carga exclusiva de .env.backend.local.

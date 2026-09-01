@@ -30,7 +30,7 @@ describe('cliente HTTP de cámaras', () => {
       JSON.stringify(result), { status: 200 },
     ));
     vi.stubGlobal('fetch', fetchMock);
-    await expect(updateCameraOperations(camera.id, update)).resolves.toEqual(result);
+    await expect(updateCameraOperations(camera.id, update, 0)).resolves.toEqual(result);
     expect(fetchMock).toHaveBeenCalledWith(
       `/api/cameras/${camera.id}/operations`,
       expect.objectContaining({ method: 'PATCH', credentials: 'include' }),
@@ -46,6 +46,6 @@ describe('cliente HTTP de cámaras', () => {
       status: camera.status, lastMaintenanceOn: camera.lastMaintenanceOn,
       nextMaintenanceOn: camera.nextMaintenanceOn,
       responsibleArea: camera.responsibleArea, notes: camera.notes,
-    })).rejects.toThrow('Este perfil no puede editar cámaras.');
+    }, 0)).rejects.toThrow('Este perfil no puede editar cámaras.');
   });
 });

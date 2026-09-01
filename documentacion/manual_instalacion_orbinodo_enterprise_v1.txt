@@ -1,0 +1,341 @@
+MANUAL DE INSTALACION
+ORBINODO ENTERPRISE v1.0
+========================
+
+Proposito
+---------
+Esta guia permite instalar OrbiNodo desde un entorno limpio, sin depender del
+conocimiento oculto del desarrollador original. Incluye el frontend del recorrido
+virtual (Proyecto A), la API y PostgreSQL (Proyecto B), y el despliegue productivo.
+
+Reglas importantes
+------------------
+- Ejecuta los comandos desde la carpeta raiz del proyecto.
+- No pegues contrasenas reales en chat, Git, capturas ni documentos versionados.
+- No uses Neon Production para pruebas de integracion local.
+- No publiques el puerto PostgreSQL 5432 en internet.
+- `npm ci` es el comando normal de instalacion; conserva exactamente el lockfile.
+
+1. PRERREQUISITOS
+-----------------
+
+Necesitas:
+
+- Windows 10/11, macOS o Linux.
+- Git para clonar el repositorio.
+- Node.js 24.18.1. La version esta fijada en `.nvmrc`.
+- npm incluido con Node.js.
+- PostgreSQL 18.x local para desarrollo completo, o una base Neon autorizada.
+- Microsoft Edge o Chromium para la verificacion visual opcional.
+- Acceso de administrador del sistema solo para instalar PostgreSQL o iniciar su
+  servicio. La API no necesita ejecutarse como administrador.
+
+Comprueba las herramientas:
+
+    git --version
+    node --version
+    npm --version
+    psql --version
+
+Node debe mostrar `v24.18.1`. Si muestra otra version, instala Node 24.18.1 o
+seleccionalo con el gestor de versiones disponible antes de continuar.
+
+2. OBTENER EL CODIGO
+--------------------
+
+Solicita al responsable la URL oficial y la rama aprobada. No inventes una URL.
+
+    git clone <URL_OFICIAL_DEL_REPOSITORIO> orbinodo
+    cd orbinodo
+    git checkout main
+    git status
+
+El estado debe indicar la rama esperada y no mostrar cambios sin confirmar.
+Si recibiste un ZIP, descomprimelo en una carpeta nueva y abre PowerShell en esa
+carpeta; no mezcles archivos con otra copia del proyecto.
+
+3. SELECCIONAR NODE E INSTALAR DEPENDENCIAS
+-------------------------------------------
+
+Desde la raiz del proyecto:
+
+    node --version
+    npm ci
+
+`npm ci` instala las versiones exactas de `package-lock.json`. Si falla, revisa
+la version de Node y la conexion a internet; no borres el lockfile ni ejecutes
+`npm audit fix --force` como solucion automatica.
+
+4. INSTALAR O INICIAR POSTGRESQL LOCAL
+--------------------------------------
+
+Si PostgreSQL ya esta instalado en Windows, comprueba el servicio:
+
+    Get-Service postgresql-x64-18
+
+Si aparece detenido, abre PowerShell como administrador y ejecuta:
+
+    Start-Service postgresql-x64-18
+
+La configuracion local esperada es:
+
+- Host: `127.0.0.1`
+- Puerto: `5432`
+- Base: `orbinodo_demo`
+- Usuario de aplicacion: `orbinodo_api`
+- SSL local: `false`
+
+5. CREAR BASE, USUARIO Y PERMISOS
+---------------------------------
+
+Este paso se hace una sola vez con pgAdmin o `psql` usando el usuario administrador
+de PostgreSQL. En pgAdmin: abre Query Tool sobre la base `postgres`, pega cada
+sentencia y ejecutala por separado.
+
+Reemplaza `PON_UNA_CLAVE_LOCAL_SEGURA` por una clave local. No uses esa clave en
+Vercel ni la guardes en el repositorio.
+
+    CREATE ROLE orbinodo_api LOGIN PASSWORD 'PON_UNA_CLAVE_LOCAL_SEGURA';
+    CREATE DATABASE orbinodo_demo OWNER orbinodo_api;
+
+Si el rol o la base ya existen, no repitas estas sentencias: selecciona la base
+existente y continua. Para comprobar la conexion sin mostrar la clave:
+
+    psql -h 127.0.0.1 -p 5432 -U orbinodo_api -d orbinodo_demo -c "SELECT current_database(), current_user;"
+
+El usuario `orbinodo_api` es el usuario de la aplicacion. No necesita permiso
+`CREATEDB`. Las pruebas de integracion usan una cuenta administrativa temporal
+separada (`ORBINODO_TEST_ADMIN_USER`) y nunca deben apuntar a Neon Production.
+
+6. CREAR LAS VARIABLES LOCALES
+------------------------------
+
+Copia la plantilla versionada a un archivo local ignorado por Git:
+
+    Copy-Item .env.example .env.backend.local
+
+Abre `.env.backend.local` y cambia como minimo:
+
+    ORBINODO_DATABASE_PASSWORD=TU_CLAVE_LOCAL_DE_POSTGRESQL
+    ORBINODO_SEED_PROGRAMMER_PASSWORD=CLAVE_LOCAL_DE_10_O_MAS_CARACTERES
+    ORBINODO_SEED_MANAGER_PASSWORD=CLAVE_LOCAL_DE_10_O_MAS_CARACTERES
+    ORBINODO_SEED_ENGINEER1_PASSWORD=CLAVE_LOCAL_DE_10_O_MAS_CARACTERES
+    ORBINODO_SEED_ENGINEER2_PASSWORD=CLAVE_LOCAL_DE_10_O_MAS_CARACTERES
+
+Conserva para local estos valores salvo que el responsable indique lo contrario:
+
+    ORBINODO_DATABASE_HOST=127.0.0.1
+    ORBINODO_DATABASE_PORT=5432
+    ORBINODO_DATABASE_NAME=orbinodo_demo
+    ORBINODO_DATABASE_USER=orbinodo_api
+    ORBINODO_DATABASE_SSL=false
+    ORBINODO_COOKIE_SECURE=false
+
+Las cuatro claves de seed deben tener entre 10 y 128 caracteres. La API calcula
+hashes Argon2id; nunca guarda las claves en texto. `.env.backend.local` no debe
+aparecer en `git status`.
+
+Comprueba la conexion:
+
+    npm run db:check
+
+Resultado esperado: `Conexion PostgreSQL verificada`.
+
+7. CREAR EL ESQUEMA Y LOS DATOS INICIALES
+------------------------------------------
+
+Aplica las ocho migraciones versionadas:
+
+    npm run db:migrate
+
+Luego carga cuatro usuarios, diez camaras y sus estados iniciales:
+
+    npm run db:seed
+
+Puedes repetir ambos comandos. Las migraciones son idempotentes y el seed no
+reemplaza cambios operativos existentes.
+
+8. BUILD DEL FRONTEND Y VALIDACION DEL BACKEND
+----------------------------------------------
+
+Ejecuta:
+
+    npm run build
+
+Este comando hace dos comprobaciones:
+
+- TypeScript valida el frontend y el backend (`tsconfig.backend.json`).
+- Vite genera el frontend en `dist/`.
+
+No existe un ejecutable backend separado: Fastify se ejecuta con Node/tsx local y
+Vercel compila las Functions TypeScript durante el despliegue.
+
+Comprueba contratos y documentacion:
+
+    npm run architecture:check
+    npm run openapi:check
+
+9. INICIAR EL SISTEMA LOCAL
+---------------------------
+
+Abre dos terminales en la carpeta del proyecto.
+
+Terminal 1 - API:
+
+    npm run api:dev
+
+Resultado esperado: Fastify escuchando en `127.0.0.1:3001`.
+
+Terminal 2 - frontend:
+
+    npm run dev
+
+Abre en el navegador la URL que muestre Vite, normalmente `http://localhost:5173`.
+
+El navegador llama `/api` en el mismo origen. `vite.config.ts` reenvia esas
+llamadas a Fastify local; el navegador nunca se conecta directamente a PostgreSQL.
+
+10. VERIFICACION COMPLETA
+-------------------------
+
+Con PostgreSQL, API y frontend disponibles:
+
+    npm run check
+
+Este comando ejecuta lint, arquitectura, OpenAPI, pruebas unitarias, build y
+verificacion visual local. La verificacion visual requiere Edge/Chromium y las
+credenciales locales de seed.
+
+Para una comprobacion reproducible sin depender de `node_modules` actual:
+
+    npm run verify:reproducible
+
+Para las pruebas reales de PostgreSQL (solo base local):
+
+    npm run test:integration
+
+Estas pruebas requieren una cuenta administrativa temporal con permiso `CREATEDB`.
+Si no existe, configura temporalmente `ORBINODO_TEST_ADMIN_USER` y
+`ORBINODO_TEST_ADMIN_PASSWORD`; nunca concedas `CREATEDB` a `orbinodo_api`.
+
+11. INSTALACION DE PRODUCCION EN VERCEL Y NEON
+----------------------------------------------
+
+Este bloque lo ejecuta el responsable de despliegue, no un usuario final:
+
+1. Crear o seleccionar la base Neon Production aprobada.
+2. Configurar en Vercel las variables de Production, especialmente `DATABASE_URL`,
+   `ORBINODO_COOKIE_SECURE=true` y los limites definidos.
+3. Ejecutar `npm run db:migrate` usando la misma URL Neon, desde una consola segura.
+4. Ejecutar `npm run db:preflight`.
+5. Ejecutar `npm run verify:reproducible`.
+6. Ejecutar `npm run check`.
+7. Publicar con `npx vercel --prod`.
+8. Comprobar `https://orbinodo-demo.vercel.app` y ejecutar
+   `npm run verify:production`.
+
+No copies `.env.backend.local` a Vercel. En Vercel se configuran variables por
+entorno desde Project Settings > Environment Variables. Preview y Production deben
+usar bases o ramas Neon separadas.
+Air Products no forma parte de la instalacion actual y no comparte secretos, certificados ni base de datos.
+
+12. PROBLEMAS COMUNES
+---------------------
+
+POSTGRESQL NO RESPONDE
+- Comprueba `Get-Service postgresql-x64-18`.
+- Inicia el servicio si esta detenido.
+- Confirma host `127.0.0.1` y puerto `5432`.
+- Ejecuta `npm run db:check`.
+
+PASSWORD AUTHENTICATION FAILED
+- Revisa que `ORBINODO_DATABASE_PASSWORD` coincida con la clave del rol
+  `orbinodo_api`.
+- No cambies el usuario a `postgres` para la API normal.
+- No pegues la clave en el comando ni en un documento versionado.
+
+DATABASE DOES NOT EXIST / BASE INEXISTENTE
+- Conectate a la base `postgres` con un administrador.
+- Ejecuta `CREATE DATABASE orbinodo_demo OWNER orbinodo_api;` una sola vez.
+- Vuelve a comprobar con `npm run db:check`.
+
+PERMISSION DENIED FOR SCHEMA PUBLIC
+- Verifica que la base sea propiedad de `orbinodo_api`.
+- Ejecuta migraciones con el propietario o administrador autorizado.
+- No otorgues permisos amplios a usuarios publicos.
+
+MIGRATIONS PENDING / MIGRACIONES PENDIENTES
+- Ejecuta `npm run db:migrate` contra la base correcta.
+- En Production, ejecuta despues `npm run db:preflight`.
+- No edites ni borres migraciones ya aplicadas.
+
+SEED ENV INVALID / FALTAN CLAVES DE SEED
+- Revisa las cuatro variables `ORBINODO_SEED_*`.
+- Cada una debe tener de 10 a 128 caracteres.
+- Ejecuta de nuevo `npm run db:seed`.
+
+API NO INICIA O PUERTO 3001 OCUPADO
+- Cierra otra instancia con Ctrl+C.
+- Comprueba el proceso que usa el puerto 3001.
+- Usa otro puerto solo si actualizas tambien `ORBINODO_API_TARGET` para Vite.
+
+FRONTEND ABRE PERO DICE QUE NO CONECTA CON LA API
+- Confirma que Terminal 1 mantiene `npm run api:dev` ejecutandose.
+- Confirma que Terminal 2 usa `npm run dev` desde la misma copia.
+- Revisa que `.env.backend.local` exista y `npm run db:check` pase.
+- Recarga el navegador despues de corregir variables.
+
+OPENAPI O ARCHITECTURE CHECK FALLA
+- No cambies rutas para ocultar el error.
+- Lee el archivo y actualiza la documentacion correspondiente si hubo un cambio
+  intencional de API o migracion.
+- Ejecuta nuevamente `npm run openapi:check` o `npm run architecture:check`.
+
+VERCEL RESPONDE 500 EN LOGIN
+- En Vercel revisa Runtime Logs, no el navegador solamente.
+- Confirma que `DATABASE_URL` sea la cadena Neon correcta y tenga SSL.
+- Confirma que las migraciones se aplicaron a esa misma base.
+- Ejecuta `npm run db:preflight` contra la URL de Production.
+- No uses la cadena de PostgreSQL local `127.0.0.1` en Vercel.
+
+13. DESINSTALACION O LIMPIEZA LOCAL
+----------------------------------
+
+Para detener la aplicacion, pulsa Ctrl+C en ambas terminales. No borres la carpeta
+de datos de PostgreSQL para resolver errores normales.
+
+El comando `npm run db:reset -- --confirm-clean-baseline` elimina datos locales de
+demo y solo debe ejecutarse cuando el responsable quiera reiniciar la base de prueba.
+Nunca lo ejecutes contra Neon Production.
+
+14. CHECKLIST DE ENTREGA
+------------------------
+
+[ ] Git y Node 24.18.1 comprobados.
+[ ] PostgreSQL iniciado en localhost:5432.
+[ ] Base `orbinodo_demo` y rol `orbinodo_api` creados.
+[ ] `.env.backend.local` creado y fuera de Git.
+[ ] `npm ci` completado.
+[ ] `npm run db:check` correcto.
+[ ] `npm run db:migrate` correcto.
+[ ] `npm run db:seed` correcto.
+[ ] `npm run build` correcto.
+[ ] `npm run architecture:check` correcto.
+[ ] `npm run openapi:check` correcto.
+[ ] API y frontend iniciados en terminales separadas.
+[ ] Login, c?maras y logout comprobados.
+[ ] `npm run verify:reproducible` correcto.
+[ ] El responsable registra commit, entorno y fecha de instalaci?n.
+
+REFERENCIAS
+-----------
+
+- Arquitectura: `documentacion/arquitectura_orbinodo_enterprise_v1.txt`
+- API: `documentacion/contrato_api_fastify_v1.txt`
+- Datos: `documentacion/modelo_datos_y_migraciones.txt`
+- Secretos: `documentacion/gestion_secretos_y_rotacion_v1.txt`
+- Backups: `documentacion/backup_y_restauracion_postgresql_v1.txt`
+- Deployment: `documentacion/despliegue_reproducible_v1.txt`
+- Dossier comercial: `documentacion/dossier_comercial_orbinodo_enterprise_v1.txt`
+
+FIN DEL MANUAL DE INSTALACION ORBINODO ENTERPRISE v1.0
