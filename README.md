@@ -1,78 +1,80 @@
-# Recorrido virtual 360° de una vivienda
+# OrbiNodo Enterprise v1.0
 
-Aplicación web para recorrer una vivienda mediante panoramas equirectangulares, con
-autenticación, cámaras CCTV ficticias y auditoría central en PostgreSQL.
+Plataforma web para recorrer una vivienda en 360 grados y consultar informacion
+operativa de camaras CCTV ficticias desde una API segura y PostgreSQL.
 
-## Estado actual
+## Que incluye
 
-La versión actual está publicada y usa Vite, Fastify, Vercel Functions y Neon. El
-recorrido contiene dos pisos, ocho panoramas ficticios y diez cámaras:
+- Recorrido 360 con panoramas, mapa, hotspots y marcadores de camaras.
+- API Fastify entre la interfaz y PostgreSQL/Neon.
+- Autenticacion en servidor, sesiones seguras y permisos por rol.
+- Historial de accesos y cambios operativos.
+- Control de concurrencia para evitar sobrescrituras.
+- Health checks, backups, restauracion validada y despliegue reproducible.
 
-- Primer piso: Parqueadero, Pasillo y Cocina.
-- Escaleras: base en el primer piso y descanso en el segundo.
-- Segundo piso: Cuarto 1 a la derecha, Cuarto 2 a la izquierda y Estudio.
-- Ruta izquierda: Cuarto 2 continúa hacia el Estudio.
-
-Todas las conexiones tienen regreso. El menú permite abrir cualquier punto, muestra
-la ubicación activa y funciona con teclado y en pantallas móviles.
-
-## Uso local
-
-```bash
-npm ci
-npm run api:dev
-```
-
-En otra terminal ejecuta `npm run dev`. La API usa `.env.backend.local` y PostgreSQL
-local; Vite mostrará la dirección localhost del frontend.
-
-## Verificación
-
-```bash
-npm run check
-```
-
-Este comando ejecuta ESLint, las pruebas con Vitest, TypeScript, la construcción de
-Vite y pruebas reales en Microsoft Edge.
-
-## Documentación
-
-Todos los TXT se conservan en `documentacion/`:
-
-- `comandos_necesarios.txt`
-- `guia_completa_de_fases.txt`
-- `explicacion_de_archivos_y_codigo.txt`
-- `gestion_secretos_y_rotacion_v1.txt`
-- `preguntas_y_respuestas_por_fase.txt`
-- `openapi/orbinodo-api-v1.json` (contrato OpenAPI 3.1 verificable)
-- `arquitectura_orbinodo_enterprise_v1.txt` (mapa arquitectónico y límites)
-- `dossier_comercial_orbinodo_enterprise_v1.txt` (presentación comercial y técnica)
-- `manual_instalacion_orbinodo_enterprise_v1.txt` (instalación paso a paso y troubleshooting)
-
-- `manual_operacion_orbinodo_enterprise_v1.txt` (operacion diaria, incidentes, backups, despliegues y escalamiento)
-- `health_checks_y_monitoreo_v1.txt` (liveness, readiness, m�tricas, alertas y runbook)
-## Privacidad
-
-Los ocho panoramas actuales son ficticios. Las fotografías reales deben guardarse
-en `public/panoramas/private/`. Git ignora su contenido, pero una construcción local
-puede copiarlo a `dist/`; ambas carpetas deben revisarse antes de compartir archivos.
-
-Las contraseñas permanecen en archivos locales ignorados por Git. La base guarda
-únicamente hashes Argon2id y las sesiones usan cookies HttpOnly y Secure.
-
-## Producción
-
-La demo verificada está disponible en:
+## Demo en produccion
 
 https://orbinodo-demo.vercel.app
 
-Para comprobar la API y la interfaz publicada:
+La demo usa Vercel + Neon. El navegador nunca se conecta directamente a PostgreSQL.
 
-```bash
-npm run verify:production
-npm run verify:production:browser
-```
+## Inicio local
 
-Producción usa Neon; no intenta conectarse al PostgreSQL instalado en localhost.
-Después de la verificación inicial, la auditoría quedó limpia: cero sesiones y cero
-cambios, conservando cuatro usuarios, diez cámaras y diez estados operativos.
+Requisitos: Node.js 24.18.1 y PostgreSQL, o una base Neon autorizada.
+
+    npm ci
+    npm run db:migrate
+    npx tsx backend/database/seed.ts
+
+En una terminal, inicia la API:
+
+    npm run api:dev
+
+En otra terminal, inicia el frontend:
+
+    npm run dev
+
+La API queda en http://127.0.0.1:3001 y Vite muestra la URL del frontend.
+
+## Verificacion
+
+    npm run test
+    npm run test:integration
+    npm run build
+    npm run verify:reproducible
+
+Para revisar la instalacion publicada:
+
+    npm run verify:production
+    npm run verify:production:browser
+
+## Documentacion principal
+
+- [Dossier comercial](documentacion/dossier_comercial_orbinodo_enterprise_v1.txt)
+- [Manual de instalacion](documentacion/manual_instalacion_orbinodo_enterprise_v1.txt)
+- [Manual de operacion](documentacion/manual_operacion_orbinodo_enterprise_v1.txt)
+- [Arquitectura](documentacion/arquitectura_orbinodo_enterprise_v1.txt)
+- [Contrato API y OpenAPI](documentacion/contrato_api_fastify_v1.txt)
+- [Especificacion OpenAPI](documentacion/openapi/orbinodo-api-v1.json)
+- [Backups y restauracion](documentacion/backup_y_restauracion_postgresql_v1.txt)
+- [Health checks y monitoreo](documentacion/health_checks_y_monitoreo_v1.txt)
+- [Despliegue reproducible](documentacion/despliegue_reproducible_v1.txt)
+- [Changelog](CHANGELOG.md)
+
+Los documentos de auditoria y las notas historicas se conservan en
+.env.auditoria. No forman parte del procedimiento diario de instalacion u operacion.
+
+## Seguridad y privacidad
+
+- No guardar contrasenas, DATABASE_URL ni tokens en Git.
+- Mantener los archivos .env reales fuera del repositorio o en las variables de Vercel.
+- Las contrasenas se validan en servidor y se almacenan con Argon2id.
+- Las sesiones usan cookies HttpOnly; en produccion son Secure.
+- PostgreSQL es la fuente central; no usar localStorage para datos empresariales.
+- Las fotografias reales deben permanecer fuera de Git en public/panoramas/private/.
+
+## Version
+
+Release de codigo: v1.0.0.
+
+Repositorio: https://github.com/amayadiegoalejandro05/OrbiNodo-V1
