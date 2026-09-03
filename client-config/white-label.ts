@@ -35,5 +35,3 @@ export interface WhiteLabelAssets {
 }
 export interface WhiteLabelTheme { [name: string]: string; }
 export interface WhiteLabelConfiguration { assets: WhiteLabelAssets; theme: WhiteLabelTheme; }
-
-
