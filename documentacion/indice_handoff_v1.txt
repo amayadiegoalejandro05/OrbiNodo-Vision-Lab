@@ -1,0 +1,27 @@
+INDICE DE HANDOFF - ORBINODO ENTERPRISE v1.0
+=============================================
+
+Este documento indica qu? archivos debe usar quien recibe el proyecto.
+
+ORDEN RECOMENDADO
+-----------------
+1. README.md: resumen y comandos principales.
+2. manual_instalacion_orbinodo_enterprise_v1.txt: instalaci?n limpia.
+3. manual_operacion_orbinodo_enterprise_v1.txt: operaci?n publicada.
+4. arquitectura_orbinodo_enterprise_v1.txt: componentes y l?mites.
+5. contrato_api_fastify_v1.txt y openapi/orbinodo-api-v1.json: API.
+
+SEGURIDAD Y OPERACI?N
+----------------------
+gestion_secretos_y_rotacion_v1.txt, seguridad_https_tls_produccion.txt,
+hardening_servidor_api_v1.txt, logging_tecnico_v1.txt,
+health_checks_y_monitoreo_v1.txt y backup_y_restauracion_postgresql_v1.txt.
+
+EVOLUCI?N Y ENTREGA
+-------------------
+testing_completo_v1.txt, dependencias_y_vulnerabilidades_v1.txt,
+concurrencia_y_control_version_v1.txt, separacion_core_cliente_v1.txt,
+white_label_v1.txt, CHANGELOG.md y release-manifest-v1.1.0.json y paquete_handoff_v1.1.0.txt.
+
+No subir .env, DATABASE_URL, contrase?as, tokens ni backups. Antes de entregar
+ejecutar npm run check, npm run secrets:check y npm run deps:check.

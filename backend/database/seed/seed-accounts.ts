@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { loadBackendEnvironment } from '../../config/environment';
+import { getClientProfile } from '../../../client-config/client-profiles';
 
-// Diez caracteres es la decisión explícita para esta demo local. La política debe
-// endurecerse antes de exponer la API o utilizar cuentas empresariales reales.
+// Diez caracteres es la decision explicita para cuentas de seed. Cada instancia
+// debe proporcionar sus propias contrasenas fuera del repositorio.
 const password = z.string().min(10).max(128);
 const seedPasswordSchema = z.object({
   ORBINODO_SEED_PROGRAMMER_PASSWORD: password,
@@ -20,28 +20,28 @@ export interface SeedAccount {
   password: string;
 }
 
-export function loadSeedAccounts(): SeedAccount[] {
-  loadBackendEnvironment();
+export function loadSeedAccounts(profileId: string): SeedAccount[] {
   const parsed = seedPasswordSchema.safeParse(process.env);
   if (!parsed.success) {
     const names = parsed.error.issues.map((issue) => issue.path.join('.')).join(', ');
-    throw new Error('Contraseñas de seed incompletas: ' + names);
+    throw new Error('Contrasenas de seed incompletas: ' + names);
   }
+  const identities = getClientProfile(profileId).seedIdentities;
   return [
     {
-      username: 'Orbinodo', displayName: 'Orbinodo', role: 'programmer',
+      ...identities.programmer, role: 'programmer',
       password: parsed.data.ORBINODO_SEED_PROGRAMMER_PASSWORD,
     },
     {
-      username: 'Jefe', displayName: 'Jefe', role: 'manager',
+      ...identities.manager, role: 'manager',
       password: parsed.data.ORBINODO_SEED_MANAGER_PASSWORD,
     },
     {
-      username: 'Ingeniero 1', displayName: 'Ingeniero 1', role: 'engineer1',
+      ...identities.engineer1, role: 'engineer1',
       password: parsed.data.ORBINODO_SEED_ENGINEER1_PASSWORD,
     },
     {
-      username: 'Ingeniero 2', displayName: 'Ingeniero 2', role: 'engineer2',
+      ...identities.engineer2, role: 'engineer2',
       password: parsed.data.ORBINODO_SEED_ENGINEER2_PASSWORD,
     },
   ];

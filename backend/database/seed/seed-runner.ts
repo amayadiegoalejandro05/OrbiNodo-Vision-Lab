@@ -1,7 +1,8 @@
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import type { BackendEnvironment } from '../../config/environment';
-import { demoSecurityCameras } from '../../../src/data/demo-cameras';
+import { getClientProfile } from '../../../client-config/client-profiles';
+import type { SecurityCameraRecord } from '../../../src/domain/security-camera.types';
 import { hashPassword } from '../../security/password-hash';
 import { createPostgresOptions } from '../postgres-options';
 import type { SeedAccount } from './seed-accounts';
@@ -42,17 +43,19 @@ export async function runSeed(
     ...account,
     passwordHash: hashPassword(password),
   }));
-  return executeWithPool(env, prepared);
+  const profile = getClientProfile(env.ORBINODO_CLIENT_PROFILE);
+  return executeWithPool(env, prepared, profile.cameras);
 }
 
 async function executeWithPool(
   env: BackendEnvironment,
   accounts: PreparedAccount[],
+  cameras: SecurityCameraRecord[],
 ): Promise<SeedResult> {
   const pool = new Pool(createPostgresOptions(env));
   try {
     const client = await pool.connect();
-    return await executeSeedTransaction(client, accounts);
+    return await executeSeedTransaction(client, accounts, cameras);
   } finally {
     await pool.end();
   }
@@ -61,6 +64,7 @@ async function executeWithPool(
 async function executeSeedTransaction(
   client: PoolClient,
   accounts: PreparedAccount[],
+  cameras: SecurityCameraRecord[],
 ): Promise<SeedResult> {
   try {
     await client.query('BEGIN');
@@ -71,9 +75,9 @@ async function executeSeedTransaction(
     );
     if (schema.rowCount !== 1) throw new Error('Falta aplicar la migración inicial.');
     await seedUsers(client, accounts);
-    await seedCameras(client);
+    await seedCameras(client, cameras);
     await client.query('COMMIT');
-    return { users: accounts.length, cameras: demoSecurityCameras.length };
+    return { users: accounts.length, cameras: cameras.length };
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -93,13 +97,13 @@ async function seedUsers(client: PoolClient, accounts: PreparedAccount[]): Promi
   }
 }
 
-async function seedCameras(client: PoolClient): Promise<void> {
-  for (const camera of demoSecurityCameras) await seedCamera(client, camera);
+async function seedCameras(client: PoolClient, cameras: SecurityCameraRecord[]): Promise<void> {
+  for (const camera of cameras) await seedCamera(client, camera);
 }
 
 async function seedCamera(
   client: PoolClient,
-  camera: (typeof demoSecurityCameras)[number],
+  camera: SecurityCameraRecord,
 ): Promise<void> {
   await client.query(CAMERA_INSERT_SQL, [
     camera.id, camera.assetCode, camera.name, camera.panoramaId,

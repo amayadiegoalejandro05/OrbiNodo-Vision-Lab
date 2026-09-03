@@ -1,10 +1,10 @@
 {
-  "releaseVersion": "1.0.0",
-  "tag": "v1.0.0",
-  "status": "released",
-  "releasedAt": "2026-08-31",
+  "releaseVersion": "1.1.0",
+  "tag": "v1.1.0",
+  "status": "preparing",
+  "releasedAt": "2026-09-03",
   "commit": {
-    "sha": "6a3ba386aed969fdb12f17666d962b6384116ccd",
+    "sha": "PENDING_TAG_COMMIT",
     "recordedAfterTag": false
   },
   "deployment": {
@@ -32,7 +32,7 @@
       "0007_session_history_view_expiration.sql",
       "0008_camera_operational_lock_version.sql"
     ],
-    "compatibility": "Aplicar migraciones acumulativas 0001-0008 antes de ejecutar v1.0.0."
+    "compatibility": "Aplicar migraciones acumulativas 0001-0008 antes de ejecutar v1.1.0."
   },
   "artifacts": {
     "checksumAlgorithm": "SHA-256",
@@ -51,6 +51,10 @@
     "documentacion/gestion_secretos_y_rotacion_v1.txt",
     "documentacion/seguridad_https_tls_produccion.txt",
     "documentacion/dependencias_y_vulnerabilidades_v1.txt",
-    "documentacion/testing_completo_v1.txt"
+    "documentacion/testing_completo_v1.txt",
+    "documentacion/indice_handoff_v1.txt",
+    "documentacion/separacion_core_cliente_v1.txt",
+    "documentacion/white_label_v1.txt",
+    "documentacion/paquete_handoff_v1.1.0.txt"
   ]
 }

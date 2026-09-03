@@ -62,7 +62,7 @@ export function createCameraMap(
         dot.className = 'camera-map-dot';
         dot.setAttribute('aria-hidden', 'true');
         const label = document.createElement('span');
-        label.textContent = camera.assetCode.replace('CCTV-DEM-', 'CAM-');
+        label.textContent = camera.assetCode;
         button.append(dot, label);
         button.addEventListener('click', () => onNavigate(camera.id));
         lane.append(button);

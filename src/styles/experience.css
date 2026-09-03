@@ -1,7 +1,7 @@
 /* Señales de progreso, carga visible y navegación móvil plegable. */
 .location-summary { display: grid; gap: 0.2rem; }
-.tour-progress { margin: 0; color: #75d9c5; font-size: 0.78rem; text-align: right; }
-.menu-toggle { display: none; color: #dbe7f3; background: transparent; }
+.tour-progress { margin: 0; color: var(--brand-primary, #75d9c5); font-size: 0.78rem; text-align: right; }
+.menu-toggle { display: none; color: var(--brand-text, #f5f7fb); background: transparent; }
 
 .panorama-viewer[aria-busy='true']::before {
   position: absolute;
@@ -9,7 +9,7 @@
   width: 2.5rem;
   height: 2.5rem;
   border: 0.3rem solid #ffffff38;
-  border-top-color: #75d9c5;
+  border-top-color: var(--brand-primary, #75d9c5);
   border-radius: 50%;
   content: '';
   animation: viewer-loading 0.8s linear infinite;
@@ -33,7 +33,7 @@
 
 .location-group h3 {
   margin: 0 0 0.65rem;
-  color: #f5f7fb;
+  color: var(--brand-text, #f5f7fb);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -58,8 +58,8 @@
   align-items: center;
   border: 1px solid #ffffff1a;
   border-radius: 0.72rem;
-  color: #c7d6e6;
-  background: #07111f73;
+  color: var(--brand-text-muted, #aebed0);
+  background: color-mix(in srgb, var(--brand-background, #07111f) 45%, transparent);
   line-height: 1.2;
   text-align: left;
   transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
@@ -71,58 +71,58 @@
   left: 0.85rem;
   width: 0.55rem;
   height: 0.55rem;
-  border: 2px solid #42d9e8;
+  border: 2px solid var(--brand-highlight, #42d9e8);
   border-radius: 50%;
   content: '';
   transform: translateY(-50%);
 }
 
 .location-link:hover {
-  border-color: #75d9c580;
+  border-color: color-mix(in srgb, var(--brand-primary, #75d9c5) 50%, transparent);
   color: #ffffff;
   background: #ffffff0d;
   transform: translateX(2px);
 }
 
 .location-link.is-active {
-  border-color: #75d9c5;
-  color: #08271f;
-  background: #75d9c5;
+  border-color: var(--brand-primary, #75d9c5);
+  color: var(--brand-primary-contrast, #08271f);
+  background: var(--brand-primary, #75d9c5);
   box-shadow: 0 0.45rem 1rem #00000024;
 }
 
 .location-link.is-active::before {
-  border-color: #08271f;
-  background: #08271f;
+  border-color: var(--brand-primary-contrast, #08271f);
+  background: var(--brand-primary-contrast, #08271f);
   box-shadow: 0 0 0 3px #ffffff75;
 }
 
 .location-link:focus-visible,
 .home-button:focus-visible {
-  outline: 3px solid #f7c969;
+  outline: 3px solid var(--brand-accent, #f7c969);
   outline-offset: 3px;
 }
 
 .home-button {
   margin-top: 1.35rem;
-  border-color: #75d9c580;
-  color: #75d9c5;
-  background: #75d9c50c;
+  border-color: color-mix(in srgb, var(--brand-primary, #75d9c5) 50%, transparent);
+  color: var(--brand-primary, #75d9c5);
+  background: color-mix(in srgb, var(--brand-primary, #75d9c5) 5%, transparent);
 }
 
-.home-button:hover { background: #75d9c51c; }
-.home-button.is-at-home { border-color: #75d9c5; background: #75d9c522; }
+.home-button:hover { background: color-mix(in srgb, var(--brand-primary, #75d9c5) 11%, transparent); }
+.home-button.is-at-home { border-color: var(--brand-primary, #75d9c5); background: color-mix(in srgb, var(--brand-primary, #75d9c5) 13%, transparent); }
 
 .tour-help {
   margin-top: 1.15rem;
   padding-top: 1rem;
   border-top: 1px solid #ffffff1f;
-  color: #aebed0;
+  color: var(--brand-text-muted, #aebed0);
   font-size: 0.82rem;
   line-height: 1.5;
 }
 
-.tour-help summary { color: #dbe7f3; cursor: pointer; font-weight: 700; }
+.tour-help summary { color: var(--brand-text, #f5f7fb); cursor: pointer; font-weight: 700; }
 .tour-help ul { padding-left: 1.25rem; }
 
 /*
@@ -132,15 +132,15 @@
 .locations {
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  scrollbar-color: #75d9c566 #07111f66;
+  scrollbar-color: color-mix(in srgb, var(--brand-primary, #75d9c5) 40%, transparent) color-mix(in srgb, var(--brand-background, #07111f) 40%, transparent);
   scrollbar-gutter: stable;
   scrollbar-width: thin;
 }
 
 .locations::-webkit-scrollbar { width: 0.55rem; }
-.locations::-webkit-scrollbar-track { background: #07111f66; }
-.locations::-webkit-scrollbar-thumb { border-radius: 999px; background: #75d9c566; }
-.locations::-webkit-scrollbar-thumb:hover { background: #75d9c599; }
+.locations::-webkit-scrollbar-track { background: color-mix(in srgb, var(--brand-background, #07111f) 40%, transparent); }
+.locations::-webkit-scrollbar-thumb { border-radius: 999px; background: color-mix(in srgb, var(--brand-primary, #75d9c5) 40%, transparent); }
+.locations::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--brand-primary, #75d9c5) 60%, transparent); }
 
 @keyframes viewer-loading { to { transform: rotate(360deg); } }
 

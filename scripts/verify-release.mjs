@@ -24,12 +24,11 @@ function gitSucceeds(args) {
 }
 
 const packageJson = await readJson('package.json');
+const version = packageJson.version;
 const lockJson = await readJson('package-lock.json');
 const openapi = await readJson('documentacion/openapi/orbinodo-api-v1.json');
-const manifest = await readJson('documentacion/release-manifest-v1.0.0.json');
-const version = packageJson.version;
+const manifest = await readJson('documentacion/release-manifest-v' + version + '.json');
 if (!/^\d+\.\d+\.\d+$/.test(version)) fail('package.json no usa SemVer.');
-if (version !== '1.0.0') fail('la release esperada es 1.0.0, no ' + version + '.');
 if (lockJson.version !== version || lockJson.packages?.['']?.version !== version) {
   fail('package-lock.json no coincide con package.json.');
 }

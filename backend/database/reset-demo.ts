@@ -1,5 +1,7 @@
 import type { PoolClient } from 'pg';
-import { demoSecurityCameras } from '../../src/data/demo-cameras';
+import { getClientProfile } from '../../client-config/client-profiles';
+
+const demoSecurityCameras = getClientProfile('orbinodo-demo').cameras;
 
 export interface ResetResult {
   users: number;

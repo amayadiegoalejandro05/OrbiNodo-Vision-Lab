@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { demoTour } from '../data/demo-tour';
+import { demoTour } from '../../client-config/profiles/orbinodo-demo/tour';
 import {
   findUnreachablePanoramaIds,
   getPanoramaLocation,

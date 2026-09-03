@@ -1,0 +1,266 @@
+﻿MANUAL WHITE-LABEL DE ORBINODO v1.0
+===================================
+
+WHITE-LABEL INCLUIDO EN v1.0
+---------------------------
+Esta versión documenta la personalización visual por instancia dedicada. No incluye multitenancy.
+
+OBJETIVO
+--------
+Esta guía permite que una persona no técnica cambie el nombre, textos, logo,
+favicon, colores y dominio de una instancia dedicada de OrbiNodo.
+
+El white-label no cambia usuarios, contraseñas, permisos, API, cámaras,
+historiales ni PostgreSQL.
+
+ANTES DE EMPEZAR
+----------------
+Solicita al cliente:
+
+[ ] Nombre comercial exacto.
+[ ] Logo autorizado en SVG o PNG con fondo transparente.
+[ ] Favicon autorizado en PNG, SVG o ICO.
+[ ] Colores oficiales en formato hexadecimal, por ejemplo #009A49.
+[ ] Textos aprobados para acceso, botón, encabezado y pie de página.
+[ ] Dominio que utilizará la aplicación.
+[ ] Autorización escrita para usar su nombre y logotipo.
+
+No pegues contraseñas, cadenas de Neon ni tokens en estos archivos.
+No modifiques backend/, api/, src/auth/ ni las migraciones para cambiar la marca.
+
+QUÉ SE PUEDE CAMBIAR
+--------------------
+- Nombre visible del producto.
+- Título de la pestaña del navegador.
+- Textos de la pantalla de acceso.
+- Texto del botón de entrada.
+- Encabezado y pie de página.
+- Logo y favicon.
+- Colores de fondo, paneles, texto, botones, avisos y errores.
+- Dominio público.
+
+PASO 1. COPIAR LOGO Y FAVICON
+-----------------------------
+En VS Code abre la carpeta public. Dentro crea:
+
+    public/branding/cliente/
+
+Copia los archivos aprobados con nombres sencillos:
+
+    public/branding/cliente/logo.svg
+    public/branding/cliente/favicon.png
+
+No uses espacios, tildes ni caracteres especiales en esos nombres.
+
+PASO 2. CAMBIAR NOMBRE Y TEXTOS
+-------------------------------
+Abre:
+
+    client-config/profiles/orbinodo-demo/profile.ts
+
+Busca la sección branding. Cambia solamente el contenido dentro de comillas.
+No borres comas, llaves ni los nombres del lado izquierdo.
+
+Ejemplo:
+
+    branding: {
+      productName: 'Nombre del cliente',
+      loginEyebrow: 'Portal corporativo',
+      loginTitle: 'Acceso al recorrido virtual',
+      loginDescription: 'Ingresa tus credenciales para continuar.',
+      loginAction: 'Ingresar',
+      loginNotice: 'Acceso exclusivo para personal autorizado.',
+      navigationEyebrow: 'Recorrido virtual',
+      footer: 'Nombre del cliente - Uso interno.',
+      browserTitle: 'Recorrido virtual - Nombre del cliente',
+    },
+
+PASO 3. CAMBIAR LOGO Y FAVICON
+------------------------------
+Abre:
+
+    client-config/white-label.ts
+
+Dentro de 'orbinodo-demo', deja assets así y cambia cliente por el nombre de la
+carpeta creada en el paso 1:
+
+    assets: {
+      logoUrl: '/branding/cliente/logo.svg',
+      faviconUrl: '/branding/cliente/favicon.png',
+      logoAlt: 'Logo de Nombre del cliente',
+      logoFallback: 'NC',
+    },
+
+logoFallback son una o dos letras que aparecen si el logo no carga.
+
+PASO 4. CAMBIAR COLORES
+-----------------------
+En el mismo archivo, busca theme. Sustituye solo los códigos hexadecimales:
+
+    theme: {
+      background: '#07111f',
+      surface: '#0d1a2a',
+      text: '#f5f7fb',
+      textMuted: '#aebed0',
+      primary: '#75d9c5',
+      primaryContrast: '#08271f',
+      accent: '#f7c969',
+      accentContrast: '#3d2a00',
+      highlight: '#42d9e8',
+      danger: '#ff7d8a',
+    },
+
+Significado:
+
+- background: fondo general.
+- surface: tarjetas, paneles y menú.
+- text: texto principal.
+- textMuted: texto secundario.
+- primary: botones y acciones principales.
+- primaryContrast: texto encima del color principal.
+- accent: avisos y elementos destacados.
+- accentContrast: texto encima del acento.
+- highlight: foco, enlaces y marcadores.
+- danger: errores y alertas.
+
+Un color siempre debe tener # y seis caracteres, por ejemplo #009A49.
+
+PASO 5. CAMBIAR EL DOMINIO
+--------------------------
+El dominio no se cambia en el código.
+
+En Vercel:
+
+1. Abre el proyecto del cliente.
+2. Entra en Settings.
+3. Abre Domains.
+4. Pulsa Add Domain.
+5. Escribe el dominio aprobado.
+6. Sigue las instrucciones DNS mostradas por Vercel.
+
+Configura también esta variable en Vercel:
+
+    ORBINODO_PUBLIC_URL=https://dominio-del-cliente.com
+
+No pongas una barra / al final.
+
+PASO 6. COMPROBAR ANTES DE PUBLICAR
+-----------------------------------
+Abre PowerShell en la carpeta del proyecto y ejecuta uno por uno:
+
+    npm run white-label:check
+    npm run typecheck
+    npm test
+    npm run build
+
+El cambio está listo únicamente si todos terminan correctamente.
+La advertencia por el tamaño del visor 360 no bloquea el deployment.
+
+PASO 7. REVISIÓN VISUAL
+-----------------------
+Antes de producción comprueba:
+
+[ ] El nombre del cliente está escrito correctamente.
+[ ] El logo no está deformado ni cortado.
+[ ] El favicon aparece en la pestaña.
+[ ] Los textos se leen claramente sobre el fondo.
+[ ] Los botones tienen contraste suficiente.
+[ ] Los mensajes de error siguen siendo visibles.
+[ ] No aparece el nombre de otro cliente.
+[ ] El inicio de sesión y el recorrido funcionan.
+
+PASO 8. PUBLICAR Y VERIFICAR
+----------------------------
+Una persona con acceso autorizado a Vercel ejecuta:
+
+    npx vercel --prod
+
+Cuando el deployment aparezca como Ready, ejecuta:
+
+    npm run verify:production
+
+Si el build falla, no pulses Redeploy repetidamente. Copia el primer error y
+solicita revisión técnica.
+
+NUEVO CLIENTE SIN REEMPLAZAR ORBINODO
+-------------------------------------
+Si deben coexistir perfiles diferentes en el repositorio, no edites
+orbinodo-demo. Duplica su carpeta usando un identificador con minúsculas,
+números y guiones:
+
+    client-config/profiles/cliente-b/
+
+Después debe registrarse el perfil en:
+
+    client-config/client-profiles.ts
+    client-config/white-label.ts
+
+En Vercel deben coincidir estas variables:
+
+    ORBINODO_CLIENT_PROFILE=cliente-b
+    VITE_ORBINODO_CLIENT_PROFILE=cliente-b
+
+Esta preparación inicial requiere revisión técnica porque también separa el
+recorrido, cámaras e identidades iniciales. Después, los cambios cotidianos de
+marca pueden hacerse siguiendo los pasos anteriores.
+
+REFERENCIA AIR PRODUCTS
+-----------------------
+La guía pública de Air Products identifica:
+
+- Verde principal: #009A49.
+- Azul principal: #00A8E1.
+- Amarillo secundario: #FFCB00.
+
+No descargues ni copies su logo desde Internet. Solicita el archivo oficial y
+la autorización escrita del cliente antes de publicarlo.
+
+Fuentes oficiales:
+https://www.airproducts.com/-/media/files/en/900/900-12-004-glb-brand-identity-41186.pdf
+https://prphotolibrary.airproducts.com/disclaimer.aspx
+
+PROBLEMAS FRECUENTES
+--------------------
+
+El logo no aparece
+  Comprueba que exista en public/branding/cliente/ y que su ruta empiece por
+  /branding/.
+
+Los colores no cambian
+  Guarda el archivo, reinicia la vista previa y confirma que editaste el perfil
+  usado por esa instancia.
+
+Aparecen caracteres como Ã, Â o �
+  No publiques. Guarda el archivo como UTF-8 en VS Code y ejecuta npm run build.
+
+El build muestra Cannot find module
+  No cambies más rutas o carpetas. Solicita revisión técnica.
+
+La API muestra error 500
+  El white-label no modifica la API. Revisa PostgreSQL y las migraciones; cambiar
+  colores o logos no corrige un error de base de datos.
+
+REGISTRO DEL CAMBIO
+-------------------
+Completa antes de cerrar:
+
+Cliente:
+Fecha:
+Persona que realizó el cambio:
+Persona que aprobó la marca:
+Dominio:
+Logo recibido:
+Colores aprobados:
+Resultado de las verificaciones:
+URL de vista previa:
+URL de producción:
+
+CRITERIO DE CIERRE
+------------------
+El white-label está preparado cuando los archivos de marca están autorizados,
+los textos y colores están configurados, las verificaciones terminan bien y una
+persona responsable aprueba visualmente la vista previa.
+
+La fase 25 permanece cerrada bajo el modelo de una instancia y una base
+PostgreSQL dedicada por cliente. Este manual documenta la operación white-label
+acordada; no implementa multitenancy.

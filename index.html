@@ -10,26 +10,26 @@
 <body>
   <main id="login-screen" class="login-screen" aria-labelledby="login-title" hidden>
     <section class="login-card">
-      <p class="eyebrow">Demo de Orbinodo</p>
-      <h1 id="login-title">Acceso al recorrido virtual</h1>
-      <p>Ingresa las credenciales asignadas para abrir la demostración.</p>
+      <p class="eyebrow" data-client="login-eyebrow">Demo de Orbinodo</p>
+      <h1 id="login-title" data-client="login-title">Acceso al recorrido virtual</h1>
+      <p data-client="login-description">Ingresa las credenciales asignadas para abrir la demostración.</p>
       <form id="login-form" class="login-form">
         <label for="demo-username">Usuario</label>
         <input id="demo-username" name="username" type="text" autocomplete="username" required />
         <label for="demo-password">Contraseña</label>
         <input id="demo-password" name="password" type="password" autocomplete="current-password" required />
-        <button type="submit">Entrar a Orbinodo</button>
+        <button type="submit" data-client="login-action">Entrar a Orbinodo</button>
         <p id="login-message" class="login-message" role="alert" aria-live="polite"></p>
       </form>
-      <p class="login-notice">Acceso básico para una demo con imágenes artificiales públicas.</p>
+      <p class="login-notice" data-client="login-notice">Acceso básico para una demo con imágenes artificiales públicas.</p>
     </section>
   </main>
 
   <div id="app" class="app-shell" hidden>
     <header class="topbar">
       <div class="brand-heading">
-        <p class="eyebrow">Recorrido virtual</p>
-        <h1>Recorrido virtual de la vivienda</h1>
+        <p class="eyebrow" data-client="navigation-eyebrow">Recorrido virtual</p>
+        <h1 data-client="tour-title">Recorrido virtual de la vivienda</h1>
       </div>
       <!-- El control del Jefe se monta aquí para mantenerlo centrado en la cabecera. -->
       <div id="manager-control-host" class="manager-control-host"></div>
@@ -98,7 +98,7 @@
         </section>
       </section>
     </main>
-    <footer>Demo pública preparada para despliegue manual en Vercel.</footer>
+    <footer data-client="footer">Demo pública preparada para despliegue manual en Vercel.</footer>
   </div>
   <noscript>Esta aplicación necesita JavaScript para funcionar.</noscript>
   <script type="module" src="/src/main.ts"></script>

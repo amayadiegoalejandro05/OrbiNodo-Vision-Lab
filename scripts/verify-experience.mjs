@@ -1,7 +1,8 @@
 /* global console, process, document, getComputedStyle, setTimeout */
 import { spawn } from 'node:child_process';
 import { createServer as createNetServer } from 'node:net';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { config as loadDotenv } from 'dotenv';
 import { chromium } from 'playwright-core';
 import { createServer } from 'vite';
@@ -213,7 +214,7 @@ try {
   assert(engineer2Text?.includes('Duración: Menos de 1 minuto'), 'No se calculó la duración de la sesión del Ingeniero 2.');
   await assertCleanEncoding();
   await page.getByRole('button', { name: 'Cerrar historial' }).click();
-  await page.screenshot({ path: 'fase7-verificacion.png', fullPage: true });
+  await page.screenshot({ path: join(tmpdir(), 'orbinodo-browser-verification.png'), fullPage: true });
 
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.psv-container');

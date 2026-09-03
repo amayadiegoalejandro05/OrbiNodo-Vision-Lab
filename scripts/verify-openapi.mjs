@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 const projectRoot = resolve(import.meta.dirname, '..');
 const documentPath = resolve(projectRoot, 'documentacion/openapi/orbinodo-api-v1.json');
 const document = JSON.parse(readFileSync(documentPath, 'utf8'));
+const packageJson = JSON.parse(readFileSync(resolve(projectRoot, 'package.json'), 'utf8'));
+const version = packageJson.version;
 const routeFiles = [
   ['backend/app.ts', ''],
   ['backend/routes/auth-routes.ts', '/api/auth'],
@@ -43,7 +45,7 @@ for (const [path, item] of Object.entries(document.paths ?? {})) {
 }
 
 assertCondition(document.openapi === '3.1.0', 'se requiere OpenAPI 3.1.0');
-assertCondition(document.info?.version === '1.0.0', 'la version del contrato debe ser 1.0.0');
+assertCondition(document.info?.version === version, 'la version del contrato no coincide con package.json.');
 assertCondition(codeRoutes.size === documentedRoutes.size, 'el numero de rutas no coincide con Fastify');
 for (const route of codeRoutes) assertCondition(documentedRoutes.has(route), `falta documentar ${route}`);
 for (const route of documentedRoutes) assertCondition(codeRoutes.has(route), `OpenAPI contiene ruta inexistente: ${route}`);

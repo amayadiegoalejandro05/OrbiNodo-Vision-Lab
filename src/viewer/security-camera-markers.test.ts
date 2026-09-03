@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { demoSecurityCameras } from '../data/demo-cameras';
+import { demoSecurityCameras } from '../../client-config/profiles/orbinodo-demo/cameras';
 import { buildSecurityCameraMarker } from './security-camera-markers';
 
 describe('renderizado seguro de fichas CCTV', () => {

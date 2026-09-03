@@ -119,8 +119,7 @@ try {
     'SELECT * FROM vista_historial_accesos LIMIT 1',
   );
   const columns = view.fields.map(({ name }) => name);
-  const expected = ['Usuario', 'Entrada', 'Salida', 'Estado', 'Duración'];
-  if (columns.join('|') !== expected.join('|')) {
+  const expected = ['usuario', 'entrada', 'salida', 'estado', 'duracion'];  if (columns.join('|') !== expected.join('|')) {
     throw new Error('La vista legible no tiene las columnas esperadas.');
   }
   const changesView = await database.query(

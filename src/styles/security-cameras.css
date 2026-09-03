@@ -10,24 +10,24 @@
   gap: 0.05rem;
   border: 2px solid #ffffff;
   border-radius: 50%;
-  color: #07111f;
-  background: #f7c969;
-  box-shadow: 0 0 0 4px #07111fb8, 0 0.6rem 1.2rem #00000073;
+  color: var(--brand-background, #07111f);
+  background: var(--brand-accent, #f7c969);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-background, #07111f) 72%, transparent), 0 0.6rem 1.2rem #00000073;
 }
 
 .security-camera-marker svg { width: 1.65rem; height: 1.65rem; fill: currentColor; }
 .security-camera-marker span { font-size: 0.52rem; font-weight: 900; letter-spacing: 0.08em; }
 .security-camera-marker:hover { color: #ffffff; background: #e47d28; transform: scale(1.08); }
-.security-camera-marker:focus-visible { outline: 4px solid #42d9e8; outline-offset: 4px; }
+.security-camera-marker:focus-visible { outline: 4px solid var(--brand-highlight, #42d9e8); outline-offset: 4px; }
 
-.camera-information { padding: 0.35rem 0.2rem 1.5rem; color: #dbe7f3; }
+.camera-information { padding: 0.35rem 0.2rem 1.5rem; color: var(--brand-text, #f5f7fb); }
 .camera-information h2 { margin: 0.35rem 0 0.75rem; font-size: 1.4rem; }
-.camera-demo-label { margin: 0; color: #f7c969; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
-.camera-status { display: inline-flex; margin: 0 0 1rem; align-items: center; gap: 0.4rem; color: #75d9c5; font-weight: 800; }
-.camera-status span { width: 0.65rem; height: 0.65rem; border-radius: 50%; background: #75d9c5; box-shadow: 0 0 0.65rem #75d9c5; }
+.camera-demo-label { margin: 0; color: var(--brand-accent, #f7c969); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.camera-status { display: inline-flex; margin: 0 0 1rem; align-items: center; gap: 0.4rem; color: var(--brand-primary, #75d9c5); font-weight: 800; }
+.camera-status span { width: 0.65rem; height: 0.65rem; border-radius: 50%; background: var(--brand-primary, #75d9c5); box-shadow: 0 0 0.65rem var(--brand-primary, #75d9c5); }
 .camera-information dl { display: grid; margin: 0; gap: 0.45rem; }
 .camera-detail { display: grid; padding: 0.6rem 0; border-bottom: 1px solid #ffffff1f; gap: 0.18rem; }
-.camera-detail dt { color: #8fa0b3; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.camera-detail dt { color: var(--brand-text-muted, #aebed0); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .camera-detail dd { margin: 0; color: #ffffff; line-height: 1.4; }
 
 @media (max-width: 700px) {

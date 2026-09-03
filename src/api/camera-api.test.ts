@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { demoSecurityCameras } from '../data/demo-cameras';
+import { demoSecurityCameras } from '../../client-config/profiles/orbinodo-demo/cameras';
 import { getCamerasFromApi, updateCameraOperations } from './camera-api';
 
 afterEach(() => vi.unstubAllGlobals());

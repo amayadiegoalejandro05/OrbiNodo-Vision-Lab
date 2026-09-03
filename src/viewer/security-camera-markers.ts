@@ -71,13 +71,13 @@ function buildOperationalReadOnly(camera: SecurityCameraRecord): string {
 function buildCameraPanel(camera: SecurityCameraRecord, editable: boolean): string {
   return `
     <article class="camera-information" aria-labelledby="${escapeHtml(camera.id)}-title">
-      <p class="camera-demo-label">Ficha simulada · Datos ficticios</p>
+      <p class="camera-demo-label">Ficha de camara</p>
       <h2 id="${escapeHtml(camera.id)}-title">${escapeHtml(camera.name)}</h2>
       <p class="camera-status camera-status--${escapeHtml(camera.status.toLowerCase().replace(/\s+/g, '-'))}"><span aria-hidden="true"></span>${escapeHtml(camera.status)}</p>
       <dl>
         ${detail('Lugar', camera.location)}
         ${detail('Código del activo', camera.assetCode)}
-        ${detail('Marca', camera.brand + ' (ficticia)')}
+        ${detail('Marca', camera.brand)}
         ${detail('Modelo', camera.model)}
         ${detail('Tipo de cámara', camera.type)}
         ${detail('Cobertura prevista', camera.coverage)}

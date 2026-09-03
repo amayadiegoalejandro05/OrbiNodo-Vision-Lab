@@ -3,6 +3,21 @@
 Todos los cambios relevantes de cada release se registran en este archivo.
 Las versiones siguen Semantic Versioning: `MAJOR.MINOR.PATCH`.
 
+## [1.1.0] - 2026-09-03
+
+Release de handoff de OrbiNodo Enterprise.
+
+### Incluye
+
+- Separacion Core/cliente y configuracion white-label documentada.
+- Paquete de handoff con instalacion, operacion, arquitectura, OpenAPI, seguridad y backups.
+- Verificaciones de navegacion, API, secretos, dependencias y documentacion.
+
+### Compatibilidad
+
+- Requiere Node.js 24.18.1 y migraciones acumulativas 0001-0008.
+- No modifica el esquema PostgreSQL respecto a v1.0.0.
+
 ## [1.0.0] - 2026-08-31
 
 Primera release empresarial consolidada.

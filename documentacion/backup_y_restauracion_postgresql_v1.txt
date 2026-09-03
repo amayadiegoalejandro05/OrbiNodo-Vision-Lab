@@ -55,4 +55,4 @@ El responsable conserva los ultimos 30 dias. El directorio local es la primera u
 
 ## Registro de prueba
 
-Registrar fecha UTC, archivo, SHA-256, resultado del restore, responsable y duracion. Prueba real ejecutada el 2026-08-28 UTC: backup cifrado y restore validados con 7 migraciones, 4 usuarios, 10 camaras y 10 estados.
+Registrar fecha UTC, archivo, SHA-256, resultado del restore, responsable y duracion. Prueba real ejecutada el 2026-08-28 UTC: backup cifrado y restore validados con 7 migraciones, 4 usuarios, 10 camaras y 10 estados. Despu?s de incorporar la migraci?n 0008, toda validaci?n nueva debe confirmar las 8 migraciones actuales.

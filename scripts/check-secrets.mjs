@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = process.cwd();
@@ -35,6 +35,9 @@ function inspect(file, content) {
 
 for (const file of git(['ls-files']).trim().split(/\r?\n/).filter(Boolean)) {
   if (file === scannerFile) continue;
+  // A tracked file may have been intentionally deleted but not committed yet.
+  // It is absent from the handoff working tree and must not make the scanner fail.
+  if (!existsSync(resolve(root, file))) continue;
   if (/(^|\/)\.env/.test(file) && !allowedEnvFiles.has(file)) {
     findings.push(file + ': archivo .env rastreado');
     continue;

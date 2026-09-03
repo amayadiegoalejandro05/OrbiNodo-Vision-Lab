@@ -1,8 +1,8 @@
 /* Estilos propios; el visor importa además su CSS oficial. */
 :root {
   --topbar-height: 5.35rem;
-  color: #f5f7fb;
-  background: #07111f;
+  color: var(--brand-text, #f5f7fb);
+  background: var(--brand-background, #07111f);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -14,17 +14,17 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: radial-gradient(circle at top right, #183a54 0, transparent 34rem), #07111f;
+  background: radial-gradient(circle at top right, #183a54 0, transparent 34rem), var(--brand-background, #07111f);
 }
 
 button, input { font: inherit; }
 
 button {
   padding: 0.7rem 1rem;
-  border: 1px solid #75d9c580;
+  border: 1px solid color-mix(in srgb, var(--brand-primary, #75d9c5) 50%, transparent);
   border-radius: 0.75rem;
-  color: #08271f;
-  background: #75d9c5;
+  color: var(--brand-primary-contrast, #08271f);
+  background: var(--brand-primary, #75d9c5);
   cursor: pointer;
   font-weight: 700;
 }
@@ -52,18 +52,18 @@ button:disabled {
   grid-template-columns: minmax(16rem, 1fr) auto minmax(16rem, 1fr);
   gap: 1.25rem;
   border-bottom: 1px solid #ffffff1f;
-  background: #07111ff2;
+  background: color-mix(in srgb, var(--brand-background, #07111f) 95%, transparent);
   backdrop-filter: blur(10px);
 }
 
 .brand-heading { min-width: 0; }
 .manager-control-host { justify-self: center; }
 .topbar-actions { display: flex; align-items: center; justify-self: end; gap: 1rem; }
-.eyebrow, .location, .locations p, .viewer-help { color: #aebed0; }
+.eyebrow, .location, .locations p, .viewer-help { color: var(--brand-text-muted, #aebed0); }
 
 .eyebrow {
   margin: 0 0 0.25rem;
-  color: #75d9c5;
+  color: var(--brand-primary, #75d9c5);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -90,7 +90,7 @@ h1 { margin-bottom: 0; font-size: clamp(1.25rem, 3vw, 1.8rem); }
   padding: 1.5rem;
   overflow-y: auto;
   border-right: 1px solid #ffffff1f;
-  background: #0d1a2a;
+  background: var(--brand-surface, #0d1a2a);
   scrollbar-gutter: stable;
 }
 
@@ -122,13 +122,13 @@ h1 { margin-bottom: 0; font-size: clamp(1.25rem, 3vw, 1.8rem); }
   margin: 0.75rem 0 0;
   padding: 0.75rem 1rem;
   border-radius: 0.75rem;
-  color: #08271f;
-  background: #75d9c5;
+  color: var(--brand-primary-contrast, #08271f);
+  background: var(--brand-primary, #75d9c5);
   font-weight: 700;
 }
 
-.status[data-state='loading'] { color: #3d2a00; background: #f7c969; }
-.status[data-state='error'] { color: #4b0d13; background: #ff9ba5; }
+.status[data-state='loading'] { color: #3d2a00; background: var(--brand-accent, #f7c969); }
+.status[data-state='error'] { color: #4b0d13; background: var(--brand-danger, #ff7d8a); }
 .viewer-feedback button { margin-top: 0.75rem; white-space: nowrap; }
 .viewer-help { width: 100%; margin: 0; font-size: 0.85rem; }
 
@@ -148,10 +148,10 @@ h1 { margin-bottom: 0; font-size: clamp(1.25rem, 3vw, 1.8rem); }
   padding: 1rem;
   border: 1px solid #ffffff1f;
   border-radius: 0.9rem;
-  background: #0d1a2acc;
+  background: color-mix(in srgb, var(--brand-surface, #0d1a2a) 80%, transparent);
 }
 
-.map-description { margin: 0.45rem 0 0.8rem; color: #aebed0; font-size: 0.75rem; }
+.map-description { margin: 0.45rem 0 0.8rem; color: var(--brand-text-muted, #aebed0); font-size: 0.75rem; }
 
 .sr-only {
   position: absolute;
@@ -168,7 +168,7 @@ h1 { margin-bottom: 0; font-size: clamp(1.25rem, 3vw, 1.8rem); }
 footer {
   padding: 0.75rem 1.5rem;
   border-top: 1px solid #ffffff1f;
-  color: #8fa0b3;
+  color: var(--brand-text-muted, #aebed0);
   font-size: 0.85rem;
   text-align: center;
 }
@@ -207,3 +207,18 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; }
 }
+
+
+
+
+
+
+
+
+
+
+
+.client-brand { display: inline-flex; align-items: center; gap: 0.55rem; }
+.client-brand-logo { width: auto; max-width: 12rem; height: 2rem; object-fit: contain; }
+.client-brand-fallback { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 0.45rem; color: var(--brand-primary-contrast, #08271f); background: var(--brand-primary, #75d9c5); font-weight: 900; }
+.client-product-name { color: var(--brand-text, #f5f7fb); font-size: 0.9rem; font-weight: 800; }

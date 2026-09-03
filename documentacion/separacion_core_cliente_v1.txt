@@ -1,0 +1,72 @@
+ORBINODO CORE Y PERFIL DE CLIENTE v1
+=====================================
+
+MODELO APROBADO
+---------------
+OrbiNodo usa una instancia dedicada por cliente. Cada cliente recibe:
+- Un proyecto y dominio de deployment propios.
+- Una base PostgreSQL o Neon independiente.
+- Sus secretos y variables de entorno propios.
+- Un perfil de contenido, branding y seed propio.
+
+No es un sistema multi-tenant en v1.0. Nunca se comparten DATABASE_URL, usuarios,
+sesiones, camaras, historial ni backups entre clientes.
+
+QUE ES CORE
+-----------
+El Core reusable comprende:
+- backend/: Fastify, autenticacion, autorizacion, auditoria, salud y servicios.
+- backend/database/migrations/: esquema PostgreSQL y protecciones.
+- src/api/, src/ui/, src/viewer/ y src/domain/: componentes reutilizables.
+- scripts/: migracion, backup, restore, verificacion y operacion.
+- documentacion/openapi/: contrato de integracion.
+
+El Core no debe contener panoramas, inventarios, logos, textos corporativos,
+usuarios iniciales de un cliente ni credenciales.
+
+QUE PERTENECE A CADA CLIENTE
+----------------------------
+Los perfiles viven en client-config/profiles/<id>/:
+- tour.ts: recorrido, pisos, espacios, hotspots y rutas.
+- cameras.ts: inventario inicial y posiciones de marcadores.
+- profile.ts: branding visible y nombres de cuentas de seed.
+
+client-config/client-profiles.ts registra los perfiles admitidos. El frontend usa
+VITE_ORBINODO_CLIENT_PROFILE y el seed usa ORBINODO_CLIENT_PROFILE. Ambos valores
+deben ser el mismo id en una instancia.
+
+CREAR CLIENTE B
+---------------
+1. Crear client-config/profiles/cliente-b/ copiando la estructura de
+   client-config/profiles/orbinodo-demo/.
+2. Sustituir tour.ts, cameras.ts, branding y seedIdentities con datos aprobados.
+3. Registrar el perfil cliente-b en client-config/client-profiles.ts.
+4. Crear un proyecto Vercel, dominio y base PostgreSQL/Neon exclusivos.
+5. Configurar DATABASE_URL, ORBINODO_CLIENT_PROFILE=cliente-b y
+   VITE_ORBINODO_CLIENT_PROFILE=cliente-b. No reutilizar valores de Cliente A.
+6. Aplicar npm run db:migrate y npm run db:seed contra la nueva base.
+7. Ejecutar npm run typecheck, npm run test, npm run clients:check y las
+   verificaciones de produccion contra el dominio de Cliente B.
+
+REGLAS DE AISLAMIENTO
+---------------------
+- Una base por cliente; no usar client_id porque este release no es multi-tenant.
+- Un backup y una clave de cifrado por cliente.
+- Un proyecto Vercel y variables privadas por cliente.
+- Las pruebas de integracion solo usan una base local temporal.
+- Los datos de demostracion OrbiNodo permanecen en su perfil y no se importan
+  desde src/ por el backend.
+
+VERIFICACION
+------------
+npm run clients:check confirma que existe esta documentacion, que el seed obtiene
+datos del perfil de cliente y que el frontend selecciona un perfil antes de montar
+el recorrido. client-config/client-profiles.test.ts comprueba la coherencia del
+perfil demo y evita volver a acoplar el seed a src/data.
+
+LIMITES
+-------
+Agregar un segundo cliente requiere un perfil y deployment nuevos, no un refactor
+del Core. Si en el futuro se necesita compartir una sola base entre clientes, debe
+abrirse una fase independiente de multi-tenancy con tenant_id, filtros obligatorios,
+indices compuestos y pruebas de aislamiento.

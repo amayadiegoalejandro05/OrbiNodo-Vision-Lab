@@ -2,138 +2,1374 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OrbiNodo Enterprise API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Contrato versionado de la API Fastify de OrbiNodo. Los datos CCTV son ficticios."
   },
   "servers": [
-    { "url": "http://127.0.0.1:3001", "description": "Desarrollo local" },
-    { "url": "https://orbinodo-demo.vercel.app", "description": "Produccion Vercel" }
+    {
+      "url": "http://127.0.0.1:3001",
+      "description": "Desarrollo local"
+    },
+    {
+      "url": "https://{host}",
+      "description": "Produccion por instancia de cliente",
+      "variables": {
+        "host": {
+          "default": "orbinodo-demo.vercel.app",
+          "description": "Dominio HTTPS de la instancia"
+        }
+      }
+    }
   ],
   "tags": [
-    { "name": "Salud" },
-    { "name": "Autenticacion" },
-    { "name": "Camaras" },
-    { "name": "Auditoria" }
+    {
+      "name": "Salud"
+    },
+    {
+      "name": "Autenticacion"
+    },
+    {
+      "name": "Camaras"
+    },
+    {
+      "name": "Auditoria"
+    }
   ],
   "paths": {
     "/api/health": {
       "get": {
-        "tags": ["Salud"], "summary": "Consulta salud de API y PostgreSQL", "security": [],
+        "tags": [
+          "Salud"
+        ],
+        "summary": "Consulta salud de API y PostgreSQL",
+        "security": [],
         "responses": {
-          "200": { "description": "API y PostgreSQL disponibles", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" }, "example": { "status": "ok", "database": "available", "serverTime": "2026-08-31T17:00:00.000Z" } } } },
-          "426": { "$ref": "#/components/responses/HttpsRequired" },
-          "503": { "$ref": "#/components/responses/DatabaseUnavailable" }
+          "200": {
+            "description": "API y PostgreSQL disponibles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "ok",
+                  "database": "available",
+                  "serverTime": "2026-08-31T17:00:00.000Z"
+                }
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/DatabaseUnavailable"
+          }
         }
       },
-      "head": { "tags": ["Salud"], "summary": "Comprueba salud sin cuerpo", "security": [], "responses": { "200": { "description": "Disponible" }, "426": { "$ref": "#/components/responses/HttpsRequired" }, "503": { "$ref": "#/components/responses/DatabaseUnavailable" } } }
+      "head": {
+        "tags": [
+          "Salud"
+        ],
+        "summary": "Comprueba salud sin cuerpo",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Disponible"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "503": {
+            "$ref": "#/components/responses/DatabaseUnavailable"
+          }
+        }
+      }
     },
     "/api/live": {
-      "get": { "tags": ["Salud"], "summary": "Confirma que la API esta viva sin consultar PostgreSQL", "security": [], "responses": { "200": { "description": "Fastify disponible", "content": { "application/json": { "schema": { "type": "object", "required": ["status", "service"], "properties": { "status": { "const": "ok" }, "service": { "const": "api" } } }, "example": { "status": "ok", "service": "api" } } } }, "426": { "$ref": "#/components/responses/HttpsRequired" } } },
-      "head": { "tags": ["Salud"], "summary": "Comprueba liveness sin cuerpo", "security": [], "responses": { "200": { "description": "Fastify disponible" }, "426": { "$ref": "#/components/responses/HttpsRequired" } } }
+      "get": {
+        "tags": [
+          "Salud"
+        ],
+        "summary": "Confirma que la API esta viva sin consultar PostgreSQL",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Fastify disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "service"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ok"
+                    },
+                    "service": {
+                      "const": "api"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "service": "api"
+                }
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "Salud"
+        ],
+        "summary": "Comprueba liveness sin cuerpo",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Fastify disponible"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          }
+        }
+      }
     },
     "/api/auth/login": {
       "post": {
-        "tags": ["Autenticacion"], "summary": "Inicia sesion y establece cookie HttpOnly", "security": [],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" }, "example": { "username": "Ingeniero 1", "password": "1234567890" } } } },
+        "tags": [
+          "Autenticacion"
+        ],
+        "summary": "Inicia sesion y establece cookie HttpOnly",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
+              "example": {
+                "username": "Ingeniero 1",
+                "password": "1234567890"
+              }
+            }
+          }
+        },
         "responses": {
-          "200": { "description": "Sesion creada; token solo en Set-Cookie", "headers": { "Set-Cookie": { "schema": { "type": "string" }, "description": "Cookie HttpOnly, SameSite=Lax y Secure en HTTPS" } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginResponse" } } } },
-          "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/InvalidCredentials" }, "413": { "$ref": "#/components/responses/PayloadTooLarge" }, "415": { "$ref": "#/components/responses/UnsupportedMediaType" }, "429": { "$ref": "#/components/responses/LoginRateLimited" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" }
+          "200": {
+            "description": "Sesion creada; token solo en Set-Cookie",
+            "headers": {
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Cookie HttpOnly, SameSite=Lax y Secure en HTTPS"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/InvalidCredentials"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/LoginRateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       }
     },
     "/api/auth/me": {
       "get": {
-        "tags": ["Autenticacion"], "summary": "Obtiene el usuario de la sesion actual", "security": [{ "cookieAuth": [] }],
-        "responses": { "200": { "description": "Sesion valida", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MeResponse" } } } }, "401": { "$ref": "#/components/responses/SessionRequired" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } }
+        "tags": [
+          "Autenticacion"
+        ],
+        "summary": "Obtiene el usuario de la sesion actual",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesion valida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       },
-      "head": { "tags": ["Autenticacion"], "summary": "Comprueba sesion sin cuerpo", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "Sesion valida" }, "401": { "$ref": "#/components/responses/SessionRequired" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } } }
+      "head": {
+        "tags": [
+          "Autenticacion"
+        ],
+        "summary": "Comprueba sesion sin cuerpo",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesion valida"
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
     },
     "/api/auth/logout": {
       "post": {
-        "tags": ["Autenticacion"], "summary": "Cierra la sesion si existe y elimina la cookie", "security": [{ "cookieAuth": [] }, {}],
-        "responses": { "204": { "description": "Cookie eliminada, exista o no una sesion" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } }
+        "tags": [
+          "Autenticacion"
+        ],
+        "summary": "Cierra la sesion si existe y elimina la cookie",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "204": {
+            "description": "Cookie eliminada, exista o no una sesion"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       }
     },
     "/api/cameras": {
       "get": {
-        "tags": ["Camaras"], "summary": "Lista las camaras", "security": [{ "cookieAuth": [] }], "x-orbinodo-roles": ["programmer", "manager", "engineer1", "engineer2"],
-        "responses": { "200": { "description": "Camaras disponibles", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CameraListResponse" } } } }, "401": { "$ref": "#/components/responses/SessionRequired" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } }
+        "tags": [
+          "Camaras"
+        ],
+        "summary": "Lista las camaras",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-orbinodo-roles": [
+          "programmer",
+          "manager",
+          "engineer1",
+          "engineer2"
+        ],
+        "responses": {
+          "200": {
+            "description": "Camaras disponibles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CameraListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       },
-      "head": { "tags": ["Camaras"], "summary": "Comprueba listado sin cuerpo", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "Disponible" }, "401": { "$ref": "#/components/responses/SessionRequired" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } } }
+      "head": {
+        "tags": [
+          "Camaras"
+        ],
+        "summary": "Comprueba listado sin cuerpo",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disponible"
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
     },
     "/api/cameras/{id}": {
       "get": {
-        "tags": ["Camaras"], "summary": "Consulta una camara individual", "security": [{ "cookieAuth": [] }], "x-orbinodo-roles": ["programmer", "manager", "engineer1", "engineer2"],
-        "parameters": [{ "$ref": "#/components/parameters/CameraId" }],
-        "responses": { "200": { "description": "Camara encontrada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CameraResponse" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/SessionRequired" }, "404": { "$ref": "#/components/responses/CameraNotFound" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } }
+        "tags": [
+          "Camaras"
+        ],
+        "summary": "Consulta una camara individual",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-orbinodo-roles": [
+          "programmer",
+          "manager",
+          "engineer1",
+          "engineer2"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CameraId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Camara encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CameraResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/CameraNotFound"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       },
-      "head": { "tags": ["Camaras"], "summary": "Comprueba una camara sin cuerpo", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/CameraId" }], "responses": { "200": { "description": "Camara encontrada" }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/SessionRequired" }, "404": { "$ref": "#/components/responses/CameraNotFound" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } } }
+      "head": {
+        "tags": [
+          "Camaras"
+        ],
+        "summary": "Comprueba una camara sin cuerpo",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CameraId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Camara encontrada"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "404": {
+            "$ref": "#/components/responses/CameraNotFound"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
     },
     "/api/cameras/{id}/operations": {
       "patch": {
-        "tags": ["Camaras"], "summary": "Actualiza campos operacionales autorizados", "security": [{ "cookieAuth": [] }], "x-orbinodo-roles": ["engineer1", "engineer2"],
-        "parameters": [{ "$ref": "#/components/parameters/CameraId" }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CameraOperationsRequest" }, "example": { "status": "En mantenimiento", "lastMaintenanceOn": "2026-02-01", "nextMaintenanceOn": "2026-07-01", "responsibleArea": "Mantenimiento", "notes": "Revision programada", "expectedVersion": 0 } } } },
-        "responses": { "200": { "description": "Actualizacion aplicada y auditada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CameraUpdateResponse" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/SessionRequired" }, "403": { "$ref": "#/components/responses/ForbiddenRole" }, "404": { "$ref": "#/components/responses/CameraNotFound" }, "409": { "$ref": "#/components/responses/ResourceConflict" }, "413": { "$ref": "#/components/responses/PayloadTooLarge" }, "415": { "$ref": "#/components/responses/UnsupportedMediaType" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } }
+        "tags": [
+          "Camaras"
+        ],
+        "summary": "Actualiza campos operacionales autorizados",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-orbinodo-roles": [
+          "engineer1",
+          "engineer2"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CameraId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CameraOperationsRequest"
+              },
+              "example": {
+                "status": "En mantenimiento",
+                "lastMaintenanceOn": "2026-02-01",
+                "nextMaintenanceOn": "2026-07-01",
+                "responsibleArea": "Mantenimiento",
+                "notes": "Revision programada",
+                "expectedVersion": 0
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Actualizacion aplicada y auditada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CameraUpdateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenRole"
+          },
+          "404": {
+            "$ref": "#/components/responses/CameraNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ResourceConflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       }
     },
     "/api/audit/access-sessions": {
       "get": {
-        "tags": ["Auditoria"], "summary": "Consulta historial de sesiones", "security": [{ "cookieAuth": [] }], "x-orbinodo-roles": ["manager"],
-        "responses": { "200": { "description": "Historial de accesos", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccessSessionsResponse" } } } }, "401": { "$ref": "#/components/responses/SessionRequired" }, "403": { "$ref": "#/components/responses/ForbiddenRole" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } }
+        "tags": [
+          "Auditoria"
+        ],
+        "summary": "Consulta historial de sesiones",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-orbinodo-roles": [
+          "manager"
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de accesos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessSessionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenRole"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       },
-      "head": { "tags": ["Auditoria"], "summary": "Comprueba auditoria de sesiones sin cuerpo", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "Disponible" }, "401": { "$ref": "#/components/responses/SessionRequired" }, "403": { "$ref": "#/components/responses/ForbiddenRole" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } } }
+      "head": {
+        "tags": [
+          "Auditoria"
+        ],
+        "summary": "Comprueba auditoria de sesiones sin cuerpo",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disponible"
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenRole"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
     },
     "/api/audit/camera-changes": {
       "get": {
-        "tags": ["Auditoria"], "summary": "Consulta historial de cambios de camaras", "security": [{ "cookieAuth": [] }], "x-orbinodo-roles": ["manager"],
-        "parameters": [{ "$ref": "#/components/parameters/CameraIdFilter" }, { "$ref": "#/components/parameters/AssetCodeFilter" }, { "$ref": "#/components/parameters/UsernameFilter" }],
-        "responses": { "200": { "description": "Historial de cambios", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CameraChangesResponse" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/SessionRequired" }, "403": { "$ref": "#/components/responses/ForbiddenRole" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } }
+        "tags": [
+          "Auditoria"
+        ],
+        "summary": "Consulta historial de cambios de camaras",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-orbinodo-roles": [
+          "manager"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CameraIdFilter"
+          },
+          {
+            "$ref": "#/components/parameters/AssetCodeFilter"
+          },
+          {
+            "$ref": "#/components/parameters/UsernameFilter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de cambios",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CameraChangesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenRole"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       },
-      "head": { "tags": ["Auditoria"], "summary": "Comprueba auditoria de cambios sin cuerpo", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/CameraIdFilter" }, { "$ref": "#/components/parameters/AssetCodeFilter" }, { "$ref": "#/components/parameters/UsernameFilter" }], "responses": { "200": { "description": "Disponible" }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/SessionRequired" }, "403": { "$ref": "#/components/responses/ForbiddenRole" }, "500": { "$ref": "#/components/responses/InternalError" }, "426": { "$ref": "#/components/responses/HttpsRequired" } } }
+      "head": {
+        "tags": [
+          "Auditoria"
+        ],
+        "summary": "Comprueba auditoria de cambios sin cuerpo",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CameraIdFilter"
+          },
+          {
+            "$ref": "#/components/parameters/AssetCodeFilter"
+          },
+          {
+            "$ref": "#/components/parameters/UsernameFilter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disponible"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/SessionRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenRole"
+          },
+          "426": {
+            "$ref": "#/components/responses/HttpsRequired"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
     }
   },
   "components": {
-    "securitySchemes": { "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "orbinodo_session", "description": "Cookie HttpOnly creada por POST /api/auth/login." } },
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "orbinodo_session",
+        "description": "Cookie HttpOnly creada por POST /api/auth/login."
+      }
+    },
     "parameters": {
-      "CameraId": { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^camera-[0-9]{2}$" }, "example": "camera-01" },
-      "CameraIdFilter": { "name": "cameraId", "in": "query", "required": false, "schema": { "type": "string", "minLength": 1, "maxLength": 80 }, "example": "camera-03" },
-      "AssetCodeFilter": { "name": "assetCode", "in": "query", "required": false, "schema": { "type": "string", "minLength": 1, "maxLength": 80 }, "example": "CCTV-003" },
-      "UsernameFilter": { "name": "username", "in": "query", "required": false, "schema": { "type": "string", "minLength": 1, "maxLength": 80 }, "example": "Ingeniero 1" }
+      "CameraId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^camera-[0-9]{2}$"
+        },
+        "example": "camera-01"
+      },
+      "CameraIdFilter": {
+        "name": "cameraId",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "example": "camera-03"
+      },
+      "AssetCodeFilter": {
+        "name": "assetCode",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "example": "CCTV-003"
+      },
+      "UsernameFilter": {
+        "name": "username",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "example": "Ingeniero 1"
+      }
     },
     "schemas": {
-      "ApiError": { "type": "object", "additionalProperties": false, "required": ["error", "message"], "properties": { "error": { "type": "string", "enum": ["VALIDATION_ERROR", "INVALID_JSON", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "HTTPS_REQUIRED", "CORS_ORIGIN_FORBIDDEN", "METHOD_NOT_ALLOWED", "API_RATE_LIMITED", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "SESSION_REQUIRED", "FORBIDDEN_ROLE", "CAMERA_NOT_FOUND", "ROUTE_NOT_FOUND", "RESOURCE_CONFLICT", "INTERNAL_ERROR", "DATABASE_UNAVAILABLE"] }, "message": { "type": "string" } }, "example": { "error": "CAMERA_NOT_FOUND", "message": "La camara solicitada no existe." } },
-      "AuthRole": { "type": "string", "enum": ["programmer", "manager", "engineer1", "engineer2"] },
-      "AuthUser": { "type": "object", "additionalProperties": false, "required": ["username", "displayName", "role"], "properties": { "username": { "type": "string" }, "displayName": { "type": "string" }, "role": { "$ref": "#/components/schemas/AuthRole" } } },
-      "LoginRequest": { "type": "object", "additionalProperties": false, "required": ["username", "password"], "properties": { "username": { "type": "string", "minLength": 1, "maxLength": 80 }, "password": { "type": "string", "minLength": 1, "maxLength": 128, "writeOnly": true } } },
-      "LoginResponse": { "type": "object", "additionalProperties": false, "required": ["user", "expiresAt"], "properties": { "user": { "$ref": "#/components/schemas/AuthUser" }, "expiresAt": { "type": "string", "format": "date-time" } } },
-      "MeResponse": { "type": "object", "additionalProperties": false, "required": ["user"], "properties": { "user": { "$ref": "#/components/schemas/AuthUser" } } },
-      "HealthResponse": { "type": "object", "additionalProperties": false, "required": ["status", "database", "serverTime"], "properties": { "status": { "const": "ok" }, "database": { "const": "available" }, "serverTime": { "type": "string", "format": "date-time" } } },
-      "CameraStatus": { "type": "string", "enum": ["Operativa", "En mantenimiento", "Fuera de servicio"] },
-      "Camera": { "type": "object", "additionalProperties": false, "required": ["id", "version", "assetCode", "name", "panoramaId", "location", "brand", "model", "type", "yaw", "pitch", "status", "installedOn", "lastMaintenanceOn", "nextMaintenanceOn", "coverage", "recordingMode", "retention", "responsibleArea", "notes"], "properties": { "id": { "type": "string", "pattern": "^camera-[0-9]{2}$" }, "version": { "type": "integer", "minimum": 0 }, "assetCode": { "type": "string" }, "name": { "type": "string" }, "panoramaId": { "type": "string" }, "location": { "type": "string" }, "brand": { "type": "string" }, "model": { "type": "string" }, "type": { "type": "string", "enum": ["360?", "Fija"] }, "yaw": { "type": "number" }, "pitch": { "type": "number" }, "status": { "$ref": "#/components/schemas/CameraStatus" }, "installedOn": { "type": "string", "format": "date" }, "lastMaintenanceOn": { "type": "string", "format": "date" }, "nextMaintenanceOn": { "type": "string", "format": "date" }, "coverage": { "type": "string" }, "recordingMode": { "type": "string" }, "retention": { "type": "string" }, "responsibleArea": { "type": "string" }, "notes": { "type": "string" } } },
-      "CameraOperationsRequest": { "type": "object", "additionalProperties": false, "required": ["status", "lastMaintenanceOn", "nextMaintenanceOn", "responsibleArea", "notes", "expectedVersion"], "properties": { "status": { "$ref": "#/components/schemas/CameraStatus" }, "lastMaintenanceOn": { "type": "string", "format": "date" }, "nextMaintenanceOn": { "type": "string", "format": "date" }, "responsibleArea": { "type": "string", "minLength": 1, "maxLength": 100 }, "notes": { "type": "string", "minLength": 1, "maxLength": 500 }, "expectedVersion": { "type": "integer", "minimum": 0 } } },
-      "CameraListResponse": { "type": "object", "additionalProperties": false, "required": ["cameras"], "properties": { "cameras": { "type": "array", "items": { "$ref": "#/components/schemas/Camera" } } } },
-      "CameraResponse": { "type": "object", "additionalProperties": false, "required": ["camera"], "properties": { "camera": { "$ref": "#/components/schemas/Camera" } } },
-      "CameraUpdateResponse": { "type": "object", "additionalProperties": false, "required": ["camera", "changedFields"], "properties": { "camera": { "$ref": "#/components/schemas/Camera" }, "changedFields": { "type": "array", "items": { "type": "string", "enum": ["status", "lastMaintenanceOn", "nextMaintenanceOn", "responsibleArea", "notes"] } } } },
-      "AccessSession": { "type": "object", "additionalProperties": false, "required": ["id", "timestamp", "status", "role", "displayName", "username"], "properties": { "id": { "type": "string" }, "timestamp": { "type": "string", "format": "date-time" }, "endedAt": { "type": "string", "format": "date-time" }, "logoutAt": { "type": "string", "format": "date-time" }, "durationSeconds": { "type": "number", "minimum": 0 }, "status": { "type": "string", "enum": ["active", "logged_out", "expired", "revoked"] }, "role": { "$ref": "#/components/schemas/AuthRole" }, "displayName": { "type": "string" }, "username": { "type": "string" } } },
-      "AuditFieldChange": { "type": "object", "additionalProperties": false, "required": ["field", "label", "before", "after"], "properties": { "field": { "type": "string", "enum": ["status", "lastMaintenanceOn", "nextMaintenanceOn", "responsibleArea", "notes"] }, "label": { "type": "string" }, "before": { "type": "string" }, "after": { "type": "string" } } },
-      "CameraChange": { "type": "object", "additionalProperties": false, "required": ["id", "timestamp", "actorRole", "actorName", "cameraId", "cameraName", "assetCode", "changes"], "properties": { "id": { "type": "string" }, "timestamp": { "type": "string", "format": "date-time" }, "actorRole": { "$ref": "#/components/schemas/AuthRole" }, "actorName": { "type": "string" }, "cameraId": { "type": "string" }, "cameraName": { "type": "string" }, "assetCode": { "type": "string" }, "changes": { "type": "array", "items": { "$ref": "#/components/schemas/AuditFieldChange" } } } },
-      "AccessSessionsResponse": { "type": "object", "additionalProperties": false, "required": ["accessSessions"], "properties": { "accessSessions": { "type": "array", "items": { "$ref": "#/components/schemas/AccessSession" } } } },
-      "CameraChangesResponse": { "type": "object", "additionalProperties": false, "required": ["cameraChanges"], "properties": { "cameraChanges": { "type": "array", "items": { "$ref": "#/components/schemas/CameraChange" } } } }
+      "ApiError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "VALIDATION_ERROR",
+              "INVALID_JSON",
+              "PAYLOAD_TOO_LARGE",
+              "UNSUPPORTED_MEDIA_TYPE",
+              "HTTPS_REQUIRED",
+              "CORS_ORIGIN_FORBIDDEN",
+              "METHOD_NOT_ALLOWED",
+              "API_RATE_LIMITED",
+              "INVALID_CREDENTIALS",
+              "LOGIN_RATE_LIMITED",
+              "SESSION_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "CAMERA_NOT_FOUND",
+              "ROUTE_NOT_FOUND",
+              "RESOURCE_CONFLICT",
+              "INTERNAL_ERROR",
+              "DATABASE_UNAVAILABLE"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "error": "CAMERA_NOT_FOUND",
+          "message": "La camara solicitada no existe."
+        }
+      },
+      "AuthRole": {
+        "type": "string",
+        "enum": [
+          "programmer",
+          "manager",
+          "engineer1",
+          "engineer2"
+        ]
+      },
+      "AuthUser": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "username",
+          "displayName",
+          "role"
+        ],
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/AuthRole"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "writeOnly": true
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "user",
+          "expiresAt"
+        ],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/AuthUser"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MeResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "user"
+        ],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/AuthUser"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "database",
+          "serverTime"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "database": {
+            "const": "available"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CameraStatus": {
+        "type": "string",
+        "enum": [
+          "Operativa",
+          "En mantenimiento",
+          "Fuera de servicio"
+        ]
+      },
+      "Camera": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "assetCode",
+          "name",
+          "panoramaId",
+          "location",
+          "brand",
+          "model",
+          "type",
+          "yaw",
+          "pitch",
+          "status",
+          "installedOn",
+          "lastMaintenanceOn",
+          "nextMaintenanceOn",
+          "coverage",
+          "recordingMode",
+          "retention",
+          "responsibleArea",
+          "notes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^camera-[0-9]{2}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "assetCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "panoramaId": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "360?",
+              "Fija"
+            ]
+          },
+          "yaw": {
+            "type": "number"
+          },
+          "pitch": {
+            "type": "number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CameraStatus"
+          },
+          "installedOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "lastMaintenanceOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "nextMaintenanceOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "coverage": {
+            "type": "string"
+          },
+          "recordingMode": {
+            "type": "string"
+          },
+          "retention": {
+            "type": "string"
+          },
+          "responsibleArea": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "CameraOperationsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "lastMaintenanceOn",
+          "nextMaintenanceOn",
+          "responsibleArea",
+          "notes",
+          "expectedVersion"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/CameraStatus"
+          },
+          "lastMaintenanceOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "nextMaintenanceOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "responsibleArea": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CameraListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cameras"
+        ],
+        "properties": {
+          "cameras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Camera"
+            }
+          }
+        }
+      },
+      "CameraResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "camera"
+        ],
+        "properties": {
+          "camera": {
+            "$ref": "#/components/schemas/Camera"
+          }
+        }
+      },
+      "CameraUpdateResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "camera",
+          "changedFields"
+        ],
+        "properties": {
+          "camera": {
+            "$ref": "#/components/schemas/Camera"
+          },
+          "changedFields": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "status",
+                "lastMaintenanceOn",
+                "nextMaintenanceOn",
+                "responsibleArea",
+                "notes"
+              ]
+            }
+          }
+        }
+      },
+      "AccessSession": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "timestamp",
+          "status",
+          "role",
+          "displayName",
+          "username"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "logoutAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationSeconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "logged_out",
+              "expired",
+              "revoked"
+            ]
+          },
+          "role": {
+            "$ref": "#/components/schemas/AuthRole"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "AuditFieldChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "label",
+          "before",
+          "after"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "status",
+              "lastMaintenanceOn",
+              "nextMaintenanceOn",
+              "responsibleArea",
+              "notes"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "before": {
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          }
+        }
+      },
+      "CameraChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "timestamp",
+          "actorRole",
+          "actorName",
+          "cameraId",
+          "cameraName",
+          "assetCode",
+          "changes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorRole": {
+            "$ref": "#/components/schemas/AuthRole"
+          },
+          "actorName": {
+            "type": "string"
+          },
+          "cameraId": {
+            "type": "string"
+          },
+          "cameraName": {
+            "type": "string"
+          },
+          "assetCode": {
+            "type": "string"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditFieldChange"
+            }
+          }
+        }
+      },
+      "AccessSessionsResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "accessSessions"
+        ],
+        "properties": {
+          "accessSessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessSession"
+            }
+          }
+        }
+      },
+      "CameraChangesResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cameraChanges"
+        ],
+        "properties": {
+          "cameraChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CameraChange"
+            }
+          }
+        }
+      }
     },
     "responses": {
-      "ValidationError": { "description": "Datos, parametros o filtros invalidos", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" }, "example": { "error": "VALIDATION_ERROR", "message": "Los datos de la solicitud no son validos." } } } },
-      "InvalidCredentials": { "description": "Credenciales invalidas", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" }, "example": { "error": "INVALID_CREDENTIALS", "message": "Usuario o contrase?a incorrectos." } } } },
-      "SessionRequired": { "description": "Sesion ausente, vencida o revocada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-      "ForbiddenRole": { "description": "Sesion valida sin permiso", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" }, "example": { "error": "FORBIDDEN_ROLE", "message": "Este perfil no puede editar c?maras." } } } },
-      "CameraNotFound": { "description": "Camara inexistente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-      "ResourceConflict": { "description": "Version de camara desactualizada", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" }, "example": { "error": "RESOURCE_CONFLICT", "message": "La c?mara fue modificada por otro usuario." } } } },
-      "PayloadTooLarge": { "description": "Cuerpo superior a 16 KiB", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-      "UnsupportedMediaType": { "description": "Tipo de contenido no compatible", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-      "LoginRateLimited": { "description": "Demasiados intentos de login", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-      "HttpsRequired": { "description": "HTTPS requerido en produccion", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-      "DatabaseUnavailable": { "description": "PostgreSQL no disponible", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
-      "InternalError": { "description": "Error interno sin detalles sensibles", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+      "ValidationError": {
+        "description": "Datos, parametros o filtros invalidos",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            },
+            "example": {
+              "error": "VALIDATION_ERROR",
+              "message": "Los datos de la solicitud no son validos."
+            }
+          }
+        }
+      },
+      "InvalidCredentials": {
+        "description": "Credenciales invalidas",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            },
+            "example": {
+              "error": "INVALID_CREDENTIALS",
+              "message": "Usuario o contrase?a incorrectos."
+            }
+          }
+        }
+      },
+      "SessionRequired": {
+        "description": "Sesion ausente, vencida o revocada",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "ForbiddenRole": {
+        "description": "Sesion valida sin permiso",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            },
+            "example": {
+              "error": "FORBIDDEN_ROLE",
+              "message": "Este perfil no puede editar c?maras."
+            }
+          }
+        }
+      },
+      "CameraNotFound": {
+        "description": "Camara inexistente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "ResourceConflict": {
+        "description": "Version de camara desactualizada",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            },
+            "example": {
+              "error": "RESOURCE_CONFLICT",
+              "message": "La c?mara fue modificada por otro usuario."
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "Cuerpo superior a 16 KiB",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "Tipo de contenido no compatible",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "LoginRateLimited": {
+        "description": "Demasiados intentos de login",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "HttpsRequired": {
+        "description": "HTTPS requerido en produccion",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "DatabaseUnavailable": {
+        "description": "PostgreSQL no disponible",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Error interno sin detalles sensibles",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      }
     }
   }
 }

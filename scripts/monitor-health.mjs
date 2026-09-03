@@ -1,4 +1,5 @@
-const configuredUrl = process.argv[2] || process.env.ORBINODO_MONITOR_URL || 'https://orbinodo-demo.vercel.app';
+const configuredUrl = process.argv[2] || process.env.ORBINODO_MONITOR_URL;
+if (!configuredUrl) throw new Error('Falta ORBINODO_MONITOR_URL o una URL como primer argumento.');
 const target = new URL(configuredUrl);
 if (target.protocol !== 'https:' && process.env.ORBINODO_MONITOR_ALLOW_HTTP !== 'true') {
   throw new Error('El monitor exige una URL HTTPS. Para pruebas locales usa ORBINODO_MONITOR_ALLOW_HTTP=true.');

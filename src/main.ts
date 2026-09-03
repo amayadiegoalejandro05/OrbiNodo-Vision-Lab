@@ -12,16 +12,19 @@ import {
 } from './auth/demo-auth';
 import { createLoginView } from './auth/login-view';
 import { getRolePermissions } from './auth/role-permissions';
-import { demoTour } from './data/demo-tour';
+import { activeClientProfile } from './config/active-client-profile';
+
 import type { PanoramaLocation } from './domain/tour.types';
 import type { SecurityCameraRecord } from './domain/security-camera.types';
 import { createCameraMap, type CameraMapApi } from './ui/camera-map';
 import { createCoordinateCalibrator } from './ui/coordinate-calibrator';
 import { createLocationMenu, type LocationMenuApi } from './ui/location-menu';
-import { createManagerAuditView } from './ui/manager-audit-view';
+import { createManagerAuditView, type ProfileTab } from './ui/manager-audit-view';
 import { createTourMinimap, type TourMinimapApi } from './ui/tour-minimap';
 import type { PanoramaViewerApi, PanoramaViewerStatus } from './viewer/panorama-viewer';
 
+
+const clientTour = activeClientProfile.tour;
 function required<T extends HTMLElement>(selector: string): T {
   const element = document.querySelector<T>(selector);
   if (!element) throw new Error('No se encontró el elemento obligatorio: ' + selector);
@@ -43,12 +46,18 @@ const locationElement = required<HTMLParagraphElement>('#current-location');
 const progressElement = required<HTMLParagraphElement>('#tour-progress');
 const retryButton = required<HTMLButtonElement>('#retry-panorama');
 const calibrator = createCoordinateCalibrator(app);
-const managerAudit = createManagerAuditView(managerControlHost, getAuditFromApi);
+const auditProfileTabs: ProfileTab[] = [
+  { role: 'programmer', label: activeClientProfile.roleLabels.programmer },
+  { role: 'manager', label: activeClientProfile.roleLabels.manager },
+  { role: 'engineer1', label: activeClientProfile.roleLabels.engineer1 },
+  { role: 'engineer2', label: activeClientProfile.roleLabels.engineer2 },
+];
+const managerAudit = createManagerAuditView(managerControlHost, getAuditFromApi, auditProfileTabs);
 const profileElement = document.createElement('p');
 profileElement.className = 'current-profile';
 profileElement.setAttribute('aria-live', 'polite');
 progressElement.after(profileElement);
-const roomEntries = demoTour.floors.flatMap((floor) =>
+const roomEntries = clientTour.floors.flatMap((floor) =>
   floor.rooms.map((room) => ({ id: room.entryPanoramaId, panoramaIds: room.panoramas.map((item) => item.id) })),
 );
 
@@ -99,7 +108,7 @@ function renderLocation(location: PanoramaLocation): void {
   tourMinimap?.setActivePanorama(location.panoramaId);
   cameraMap?.setActivePanorama(location.panoramaId);
   calibrator.setPanorama(location.panoramaId);
-  homeButton.classList.toggle('is-at-home', location.panoramaId === demoTour.startPanoramaId);
+  homeButton.classList.toggle('is-at-home', location.panoramaId === clientTour.startPanoramaId);
   const index = roomEntries.findIndex((room) => room.panoramaIds.includes(location.panoramaId));
   progressElement.textContent = 'Ubicación ' + (index + 1) + ' de ' + roomEntries.length;
 }
@@ -130,14 +139,14 @@ async function mountTour(session: DemoSession): Promise<void> {
   if (currentMount !== mountVersion || app.hidden) return;
   menuContainer.replaceChildren();
   minimapContainer.replaceChildren();
-  locationMenu = createLocationMenu(menuContainer, demoTour, (id) => void navigateTo(id));
-  tourMinimap = createTourMinimap(minimapContainer, demoTour, (id) => void navigateTo(id));
+  locationMenu = createLocationMenu(menuContainer, clientTour, (id) => void navigateTo(id));
+  tourMinimap = createTourMinimap(minimapContainer, clientTour, (id) => void navigateTo(id));
   if (permissions.cameraMap) {
-    cameraMap = createCameraMap(mapsDashboard, demoTour, cameraRecords, (id) => void navigateToCamera(id));
+    cameraMap = createCameraMap(mapsDashboard, clientTour, cameraRecords, (id) => void navigateToCamera(id));
   }
   panoramaViewer = createPanoramaViewer(
     container,
-    demoTour,
+    clientTour,
     renderStatus,
     renderLocation,
     (position) => calibrator.update(position),
@@ -199,7 +208,7 @@ async function refreshCamerasFromApi(): Promise<void> {
 const loginView = createLoginView(loginScreen, (session) => {
   void mountTour(session);
 });
-homeButton.addEventListener('click', () => void navigateTo(demoTour.startPanoramaId));
+homeButton.addEventListener('click', () => void navigateTo(clientTour.startPanoramaId));
 retryButton.addEventListener('click', () => void panoramaViewer?.retry());
 menuButton.addEventListener('click', () => {
   const willOpen = !app.classList.contains('is-menu-open');

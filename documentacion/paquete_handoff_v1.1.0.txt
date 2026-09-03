@@ -1,0 +1,25 @@
+PAQUETE DE HANDOFF - ORBINODO ENTERPRISE v1.1.0
+
+Estado: preparado para entrega tecnica.
+Tag esperado: v1.1.0.
+
+INVENTARIO
+- Frontend: src/, public/ y client-config/.
+- Backend: backend/, api/ y vercel.json.
+- Datos: migraciones 0001-0008, seed y scripts PostgreSQL.
+- Dependencias: package.json, package-lock.json y .nvmrc.
+- Calidad: tests, CI y scripts verify.
+- Documentacion: README, indice_handoff, manuales, arquitectura, OpenAPI, seguridad, backups, CHANGELOG y manifiesto.
+
+SECRETOS
+Usar .env.example; no entregar .env, DATABASE_URL, contrasenas, tokens, cookies ni backups.
+
+RIESGOS
+Vercel y Neon son la arquitectura actual. Las imagenes reales no se incluyen. No hay endpoints publicos de administracion de usuarios. La transferencia formal depende del contrato.
+
+ACEPTACION
+npm ci
+npm run check
+npm run secrets:check
+npm run deps:check
+npm run release:check -- --strict

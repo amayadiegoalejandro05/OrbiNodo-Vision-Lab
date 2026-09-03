@@ -1,7 +1,12 @@
 import type { DemoSession } from '../auth/demo-auth';
-import { demoSecurityCameras } from '../data/demo-cameras';
+import { demoSecurityCameras } from '../../client-config/profiles/orbinodo-demo/cameras';
 import type { SecurityCameraRecord } from '../domain/security-camera.types';
 
+/**
+ * LEGADO DE DEMOSTRACI?N: esta persistencia existe ?nicamente para pruebas de
+ * compatibilidad. El flujo productivo usa la API Fastify y PostgreSQL; no se
+ * debe importar desde src/main.ts ni desde componentes productivos.
+ */
 const CAMERA_OVERRIDES_KEY = 'orbinodo-demo-camera-overrides';
 const ACCESS_HISTORY_KEY = 'orbinodo-demo-access-history';
 const CHANGE_HISTORY_KEY = 'orbinodo-demo-change-history';

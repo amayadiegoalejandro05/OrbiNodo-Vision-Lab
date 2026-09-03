@@ -1,4 +1,12 @@
-const baseUrl = (process.argv[2] || 'https://orbinodo-demo.vercel.app').replace(/\/$/, '');
+const configuredBaseUrl = process.argv[2] || process.env.ORBINODO_PUBLIC_URL;
+if (!configuredBaseUrl) throw new Error('Falta ORBINODO_PUBLIC_URL o una URL como primer argumento.');
+const baseUrl = configuredBaseUrl.replace(/\/$/, '');
+const managerUsername = process.env.ORBINODO_VERIFY_MANAGER_USERNAME;
+const engineerUsername = process.env.ORBINODO_VERIFY_ENGINEER_USERNAME;
+const expectedCameraCount = Number.parseInt(process.env.ORBINODO_VERIFY_CAMERA_COUNT || '', 10);
+if (!managerUsername || !engineerUsername || !Number.isInteger(expectedCameraCount) || expectedCameraCount < 1) {
+  throw new Error('Faltan ORBINODO_VERIFY_MANAGER_USERNAME, ORBINODO_VERIFY_ENGINEER_USERNAME o ORBINODO_VERIFY_CAMERA_COUNT.');
+}
 
 function ensure(condition, message) {
   if (!condition) throw new Error(message);
@@ -36,7 +44,7 @@ async function verifyProfile(username, password, expectedRole, auditStatus) {
 
   const cameras = await request('/api/cameras', {}, cookie);
   ensure(cameras.response.status === 200, 'No se pudieron leer cámaras con ' + username + '.');
-  ensure(cameras.body.cameras.length === 10, 'Producción no contiene las 10 cámaras.');
+  ensure(cameras.body.cameras.length === expectedCameraCount, 'Producción no contiene las 10 cámaras.');
 
   const audit = await request('/api/audit/access-sessions', {}, cookie);
   ensure(audit.response.status === auditStatus, 'Permiso de auditoría incorrecto para ' + username + '.');
@@ -74,8 +82,8 @@ try {
   ensure([301, 302, 307, 308].includes(redirect.status), 'HTTP no redirige a HTTPS.');
   ensure((redirect.headers.get('location') || '').startsWith('https://'),
     'La redireccion HTTP no apunta a HTTPS.');
-  await verifyProfile('Jefe', process.env.ORBINODO_SEED_MANAGER_PASSWORD, 'manager', 200);
-  await verifyProfile('Ingeniero 1', process.env.ORBINODO_SEED_ENGINEER1_PASSWORD, 'engineer1', 403);
+  await verifyProfile(managerUsername, process.env.ORBINODO_SEED_MANAGER_PASSWORD, 'manager', 200);
+  await verifyProfile(engineerUsername, process.env.ORBINODO_SEED_ENGINEER1_PASSWORD, 'engineer1', 403);
   console.log('Producción verificada: salud, Neon, 10 cámaras, sesiones y permisos.');
 } catch (error) {
   console.error(error instanceof Error ? error.message : 'Falló la verificación de producción.');

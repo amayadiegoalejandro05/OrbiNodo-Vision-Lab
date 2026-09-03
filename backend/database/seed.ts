@@ -3,7 +3,8 @@ import { loadSeedAccounts } from './seed/seed-accounts';
 import { runSeed } from './seed/seed-runner';
 
 async function seed(): Promise<void> {
-  const result = await runSeed(loadBackendEnvironment(), loadSeedAccounts());
+  const environment = loadBackendEnvironment();
+  const result = await runSeed(environment, loadSeedAccounts(environment.ORBINODO_CLIENT_PROFILE));
   console.log(`Seed completado: ${result.users} usuarios y ${result.cameras} cámaras.`);
 }
 

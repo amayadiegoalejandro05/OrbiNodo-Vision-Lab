@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { demoSecurityCameras } from './demo-cameras';
-import { demoTour } from './demo-tour';
+import { demoSecurityCameras } from '../../client-config/profiles/orbinodo-demo/cameras';
+import { demoTour } from '../../client-config/profiles/orbinodo-demo/tour';
 import { listPanoramas } from '../domain/validate-tour';
 
 describe('inventario ficticio de cámaras CCTV', () => {

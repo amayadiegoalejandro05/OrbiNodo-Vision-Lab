@@ -11,12 +11,12 @@ export interface ManagerAuditViewApi {
   destroy: () => void;
 }
 
-interface ProfileTab {
+export interface ProfileTab {
   role: DemoRole;
   label: string;
 }
 
-const PROFILE_TABS: ProfileTab[] = [
+const DEFAULT_PROFILE_TABS: ProfileTab[] = [
   { role: 'programmer', label: 'Orbinodo' },
   { role: 'manager', label: 'Jefe' },
   { role: 'engineer1', label: 'Ingeniero 1' },
@@ -83,11 +83,12 @@ function createChangeEntry(entry: CameraChangeHistoryEntry): HTMLElement {
 export function createManagerAuditView(
   parent: HTMLElement,
   loadAudit: () => Promise<AuditHistory>,
+  profileTabs: ProfileTab[] = DEFAULT_PROFILE_TABS,
 ): ManagerAuditViewApi {
   const section = document.createElement('section');
   section.className = 'manager-audit-tools';
   section.hidden = true;
-  section.innerHTML = '<button type="button" class="open-audit-button">Control del Jefe</button>';
+  section.innerHTML = '<button type="button" class="open-audit-button">Control del jefe</button>';
   parent.append(section);
 
   const dialog = document.createElement('dialog');
@@ -142,7 +143,7 @@ export function createManagerAuditView(
     }
     panel.replaceChildren();
     panel.setAttribute('aria-labelledby', 'audit-tab-' + role);
-    const profile = PROFILE_TABS.find((item) => item.role === role)!;
+    const profile = profileTabs.find((item) => item.role === role)!;
     const heading = document.createElement('h3');
     heading.textContent = 'Actividad de ' + profile.label;
 
@@ -176,7 +177,7 @@ export function createManagerAuditView(
     tabList.replaceChildren();
     const latestNonManager = accessHistory.find((entry) => entry.role !== 'manager');
     activeRole = latestNonManager?.role ?? 'engineer1';
-    for (const profile of PROFILE_TABS) {
+    for (const profile of profileTabs) {
       const button = document.createElement('button');
       button.type = 'button';
       button.id = 'audit-tab-' + profile.role;

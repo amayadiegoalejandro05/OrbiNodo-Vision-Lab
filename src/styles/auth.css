@@ -1,15 +1,15 @@
 /* Fase 6: pantalla de acceso básica para la demostración pública. */
 [hidden] { display: none !important; }
 .login-screen { display: grid; min-height: 100vh; padding: 1.25rem; place-items: center; }
-.login-card { width: min(100%, 28rem); padding: clamp(1.5rem, 5vw, 2.5rem); border: 1px solid #ffffff24; border-radius: 1.25rem; background: #0d1a2af2; box-shadow: 0 1.5rem 4rem #00000055; }
-.login-card > p:not(.eyebrow) { color: #aebed0; line-height: 1.5; }
+.login-card { width: min(100%, 28rem); padding: clamp(1.5rem, 5vw, 2.5rem); border: 1px solid #ffffff24; border-radius: 1.25rem; background: color-mix(in srgb, var(--brand-surface, #0d1a2a) 95%, transparent); box-shadow: 0 1.5rem 4rem #00000055; }
+.login-card > p:not(.eyebrow) { color: var(--brand-text-muted, #aebed0); line-height: 1.5; }
 .login-form { display: grid; gap: 0.65rem; margin-top: 1.5rem; }
-.login-form label { color: #dbe7f3; font-weight: 700; }
-.login-form input { min-height: 3rem; padding: 0.7rem 0.8rem; border: 1px solid #75d9c580; border-radius: 0.7rem; color: #f5f7fb; background: #07111f; }
-.login-form input:focus-visible { outline: 3px solid #f7c969; outline-offset: 2px; }
+.login-form label { color: var(--brand-text, #f5f7fb); font-weight: 700; }
+.login-form input { min-height: 3rem; padding: 0.7rem 0.8rem; border: 1px solid color-mix(in srgb, var(--brand-primary, #75d9c5) 50%, transparent); border-radius: 0.7rem; color: var(--brand-text, #f5f7fb); background: var(--brand-background, #07111f); }
+.login-form input:focus-visible { outline: 3px solid var(--brand-accent, #f7c969); outline-offset: 2px; }
 .login-form button { margin-top: 0.5rem; }
 .login-message { min-height: 1.5rem; margin: 0; color: #ffb3ba; }
 .login-notice { margin: 1rem 0 0; font-size: 0.8rem; }
 .topbar-actions { display: flex; align-items: center; gap: 1rem; }
-.logout-button { color: #dbe7f3; background: transparent; white-space: nowrap; }
+.logout-button { color: var(--brand-text, #f5f7fb); background: transparent; white-space: nowrap; }
 @media (max-width: 700px) { .topbar-actions { width: 100%; align-items: stretch; flex-direction: column; } }
