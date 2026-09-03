@@ -1,4 +1,4 @@
-import type { TourConfig } from '../domain/tour.types';
+import type { TourConfig } from '../../../src/domain/tour.types';
 
 // Los ángulos son provisionales: se ajustarán con las fotos reales del inmueble.
 export const demoTour: TourConfig = {

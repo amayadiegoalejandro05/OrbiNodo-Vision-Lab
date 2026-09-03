@@ -1,4 +1,4 @@
-import type { SecurityCameraRecord } from '../domain/security-camera.types';
+import type { SecurityCameraRecord } from '../../../src/domain/security-camera.types';
 
 // Todos los equipos, marcas, modelos, fechas y datos operativos son ficticios.
 // Solo las ubicaciones y ángulos corresponden a la calibración solicitada.
