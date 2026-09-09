@@ -1,0 +1,52 @@
+REGISTRO DE RIESGOS DE CIBERSEGURIDAD - ORBINODO ENTERPRISE v1
+================================================================
+
+USO
+---
+Este es el registro unico para riesgos tecnicos abiertos o aceptados de la version. Debe revisarse antes de cada release y cuando cambie la infraestructura. No contiene secretos, credenciales ni datos privados de clientes.
+
+R-001 - Dependencias de desarrollo de Vercel CLI
+Estado: aceptado y vigilado. No forma parte del runtime productivo.
+Mitigacion: npm ci, npm run deps:check y revision mensual.
+Salida: actualizar cuando Vercel publique una cadena compatible sin avisos.
+Propietario: mantenedor tecnico de OrbiNodo.
+
+R-002 - Limite general por instancia
+Estado: aceptado para v1. El limite general vive en Fastify por instancia; el rate limit de login si es compartido en PostgreSQL.
+Mitigacion: body limit, timeouts, CORS same-origin, limites de login y controles del edge de Vercel.
+Salida: rate limiting distribuido si el cliente exige cuota global.
+Propietario: arquitectura e infraestructura.
+
+R-003 - Controles de plataforma
+Estado: requiere verificacion por deployment. Vercel administra certificados, HSTS, HTTPS y edge; Neon administra disponibilidad de PostgreSQL.
+Mitigacion: db:preflight y verify:production positivos por release.
+Salida: evidencia asociada al deployment productivo real.
+Propietario: responsable de produccion.
+
+R-004 - Retencion y centralizacion de logs
+Estado: configuracion operativa requerida. Fastify entrega JSON con reqId y redaccion; el destino, retencion y alertas dependen de la plataforma aprobada.
+Mitigacion: monitor:health, webhook HTTPS aprobado y retencion configurada.
+Salida: politica corporativa aprobada y una alerta de prueba.
+Propietario: operaciones y seguridad.
+
+R-005 - Identidad corporativa avanzada
+Estado: no implementado en v1. MFA, SSO/OIDC y SCIM requieren una fase IAM propia.
+Mitigacion: cuentas locales con Argon2id, sesiones opacas, RBAC y rate limiting.
+Salida: proveedor, grupos, mapeo de roles y pruebas aprobados.
+Propietario: cliente y seguridad corporativa.
+
+R-006 - Aislamiento entre clientes
+Estado: modelo aprobado, no multi-tenant. Cada cliente requiere deployment, dominio, base, secretos y backups propios.
+Mitigacion: seguir documentacion/separacion_core_cliente_v1.txt.
+Salida: fase separada si se aprueba multitenancy con filtros y pruebas obligatorias.
+Propietario: arquitectura.
+
+R-007 - Evidencia de release
+Estado: operativo. El manifiesto se completa con el deployment productivo real cuando se promueve una version.
+Mitigacion: conservar tag, commit, salida de preflight y verify:production.
+Salida: manifiesto actualizado por el responsable del release.
+Propietario: responsable de produccion.
+
+REGLA PARA AIR PRODUCTS
+-----------------------
+Ningun riesgo se cierra por suposiciones sobre Air Products. Una integracion futura requiere propietario, datos, secretos, red, IAM y pruebas propios.

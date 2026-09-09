@@ -1,5 +1,8 @@
 import cookie from '@fastify/cookie';
-import Fastify from 'fastify';
+import Fastify, {
+  type FastifyInstance,
+  type RawServerDefault,
+} from 'fastify';
 import { apiError } from './api-error.js';
 import type { AuditService } from './domain/audit-service.js';
 import type { AuthService } from './domain/auth-service.js';
@@ -61,13 +64,20 @@ function isSameOrigin(origin: string, host: string | undefined): boolean {
   }
 }
 
-export function createApiApp(options: ApiAppOptions) {
+type TrustProxyFunction = (address: string, hop: number) => boolean;
+
+function trustProxyForHops(hops: number | undefined): boolean | TrustProxyFunction {
+  if (!hops) return false;
+  return (_address, hop) => hop < hops;
+}
+
+export function createApiApp(options: ApiAppOptions): FastifyInstance<RawServerDefault> {
   const rateLimitMaxRequests = options.apiRateLimitMaxRequests ?? API_RATE_LIMIT_MAX_REQUESTS;
   const rateLimitWindowMs = options.apiRateLimitWindowMs ?? API_RATE_LIMIT_WINDOW_MS;
   const requestCounters = new Map<string, { count: number; expiresAt: number }>();
-  const app = Fastify({
+  const app = Fastify<RawServerDefault>({
     bodyLimit: API_BODY_LIMIT_BYTES,
-    trustProxy: options.trustedProxyHops || false,
+    trustProxy: trustProxyForHops(options.trustedProxyHops),
     connectionTimeout: options.connectionTimeoutMs ?? API_CONNECTION_TIMEOUT_MS,
     keepAliveTimeout: options.keepAliveTimeoutMs ?? API_KEEP_ALIVE_TIMEOUT_MS,
     requestTimeout: options.requestTimeoutMs ?? API_REQUEST_TIMEOUT_MS,

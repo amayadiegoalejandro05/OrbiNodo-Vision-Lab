@@ -18,6 +18,7 @@ const configurations: Record<string, WhiteLabelConfiguration> = {
       danger: '#ff7d8a',
     },
   },
+  'vision-lab': { assets: { logoAlt: 'OrbiNodo Vision Lab', logoFallback: 'V' }, theme: { background: '#07111f', surface: '#0d1a2a', text: '#f5f7fb', textMuted: '#aebed0', primary: '#75d9c5', primaryContrast: '#08271f', accent: '#f7c969', accentContrast: '#3d2a00', highlight: '#42d9e8', danger: '#ff7d8a' } },
 };
 
 export function getWhiteLabelConfiguration(profileId: string): WhiteLabelConfiguration {

@@ -29,6 +29,7 @@
 .camera-detail { display: grid; padding: 0.6rem 0; border-bottom: 1px solid #ffffff1f; gap: 0.18rem; }
 .camera-detail dt { color: var(--brand-text-muted, #aebed0); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .camera-detail dd { margin: 0; color: #ffffff; line-height: 1.4; }
+.robot-vision-launch { width: 100%; margin-top: 1rem; color: var(--brand-background, #07111f); background: var(--brand-accent, #f7c969); border-color: var(--brand-accent, #f7c969); }
 
 @media (max-width: 700px) {
   .security-camera-marker { width: 3.15rem; height: 3.15rem; }

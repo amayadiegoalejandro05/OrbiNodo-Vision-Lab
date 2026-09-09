@@ -14,8 +14,10 @@ export function isProductionDeployment(environment: DeploymentTarget): boolean {
 
 
 const environmentSchema = z.object({
+  APP_ENV: z.literal('vision-lab'),
   DATABASE_URL: z.string().regex(/^postgres(?:ql)?:\/\//).optional(),
   POSTGRES_URL: z.string().regex(/^postgres(?:ql)?:\/\//).optional(),
+  VISION_LAB_DATABASE_HOST: z.string().min(1).max(255).optional(),
   NODE_ENV: z.enum(['development', 'test', 'production']).optional(),
   VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
   ORBINODO_CLIENT_PROFILE: z.string().regex(/^[a-z0-9-]{1,80}$/).default('orbinodo-demo'),
@@ -42,10 +44,21 @@ const environmentSchema = z.object({
   ORBINODO_COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
   ORBINODO_LOG_LEVEL: z.enum(['info', 'warn', 'error']).default('info'),
 }).superRefine((value, context) => {
-  if (!value.DATABASE_URL && !value.POSTGRES_URL && !value.ORBINODO_DATABASE_PASSWORD) {
+  const connectionString = value.DATABASE_URL ?? value.POSTGRES_URL;
+  if (!connectionString) {
     context.addIssue({
-      code: 'custom', path: ['ORBINODO_DATABASE_PASSWORD'],
-      message: 'Falta DATABASE_URL o la contraseña de PostgreSQL local.',
+      code: 'custom', path: ['DATABASE_URL'],
+      message: 'Vision Lab requiere DATABASE_URL o POSTGRES_URL de su Neon dedicado.',
+    });
+  } else if (!value.VISION_LAB_DATABASE_HOST) {
+    context.addIssue({
+      code: 'custom', path: ['VISION_LAB_DATABASE_HOST'],
+      message: 'Falta el host esperado de la base Neon de Vision Lab.',
+    });
+  } else if (new URL(connectionString).hostname.toLowerCase() !== value.VISION_LAB_DATABASE_HOST.toLowerCase()) {
+    context.addIssue({
+      code: 'custom', path: ['DATABASE_URL'],
+      message: 'La base configurada no coincide con el host autorizado para Vision Lab.',
     });
   }
   if (value.ORBINODO_SESSION_IDLE_MINUTES > value.ORBINODO_SESSION_HOURS * 60) {
@@ -74,7 +87,8 @@ export type BackendEnvironment = z.infer<typeof environmentSchema>;
 
 // Las credenciales del backend nunca usan variables VITE_* visibles en el navegador.
 export function loadBackendEnvironment(): BackendEnvironment {
-  loadDotenv({ path: resolve(process.cwd(), '.env.backend.local'), quiet: true });
+  // Deliberately ignore the Core .env.backend.local file in this experimental copy.
+  loadDotenv({ path: resolve(process.cwd(), '.env.vision-lab.local'), quiet: true });
   const parsed = environmentSchema.safeParse(process.env);
   if (!parsed.success) {
     const names = parsed.error.issues.map((issue) => issue.path.join('.')).join(', ');

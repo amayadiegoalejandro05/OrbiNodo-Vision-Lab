@@ -1,0 +1,66 @@
+CYBERSECURITY READINESS - ORBINODO ENTERPRISE v1
+==================================================
+
+PROPOSITO
+---------
+Este expediente consolida la evidencia tecnica de seguridad de OrbiNodo Enterprise v1. No sustituye una certificacion, un pentest independiente ni las decisiones de infraestructura del cliente.
+
+ARQUITECTURA Y LIMITES
+----------------------
+El navegador se comunica por HTTPS con la API Fastify. Fastify es la unica capa que accede a PostgreSQL/Neon. El frontend no recibe DATABASE_URL, contrasenas, tokens persistentes, hashes ni acceso directo a la base.
+
+Proyecto A conserva el recorrido 360 y componentes visuales. Proyecto B implementa Fastify, PostgreSQL, autenticacion, autorizacion, sesiones, auditoria y operaciones. El diagrama y flujo de confianza estan en documentacion/arquitectura_orbinodo_enterprise_v1.txt.
+
+CONTROLES IMPLEMENTADOS
+-----------------------
+1. Autenticacion: backend/security/password-hash.ts usa Argon2id con 65536 KiB, tres pasadas, salt aleatorio y verificacion en tiempo constante. Las contrasenas nunca se devuelven por API.
+2. Sesiones: postgres-auth-service.ts crea tokens opacos de 32 bytes; PostgreSQL conserva SHA-256 del token. La cookie es HttpOnly, SameSite=Lax y Secure en produccion. Hay expiracion absoluta, inactividad, logout y revocacion de usuarios desactivados.
+3. RBAC: el rol se obtiene de users.role mediante la sesion. Solo engineer1 y engineer2 modifican operaciones; manager consulta auditoria y no edita camaras. Fastify es la autoridad real.
+4. Auditoria: camera_change_history conserva actor, rol, activo, fecha de servidor, campo y valores antes/despues. Las migraciones bloquean UPDATE, DELETE y TRUNCATE; estado e historial se escriben en la misma transaccion.
+5. Validacion: las rutas usan schemas Zod estrictos, enums, longitudes, IDs y fechas validas. Los campos desconocidos se rechazan antes del servicio o PostgreSQL.
+6. Proteccion API: body limit de 16 KiB, timeouts, metodos permitidos, respuestas sanitizadas, CORS same-origin, rate limiting general y rate limiting de login compartido en PostgreSQL.
+7. Cabeceras: Cache-Control no-store, Content-Security-Policy, Cross-Origin-Resource-Policy, Permissions-Policy, Referrer-Policy, X-Content-Type-Options y X-Frame-Options. HSTS y HTTP a HTTPS corresponden al edge de Vercel.
+8. Secretos: .env reales estan ignorados; solo .env.example usa valores falsos. scripts/check-secrets.mjs revisa archivos rastreados e historial Git sin imprimir secretos.
+9. TLS y base: produccion exige cookie Secure y PostgreSQL TLS. Neon se conecta con sslmode=verify-full. Certificados y redireccion HTTP a HTTPS son administrados por Vercel.
+10. Operacion: backups AES-256-GCM con manifest SHA-256, restauracion aislada, health/readiness, logs JSON con reqId y datos sensibles redactados.
+11. Calidad: OpenAPI 3.1, lockfile, CI, pruebas unitarias e integracion PostgreSQL respaldan el comportamiento esperado.
+
+EVIDENCIA EJECUTABLE
+--------------------
+    npm run cybersecurity:check
+    npm run secrets:check
+    npm run deps:check
+    npm run test:all
+    npm run verify:reproducible
+
+Antes de produccion, con variables privadas aprobadas:
+    npm run db:preflight
+    npm run verify:production
+
+El ultimo comando confirma HTTPS, HSTS, redireccion HTTP a HTTPS, headers, cookie Secure, salud, Neon, sesiones y permisos. No pegar DATABASE_URL, contrasenas ni cookies en esta evidencia.
+
+CONTROLES DEL PROVEEDOR Y DEL CLIENTE
+-------------------------------------
+Vercel administra certificados, HSTS, terminacion TLS y redireccion HTTPS. Neon administra la disponibilidad de PostgreSQL. El cliente debe asignar propietario de secretos, retencion de logs, calendario de backups, canal de alertas y aprobacion de cambios de produccion.
+
+CONTROLES NO IMPLEMENTADOS EN V1
+--------------------------------
+- MFA, SSO/OIDC y aprovisionamiento corporativo de usuarios.
+- SIEM o centralizacion obligatoria de logs.
+- WAF corporativo o rate limiting distribuido para cada endpoint.
+- Multi-tenancy dentro de una misma base de datos.
+- Pentest o certificacion ejecutados por un tercero.
+
+Estos puntos no se presentan como capacidades actuales. Requieren una fase, alcance, propietario y evidencia nuevos antes de afirmarse en una propuesta.
+
+SEPARACION DE AIR PRODUCTS
+--------------------------
+Air Products no integra actualmente identidad, certificados, secretos, redes, Vercel, Neon ni bases de datos con OrbiNodo. Cualquier integracion futura debe definir por escrito identidad, permisos, secretos, retencion, redes, aprobacion de seguridad y pruebas de aceptacion.
+
+RIESGOS
+--------
+La lista unica de riesgos, responsables y criterios de salida esta en documentacion/registro_riesgos_ciberseguridad_v1.txt.
+
+CIERRE TECNICO
+--------------
+La preparacion tecnica queda cerrada cuando cybersecurity:check, secrets:check, deps:check y las pruebas requeridas terminan correctamente. La aprobacion corporativa de plataforma, IAM, SIEM o pentest es externa a este repositorio.

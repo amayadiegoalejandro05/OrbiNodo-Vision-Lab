@@ -85,6 +85,7 @@ function buildCameraPanel(camera: SecurityCameraRecord, editable: boolean): stri
         ${detail('Retención', camera.retention)}
         ${detail('Instalación', formatDate(camera.installedOn))}
       </dl>
+      ${camera.assetCode === 'CAM-ROBOT-01' ? '<button type="button" class="robot-vision-launch" data-robot-vision-camera-id="' + escapeHtml(camera.id) + '">Robot Vision</button>' : ''}
       ${editable ? buildOperationalEditor(camera) : buildOperationalReadOnly(camera)}
     </article>`;
 }

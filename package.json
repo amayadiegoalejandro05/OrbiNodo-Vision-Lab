@@ -20,7 +20,7 @@
     "lint": "eslint src eslint.config.js",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "check": "npm run lint && npm run architecture:check && npm run clients:check && npm run white-label:check && npm run installation:check && npm run operation:check && npm run openapi:check && npm run test && npm run build && npm run verify:browser",
+    "check": "npm run lint && npm run architecture:check && npm run cybersecurity:check && npm run clients:check && npm run white-label:check && npm run installation:check && npm run operation:check && npm run openapi:check && npm run test && npm run build && npm run verify:browser",
     "test": "vitest run --exclude **/*.integration.test.ts",
     "test:all": "npm run test && npm run test:integration",
     "test:integration": "vitest run backend/database/postgres-auth-service.integration.test.ts backend/database/postgres-persistence.integration.test.ts",
@@ -37,7 +37,11 @@
     "verify:browser": "node scripts/verify-browser.mjs",
     "verify:reproducible": "node scripts/verify-reproducible.mjs",
     "verify:production": "node --env-file=.env.backend.local scripts/verify-production.mjs",
-    "verify:production:browser": "node --env-file=.env.backend.local scripts/verify-production-browser.mjs"
+    "verify:production:browser": "node --env-file=.env.backend.local scripts/verify-production-browser.mjs",
+    "cybersecurity:check": "node scripts/verify-cybersecurity-readiness.mjs",
+    "dev:vision-lab": "vite --mode vision-lab",
+    "db:seed:vision-lab": "tsx backend/database/seed/vision-lab.ts",
+    "build:vision-lab": "npm run typecheck && vite build --mode vision-lab"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

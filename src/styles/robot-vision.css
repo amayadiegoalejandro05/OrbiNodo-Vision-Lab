@@ -1,0 +1,27 @@
+.robot-vision-dialog { width: min(48rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); padding: 0; overflow: auto; border: 1px solid color-mix(in srgb, var(--brand-primary, #75d9c5) 45%, transparent); border-radius: 1rem; color: var(--brand-text, #f5f7fb); background: var(--brand-background, #07111f); box-shadow: 0 2rem 5rem #000000a8; }
+.robot-vision-dialog::backdrop { background: #000000b8; backdrop-filter: blur(3px); }
+.robot-vision { display: grid; gap: 1rem; padding: 1.2rem; }
+.robot-vision-header { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.robot-vision-header h2, .robot-vision-recognition h3 { margin: 0; }
+.robot-vision-eyebrow { margin: 0 0 0.25rem; color: var(--brand-primary, #75d9c5); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; }
+.robot-vision-close { width: 2.5rem; min-height: 2.5rem; padding: 0; border-radius: 50%; font-size: 1.5rem; }
+.robot-vision-status-grid { display: grid; margin: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; }
+.robot-vision-status-grid div, .robot-vision-recognition { padding: 0.8rem; border: 1px solid #ffffff1f; border-radius: 0.7rem; background: var(--brand-surface, #0d1a2a); }
+.robot-vision-status-grid dt { color: var(--brand-text-muted, #aebed0); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.robot-vision-status-grid dd { margin: 0.3rem 0 0; font-weight: 700; }
+.robot-vision-video-shell { position: relative; min-height: 15rem; overflow: hidden; border: 1px solid #ffffff24; border-radius: 0.75rem; background: #02070d; }
+.robot-vision-stream { display: block; width: 100%; min-height: 15rem; object-fit: contain; }
+.robot-vision-faces { display: grid; gap: 0.35rem; margin: 0.6rem 0 0; padding-left: 1.2rem; color: var(--brand-text-muted, #aebed0); }
+.robot-vision-video-placeholder { position: absolute; inset: 0; display: grid; margin: 0; padding: 1rem; place-items: center; color: var(--brand-text-muted, #aebed0); text-align: center; }
+.robot-vision-message { min-height: 1.4rem; margin: 0; color: var(--brand-primary, #75d9c5); font-weight: 700; }
+.robot-vision-recognition p { margin: 0.55rem 0 0; color: var(--brand-text-muted, #aebed0); line-height: 1.5; }
+.robot-vision-alert { color: var(--brand-danger, #ff7d8a) !important; font-weight: 900; }
+.robot-vision-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+@media (max-width: 600px) {
+  .robot-vision-status-grid { grid-template-columns: 1fr; }
+  .robot-vision-dialog { width: calc(100% - 0.75rem); max-height: calc(100dvh - 0.75rem); }
+  .robot-vision { gap: 0.75rem; padding: 0.85rem; }
+  .robot-vision-video-shell, .robot-vision-stream { min-height: 11rem; }
+  .robot-vision-actions { position: sticky; bottom: 0; padding-top: 0.5rem; background: var(--brand-background, #07111f); }
+  .robot-vision-actions button { flex: 1 1 9rem; min-height: 2.75rem; }
+}

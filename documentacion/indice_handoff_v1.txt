@@ -25,3 +25,9 @@ white_label_v1.txt, CHANGELOG.md y release-manifest-v1.1.0.json y paquete_handof
 
 No subir .env, DATABASE_URL, contrase?as, tokens ni backups. Antes de entregar
 ejecutar npm run check, npm run secrets:check y npm run deps:check.
+
+
+CYBERSECURITY READINESS
+-----------------------
+Revisar cybersecurity_readiness_v1.txt y registro_riesgos_ciberseguridad_v1.txt.
+Ejecutar npm run cybersecurity:check junto con secrets:check y deps:check.

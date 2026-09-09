@@ -5,6 +5,7 @@ import './styles/experience.css';
 import './styles/calibration.css';
 import './styles/minimap.css';
 import './styles/operational-tools.css';
+import './styles/robot-vision.css';
 import { getAuditFromApi } from './api/audit-api';
 import { getCamerasFromApi, updateCameraOperations } from './api/camera-api';
 import {
@@ -13,6 +14,7 @@ import {
 import { createLoginView } from './auth/login-view';
 import { getRolePermissions } from './auth/role-permissions';
 import { activeClientProfile } from './config/active-client-profile';
+import { applyClientBranding } from './config/white-label';
 
 import type { PanoramaLocation } from './domain/tour.types';
 import type { SecurityCameraRecord } from './domain/security-camera.types';
@@ -20,11 +22,14 @@ import { createCameraMap, type CameraMapApi } from './ui/camera-map';
 import { createCoordinateCalibrator } from './ui/coordinate-calibrator';
 import { createLocationMenu, type LocationMenuApi } from './ui/location-menu';
 import { createManagerAuditView, type ProfileTab } from './ui/manager-audit-view';
+import { createRobotVision } from './ui/robot-vision';
 import { createTourMinimap, type TourMinimapApi } from './ui/tour-minimap';
 import type { PanoramaViewerApi, PanoramaViewerStatus } from './viewer/panorama-viewer';
 
 
 const clientTour = activeClientProfile.tour;
+applyClientBranding(activeClientProfile);
+
 function required<T extends HTMLElement>(selector: string): T {
   const element = document.querySelector<T>(selector);
   if (!element) throw new Error('No se encontró el elemento obligatorio: ' + selector);
@@ -53,6 +58,7 @@ const auditProfileTabs: ProfileTab[] = [
   { role: 'engineer2', label: activeClientProfile.roleLabels.engineer2 },
 ];
 const managerAudit = createManagerAuditView(managerControlHost, getAuditFromApi, auditProfileTabs);
+const robotVision = createRobotVision();
 const profileElement = document.createElement('p');
 profileElement.className = 'current-profile';
 profileElement.setAttribute('aria-live', 'polite');
@@ -159,7 +165,9 @@ async function mountTour(session: DemoSession): Promise<void> {
           camera.id === updated.id ? updated : camera,
         );
         cameraMap?.refresh(cameraRecords);
+        robotVision.updateCamera(updated);
       },
+      onRobotVisionRequested: (camera) => robotVision.open(camera),
     },
   );
   app.dataset.ready = 'true';
@@ -180,6 +188,7 @@ function unmountTour(): void {
   container.replaceChildren();
   calibrator.setAvailable(false);
   managerAudit.setAvailable(false);
+  robotVision.close();
   profileElement.textContent = '';
   delete app.dataset.ready;
   delete app.dataset.role;

@@ -23,3 +23,7 @@ npm run check
 npm run secrets:check
 npm run deps:check
 npm run release:check -- --strict
+
+CYBERSECURITY READINESS
+- Incluye cybersecurity_readiness_v1.txt y registro_riesgos_ciberseguridad_v1.txt.
+- Validar con npm run cybersecurity:check antes de entregar.

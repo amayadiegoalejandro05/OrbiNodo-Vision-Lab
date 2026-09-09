@@ -1,0 +1,34 @@
+ORBINODO VISION LAB - AISLAMIENTO LOCAL Y DE DESPLIEGUE
+=======================================================
+
+Estado
+------
+Este repositorio, el proyecto Vercel orbinodo-vision-lab y el proyecto Neon
+orbinodo-vision-lab-db son independientes de OrbiNodo Core.
+
+Regla de arranque
+-----------------
+El backend exige APP_ENV=vision-lab, DATABASE_URL o POSTGRES_URL, y
+VISION_LAB_DATABASE_HOST. Antes de abrir una conexion, compara el hostname de
+la URL con VISION_LAB_DATABASE_HOST. Una URL del Core o cualquier host distinto
+detiene el arranque.
+
+Configuracion local
+-------------------
+1. Copiar .env.vision-lab.example a .env.vision-lab.local.
+2. Copiar desde Neon la URL exclusiva de orbinodo-vision-lab-db.
+3. Guardar solo su hostname en VISION_LAB_DATABASE_HOST.
+4. No editar ni reutilizar .env.backend.local.
+
+Configuracion Vercel
+--------------------
+En el proyecto orbinodo-vision-lab, agregar APP_ENV=vision-lab y
+VISION_LAB_DATABASE_HOST para Preview y Production. Neon proporciona
+DATABASE_URL/POSTGRES_URL al conectar la base. Confirmar que el host coincide
+con VISION_LAB_DATABASE_HOST antes de desplegar.
+
+Prohibiciones
+-------------
+- No ejecutar migraciones hasta comprobar el host del Lab.
+- No copiar DATABASE_URL, POSTGRES_URL, PG*, NEON_* ni VERCEL_OIDC_TOKEN del Core.
+- No usar .env.backend.local para Vision Lab.

@@ -1,0 +1,7 @@
+vision-service/
+.venv/
+.env
+.env.*
+*.db
+*.sqlite3
+*.onnx

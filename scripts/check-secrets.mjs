@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = process.cwd();
-const allowedEnvFiles = new Set(['.env.example']);
+const allowedEnvFiles = new Set(['.env.example', '.env.vision-lab.example']);
 const scannerFile = 'scripts/check-secrets.mjs';
 const findings = [];
 
@@ -25,7 +25,9 @@ function inspect(file, content) {
   for (const url of content.match(/postgres(?:ql)?:\/\/[^\s'"`]+/g) ?? []) {
     const placeholder = /usuario:clave@(?:host|db\.example)|\[REDACTED\]|PEGA_AQUI/.test(url);
     const safeExample = url.includes('usuario:secreto@db.interna')
-      || url.includes('USUARIO_LOCAL:CLAVE_LOCAL@127.0.0.1');
+      || url.includes('USUARIO_LOCAL:CLAVE_LOCAL@127.0.0.1')
+      || url.includes('@ep-tu-host.neon.tech/')
+      || url.includes('.example.neon.tech/');
     if (!placeholder && !safeExample) {
       findings.push(file + ': PostgreSQL URL');
       break;

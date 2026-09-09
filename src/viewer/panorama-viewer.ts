@@ -41,6 +41,7 @@ export interface PanoramaViewerOptions {
     expectedVersion: number,
   ) => Promise<CameraUpdateResult>;
   onCameraUpdated?: (camera: SecurityCameraRecord) => void;
+  onRobotVisionRequested?: (camera: SecurityCameraRecord) => void;
 }
 
 function buildNodes(
@@ -196,7 +197,16 @@ export function createPanoramaViewer(
       if (submit?.isConnected) submit.disabled = false;
     }
   }
+  function handleRobotVisionRequest(event: MouseEvent): void {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const button = target.closest<HTMLButtonElement>('[data-robot-vision-camera-id]');
+    if (!button) return;
+    const camera = cameraRecordsById.get(button.dataset.robotVisionCameraId ?? '');
+    if (camera) options.onRobotVisionRequested?.(camera);
+  }
   container.addEventListener('submit', handleCameraEdit);
+  container.addEventListener('click', handleRobotVisionRequest);
 
   viewer.addEventListener('load-progress', ({ progress }) => {
     onStatus({ kind: 'loading', message: 'Cargando panorama… ' + Math.round(progress) + ' %' });
@@ -246,6 +256,7 @@ export function createPanoramaViewer(
     },
     destroy: () => {
       container.removeEventListener('submit', handleCameraEdit);
+      container.removeEventListener('click', handleRobotVisionRequest);
       viewer.destroy();
     },
   };

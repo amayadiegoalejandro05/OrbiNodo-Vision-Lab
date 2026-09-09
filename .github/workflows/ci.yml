@@ -51,6 +51,8 @@ jobs:
         run: npm ci
       - name: Architecture documentation correspondence
         run: npm run architecture:check
+      - name: Cybersecurity readiness correspondence
+        run: npm run cybersecurity:check
       - name: Installation manual correspondence
         run: npm run installation:check
       - name: OpenAPI contract correspondence

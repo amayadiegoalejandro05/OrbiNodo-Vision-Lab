@@ -69,3 +69,15 @@ npm run verify:production:browser
 
 Producción usa Neon; no intenta conectarse al PostgreSQL instalado en localhost.
 Después de la verificación inicial, la auditoría quedó limpia: cero sesiones y cero cambios, conservando cuatro usuarios, diez cámaras y diez estados operativos.
+
+
+## Seguridad corporativa
+
+La evidencia tecnica y los limites actuales estan en documentacion/cybersecurity_readiness_v1.txt. Los riesgos abiertos y criterios de salida estan en documentacion/registro_riesgos_ciberseguridad_v1.txt.
+
+## Vision Lab distribuido
+
+La preparación del portátil remoto, la configuración HTTPS, CORS y los límites
+de seguridad de la demo están en `documentacion/vision_node_remote_demo.md`.
+El servicio Python, los modelos ONNX y la base biométrica local no forman parte
+del despliegue Vercel.

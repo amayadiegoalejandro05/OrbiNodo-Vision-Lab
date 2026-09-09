@@ -1,4 +1,5 @@
 import { getWhiteLabelConfiguration } from '../../client-config/white-label';
+import type { ClientProfile } from '../../client-config/types';
 export function applyWhiteLabel(profileId: string, productName: string): void {
   const config = getWhiteLabelConfiguration(profileId);
   for (const [name, value] of Object.entries(config.theme)) {
@@ -38,5 +39,29 @@ export function applyWhiteLabel(profileId: string, productName: string): void {
       document.head.append(icon);
     }
     icon.href = config.assets.faviconUrl;
+  }
+}
+
+export function applyClientBranding(profile: ClientProfile): void {
+  applyWhiteLabel(profile.id, profile.branding.productName);
+  document.title = profile.branding.browserTitle;
+
+  const textByClientField: Record<string, string> = {
+    'login-eyebrow': profile.branding.loginEyebrow,
+    'login-title': profile.branding.loginTitle,
+    'login-description': profile.branding.loginDescription,
+    'login-action': profile.branding.loginAction,
+    'login-notice': profile.branding.loginNotice,
+    'navigation-eyebrow': profile.branding.navigationEyebrow,
+    'tour-title': profile.tour.title,
+    footer: profile.branding.footer,
+  };
+
+  for (const [field, text] of Object.entries(textByClientField)) {
+    for (const element of document.querySelectorAll<HTMLElement>(
+      '[data-client="' + field + '"]',
+    )) {
+      element.textContent = text;
+    }
   }
 }

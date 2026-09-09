@@ -1,8 +1,10 @@
 import { orbinodoDemoProfile } from './profiles/orbinodo-demo/profile';
+import { visionLabProfile } from './profiles/vision-lab/profile';
 import type { ClientProfile } from './types';
 
 const profiles: Record<string, ClientProfile> = {
   [orbinodoDemoProfile.id]: orbinodoDemoProfile,
+  [visionLabProfile.id]: visionLabProfile,
 };
 
 export function getClientProfile(profileId: string): ClientProfile {

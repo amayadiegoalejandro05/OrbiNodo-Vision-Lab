@@ -1,0 +1,14 @@
+VERIFICACION VISION LAB EN RAMA TEMPORAL
+========================================
+
+La base principal de Vision Lab no se usa para verify:browser porque el flujo
+crea sesiones, cambios operativos e historial append-only.
+
+Flujo previsto:
+1. Crear una rama Neon temporal desde la base/schema Vision Lab.
+2. Configurar .env.vision-lab.local con la URL directa de esa rama y validar host.
+3. Ejecutar db:seed:vision-lab y verify:browser solo en la rama temporal.
+4. Revisar resultados y descartar la rama temporal desde Neon.
+
+No se ejecutan DELETE globales ni se desactiva la proteccion append-only de
+camera_change_history. Este documento no automatiza crear ni eliminar ramas.

@@ -2,19 +2,13 @@
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { resolve } from 'node:path';
-import { config as loadDotenv } from 'dotenv';
 import pg from 'pg';
+import { loadVisionLabVerificationConfig } from './vision-lab-verification-config.mjs';
 
-loadDotenv({ path: resolve('.env.backend.local'), quiet: true });
 const { Pool } = pg;
-const database = new Pool({
-  host: process.env.ORBINODO_DATABASE_HOST ?? '127.0.0.1',
-  port: Number(process.env.ORBINODO_DATABASE_PORT ?? 5432),
-  database: process.env.ORBINODO_DATABASE_NAME ?? 'orbinodo_demo',
-  user: process.env.ORBINODO_DATABASE_USER ?? 'orbinodo_api',
-  password: process.env.ORBINODO_DATABASE_PASSWORD,
-  ssl: process.env.ORBINODO_DATABASE_SSL === 'true',
-});
+const config = loadVisionLabVerificationConfig();
+const { accounts, camera, environment } = config;
+const database = new Pool({ connectionString: environment.DATABASE_URL, max: 1 });
 
 async function freePort() {
   const server = createServer();
@@ -26,129 +20,87 @@ async function freePort() {
 }
 
 const port = await freePort();
-const baseUrl = `http://127.0.0.1:${port}`;
+const baseUrl = 'http://127.0.0.1:' + port;
 const api = spawn(process.execPath, [
   resolve('node_modules/tsx/dist/cli.mjs'), resolve('backend/server.ts'),
-], { env: { ...process.env, ORBINODO_API_PORT: String(port) }, stdio: 'ignore' });
+], { env: { ...process.env, ...environment, ORBINODO_API_PORT: String(port) }, stdio: 'ignore' });
 
 async function waitForApi() {
   for (let attempt = 0; attempt < 50; attempt += 1) {
     try {
-      const response = await fetch(`${baseUrl}/api/health`);
+      const response = await fetch(baseUrl + '/api/health');
       if (response.ok) return;
-    } catch { /* todavía está iniciando */ }
+    } catch { /* API is starting. */ }
     await new Promise((ok) => setTimeout(ok, 100));
   }
-  throw new Error('La API temporal no inició correctamente.');
+  throw new Error('La API temporal no inicio correctamente.');
 }
 
-async function login(username, password) {
-  const response = await fetch(`${baseUrl}/api/auth/login`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+async function login(account) {
+  const response = await fetch(baseUrl + '/api/auth/login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ username: account.username, password: account.password }),
   });
-  if (!response.ok) throw new Error('Falló el inicio de sesión real.');
+  if (!response.ok) throw new Error('Fallo el inicio de sesion Vision Lab.');
   const cookie = response.headers.get('set-cookie') ?? '';
   if (!cookie.includes('HttpOnly') || !cookie.includes('SameSite=Lax')) {
-    throw new Error('La cookie no tiene la protección esperada.');
+    throw new Error('La cookie no tiene la proteccion esperada.');
   }
   return cookie.split(';', 1)[0];
 }
 
-async function verifySession(cookie, expectedUsername) {
+async function verifySession(cookie, account) {
   const headers = { cookie };
-  const me = await fetch(`${baseUrl}/api/auth/me`, { headers });
+  const me = await fetch(baseUrl + '/api/auth/me', { headers });
   const body = await me.json();
-  if (!me.ok || body.user?.username !== expectedUsername) {
-    throw new Error('La sesión no corresponde al perfil esperado.');
+  if (!me.ok || body.user?.username !== account.username) throw new Error('La sesion no corresponde al perfil Vision Lab.');
+  const logout = await fetch(baseUrl + '/api/auth/logout', { method: 'POST', headers });
+  if (logout.status !== 204) throw new Error('Fallo el cierre de sesion.');
+  if ((await fetch(baseUrl + '/api/auth/me', { headers })).status !== 401) {
+    throw new Error('La sesion siguio activa.');
   }
-  const logout = await fetch(`${baseUrl}/api/auth/logout`, {
-    method: 'POST', headers,
-  });
-  if (logout.status !== 204) throw new Error('Falló logout.');
-  const after = await fetch(`${baseUrl}/api/auth/me`, { headers });
-  if (after.status !== 401) throw new Error('La sesión siguió activa.');
 }
 
 try {
   await waitForApi();
-  const engineerPassword = process.env.ORBINODO_SEED_ENGINEER1_PASSWORD;
-  const managerPassword = process.env.ORBINODO_SEED_MANAGER_PASSWORD;
-  if (!engineerPassword || !managerPassword) {
-    throw new Error('Faltan credenciales locales de verificación.');
+  const operatorCookie = await login(accounts.engineer1);
+  const supervisorCookie = await login(accounts.manager);
+  if (operatorCookie === supervisorCookie) throw new Error('Las sesiones no son unicas.');
+
+  const inventory = await (await fetch(baseUrl + '/api/cameras', { headers: { cookie: operatorCookie } })).json();
+  if (!Array.isArray(inventory.cameras) || inventory.cameras.length !== 1 || inventory.cameras[0]?.assetCode !== camera.assetCode) {
+    throw new Error('El inventario Vision Lab no contiene el activo minimo esperado.');
   }
-  const engineerCookie = await login('Ingeniero 1', engineerPassword);
-  const managerCookie = await login('Jefe', managerPassword);
-  if (engineerCookie === managerCookie) throw new Error('Las sesiones no son únicas.');
-  const cameras = await fetch(`${baseUrl}/api/cameras`, {
-    headers: { cookie: engineerCookie },
+  const forbidden = await fetch(baseUrl + '/api/cameras/' + camera.id + '/operations', {
+    method: 'PATCH', headers: { cookie: supervisorCookie, 'content-type': 'application/json' }, body: '{}',
   });
-  const inventory = await cameras.json();
-  if (!cameras.ok || inventory.cameras?.length !== 10) {
-    throw new Error('La API no devolvió las diez cámaras de PostgreSQL.');
+  if (forbidden.status !== 403) throw new Error('El supervisor pudo editar el activo.');
+  if ((await fetch(baseUrl + '/api/audit/camera-changes', { headers: { cookie: operatorCookie } })).status !== 403) {
+    throw new Error('El operador pudo consultar auditoria privada.');
   }
-  const forbidden = await fetch(`${baseUrl}/api/cameras/camera-01/operations`, {
-    method: 'PATCH',
-    headers: { cookie: managerCookie, 'content-type': 'application/json' },
-    body: '{}',
+  const accessAudit = await fetch(baseUrl + '/api/audit/access-sessions', { headers: { cookie: supervisorCookie } });
+  const changeAudit = await fetch(baseUrl + '/api/audit/camera-changes', { headers: { cookie: supervisorCookie } });
+  if (!accessAudit.ok || !changeAudit.ok) throw new Error('El supervisor no pudo consultar auditoria.');
+
+  await Promise.all([verifySession(operatorCookie, accounts.engineer1), verifySession(supervisorCookie, accounts.manager)]);
+  const sessionView = await database.query('SELECT * FROM vista_historial_accesos LIMIT 1');
+  if (sessionView.fields.map(({ name }) => name).join('|') !== 'usuario|entrada|salida|estado|duracion') {
+    throw new Error('La vista de sesiones no tiene las columnas esperadas.');
+  }
+  const changeView = await database.query('SELECT * FROM vista_historial_cambios LIMIT 1');
+  if (changeView.fields.map(({ name }) => name).join('|') !== 'Ingeniero|Cámara|Código|Campo|Valor anterior|Valor nuevo|Fecha') {
+    throw new Error('La vista de cambios no tiene las columnas esperadas.');
+  }
+  const persisted = await database.query({
+    text: 'SELECT array_agg(DISTINCT actor_username) AS actors FROM camera_change_history WHERE camera_id = $1',
+    values: [camera.id],
   });
-  if (forbidden.status !== 403) throw new Error('El Jefe pudo editar por API.');
-  const engineerAudit = await fetch(`${baseUrl}/api/audit/camera-changes`, {
-    headers: { cookie: engineerCookie },
-  });
-  if (engineerAudit.status !== 403) {
-    throw new Error('Un Ingeniero pudo consultar la auditoría privada.');
+  const actors = persisted.rows[0]?.actors ?? [];
+  if (!actors.includes(accounts.engineer1.username) || !actors.includes(accounts.engineer2.username)) {
+    throw new Error('No se conservaron ambos operadores Vision Lab en el historial.');
   }
-  const accessAudit = await fetch(baseUrl + '/api/audit/access-sessions', {
-    headers: { cookie: managerCookie },
-  });
-  const changeAudit = await fetch(baseUrl + '/api/audit/camera-changes', {
-    headers: { cookie: managerCookie },
-  });
-  const accessAuditBody = await accessAudit.json();
-  const changeAuditBody = await changeAudit.json();
-  if (!accessAudit.ok || !Array.isArray(accessAuditBody.accessSessions)
-      || !changeAudit.ok || !Array.isArray(changeAuditBody.cameraChanges)) {
-    throw new Error('El Jefe no recibió la auditoría completa desde la API.');
-  }
-  await Promise.all([
-    verifySession(engineerCookie, 'Ingeniero 1'),
-    verifySession(managerCookie, 'Jefe'),
-  ]);
-  const view = await database.query(
-    'SELECT * FROM vista_historial_accesos LIMIT 1',
-  );
-  const columns = view.fields.map(({ name }) => name);
-  const expected = ['usuario', 'entrada', 'salida', 'estado', 'duracion'];  if (columns.join('|') !== expected.join('|')) {
-    throw new Error('La vista legible no tiene las columnas esperadas.');
-  }
-  const changesView = await database.query(
-    'SELECT * FROM vista_historial_cambios LIMIT 1',
-  );
-  const changeColumns = changesView.fields.map(({ name }) => name);
-  const expectedChanges = [
-    'Ingeniero', 'Cámara', 'Código', 'Campo', 'Valor anterior', 'Valor nuevo', 'Fecha',
-  ];
-  if (changeColumns.join('|') !== expectedChanges.join('|')) {
-    throw new Error('La vista legible de cambios no tiene las columnas esperadas.');
-  }
-  const cameraState = await database.query({
-    text: `SELECT o.notes,
-      array_agg(DISTINCT h.actor_username) AS actors
-      FROM camera_operational_state o
-      JOIN camera_change_history h ON h.camera_id = o.camera_id
-      WHERE o.camera_id = $1 GROUP BY o.notes`,
-    values: ['camera-03'],
-  });
-  const persisted = cameraState.rows[0];
-  if (!persisted?.notes.includes('Ingeniero 2')
-      || !persisted.actors.includes('Ingeniero 1')
-      || !persisted.actors.includes('Ingeniero 2')) {
-    throw new Error('Los cambios de cámaras no quedaron persistidos y auditados.');
-  }
-  console.log('Autenticación PostgreSQL verificada con dos sesiones independientes.');
-  console.log('Vista legible del historial de accesos verificada.');
-  console.log('Cambios operativos y autores verificados en PostgreSQL.');
+  console.log('Autenticacion, RBAC, sesiones, auditoria y vistas Vision Lab verificados.');
 } finally {
   api.kill();
   await database.end();
