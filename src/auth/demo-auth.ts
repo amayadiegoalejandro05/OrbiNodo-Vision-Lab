@@ -35,7 +35,7 @@ export async function authenticateWithApi(
   });
   const value = await readApiJson(response);
   if (response.status === 401) return null;
-  if (!response.ok) throw apiFailure(value, 'La API local no está disponible.');
+  if (!response.ok) throw apiFailure(value, 'El servicio de OrbiNodo no está disponible.');
   const session = readSession(value);
   if (!session) throw new Error('La API devolvió un perfil no válido.');
   return session;
@@ -44,7 +44,7 @@ export async function authenticateWithApi(
 export async function getActiveApiSession(): Promise<DemoSession | null> {
   const response = await fetch('/api/auth/me', { credentials: 'include' });
   if (response.status === 401) return null;
-  if (!response.ok) throw new Error('La API local no está disponible.');
+  if (!response.ok) throw new Error('El servicio de OrbiNodo no está disponible.');
   const session = readSession(await readApiJson(response));
   if (!session) throw new Error('La API devolvió un perfil no válido.');
   return session;

@@ -1,5 +1,6 @@
 import type { DemoSession } from './demo-auth';
 import { authenticateWithApi } from './demo-auth';
+import { ApiRequestError } from '../api/api-response';
 
 export interface LoginViewApi {
   show: () => void;
@@ -29,8 +30,10 @@ export function createLoginView(
     let session: DemoSession | null;
     try {
       session = await authenticateWithApi(username.value, password.value);
-    } catch {
-      message.textContent = 'No fue posible conectar con la API local.';
+    } catch (error) {
+      message.textContent = error instanceof ApiRequestError
+        ? error.message
+        : 'No fue posible conectar con el servicio de OrbiNodo.';
       submit.disabled = false;
       return;
     }

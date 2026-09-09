@@ -10,7 +10,7 @@ const user = {
   role: 'engineer1', displayName: 'Ingeniero 1', username: 'Ingeniero 1',
 };
 
-describe('autenticación mediante API local', () => {
+describe('autenticación mediante API de OrbiNodo', () => {
   it('envía credenciales al backend y acepta el perfil validado', async () => {
     const fetchMock = vi.fn(async () => new Response(
       JSON.stringify({ user }), { status: 200 },
@@ -27,6 +27,17 @@ describe('autenticación mediante API local', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 401 })));
     await expect(authenticateWithApi('nadie', 'incorrecta0')).resolves.toBeNull();
     await expect(getActiveApiSession()).resolves.toBeNull();
+  });
+
+  it('conserva el mensaje del backend cuando limita intentos', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      error: 'LOGIN_RATE_LIMITED',
+      message: 'Demasiados intentos. Intenta nuevamente más tarde.',
+    }), { status: 429 })));
+    await expect(authenticateWithApi('vision-admin', '1234567890')).rejects.toMatchObject({
+      code: 'LOGIN_RATE_LIMITED',
+      message: 'Demasiados intentos. Intenta nuevamente más tarde.',
+    });
   });
 
   it('restaura el perfil y solicita logout con la cookie', async () => {
