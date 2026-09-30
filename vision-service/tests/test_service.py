@@ -4,13 +4,17 @@ import json
 import os
 import sys
 import unittest
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.actuator_client import ActuatorClientError
 from app.config import VisionServiceConfig, configured_cors_origins
+from app.face_detector import FaceDetection
+from app.face_recognizer import FaceMatch
+from app.pipeline import VisionPipeline
 from app.service import create_app
 
 
@@ -231,6 +235,101 @@ class ServiceTests(unittest.TestCase):
         self.assertIs(app.state.actuator_client, client_type.return_value)
         client_type.return_value.status.assert_not_called()
         client_type.return_value.open.assert_not_called()
+
+
+class PipelineActiveUserTests(unittest.TestCase):
+    def run_frame(self, faces: list[FaceDetection], matches: dict[int, FaceMatch]):
+        pipeline = VisionPipeline(VisionServiceConfig(camera_index=1))
+        detector = MagicMock()
+        detector.detect.return_value = faces
+        recognizer = MagicMock()
+        recognizer.embedding.side_effect = lambda _frame, raw: raw
+        recognizer.best_candidate.side_effect = lambda query, _candidates: matches.get(query)
+        pipeline._prepared = True
+        pipeline._detector = detector
+        pipeline._recognizer = recognizer
+
+        camera = MagicMock()
+        camera.read.return_value = object()
+
+        def encode(*_args):
+            pipeline._stop_event.set()
+            return True, SimpleNamespace(tobytes=lambda: b"jpeg")
+
+        fake_cv2 = SimpleNamespace(
+            rectangle=lambda *_args: None,
+            putText=lambda *_args: None,
+            imencode=encode,
+            FONT_HERSHEY_SIMPLEX=0,
+            LINE_AA=0,
+            IMWRITE_JPEG_QUALITY=0,
+        )
+
+        with (
+            patch("app.pipeline.CameraCapture", return_value=camera),
+            patch("app.pipeline.FpsMeter") as fps_meter,
+            patch.dict(sys.modules, {"cv2": fake_cv2}),
+        ):
+            fps_meter.return_value.tick.return_value = 30.0
+            pipeline._run()
+
+        camera.open.assert_called_once()
+        camera.release.assert_called_once()
+        detector.detect.assert_called_once()
+        self.assertIsNone(pipeline.status()["error"])
+        return pipeline.status(), recognizer
+
+    @staticmethod
+    def face(index: int, width: int, height: int) -> FaceDetection:
+        return FaceDetection(
+            x=0,
+            y=0,
+            width=width,
+            height=height,
+            confidence=0.9,
+            raw=index,
+        )
+
+    def test_no_faces_has_no_active_user(self) -> None:
+        status, recognizer = self.run_frame([], {})
+        self.assertEqual(status["faces"], [])
+        self.assertIsNone(status["active_face_index"])
+        self.assertIsNone(status["active_user"])
+        recognizer.embedding.assert_not_called()
+
+    def test_largest_face_maps_to_same_public_face(self) -> None:
+        faces = [
+            self.face(0, 10, 10),
+            self.face(1, 30, 20),
+            self.face(2, 20, 20),
+        ]
+        matches = {
+            0: FaceMatch(1, "First", 0.8),
+            1: FaceMatch(2, "Largest", 0.9),
+            2: FaceMatch(3, "Third", 0.7),
+        }
+        status, recognizer = self.run_frame(faces, matches)
+
+        self.assertEqual(recognizer.embedding.call_count, 3)
+        self.assertEqual(len(status["faces"]), 3)
+        self.assertEqual(status["active_face_index"], 1)
+        self.assertEqual(status["active_user"], status["faces"][1])
+        self.assertEqual(status["active_user"]["name"], "Largest")
+
+    def test_largest_unknown_face_remains_active(self) -> None:
+        faces = [self.face(0, 10, 10), self.face(1, 30, 20)]
+        matches = {
+            0: FaceMatch(1, "Known", 0.8),
+            1: FaceMatch(2, "Below threshold", 0.1),
+        }
+        status, _ = self.run_frame(faces, matches)
+
+        self.assertEqual(status["active_face_index"], 1)
+        self.assertEqual(status["active_user"], status["faces"][1])
+        self.assertEqual(
+            status["active_user"],
+            {"status": "UNKNOWN", "person_id": None, "name": None, "similarity": 0.1},
+        )
 
 
 if __name__ == "__main__":

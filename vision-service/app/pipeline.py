@@ -5,6 +5,7 @@ from threading import Event, RLock, Thread, current_thread
 from time import perf_counter, sleep
 from typing import Any
 
+from .active_user import select_active_face_index
 from .camera import CameraCapture, FpsMeter
 from .config import VisionServiceConfig
 from .face_database import FaceDatabase
@@ -52,6 +53,8 @@ class VisionPipeline:
         self._running = False
         self._fps = 0.0
         self._faces: list[PublicFace] = []
+        self._active_face_index: int | None = None
+        self._active_user: PublicFace | None = None
         self._timestamp: str | None = None
         self._jpeg: bytes | None = None
         self._error: str | None = None
@@ -209,6 +212,8 @@ class VisionPipeline:
             self._error = None
             self._fps = 0.0
             self._faces = []
+            self._active_face_index = None
+            self._active_user = None
             self._timestamp = None
             self._jpeg = None
 
@@ -268,6 +273,12 @@ class VisionPipeline:
                     face.as_dict()
                     for face in self._faces
                 ],
+                "active_face_index": self._active_face_index,
+                "active_user": (
+                    self._active_user.as_dict()
+                    if self._active_user is not None
+                    else None
+                ),
                 "timestamp": self._timestamp,
                 "error": self._error,
             }
@@ -336,10 +347,14 @@ class VisionPipeline:
         jpeg: bytes,
         faces: list[PublicFace],
         fps: float,
+        active_face_index: int | None = None,
+        active_user: PublicFace | None = None,
     ) -> None:
         with self._lock:
             self._jpeg = jpeg
             self._faces = faces
+            self._active_face_index = active_face_index
+            self._active_user = active_user
             self._fps = fps
             self._timestamp = datetime.now(timezone.utc).isoformat()
             self._error = None
@@ -456,7 +471,9 @@ class VisionPipeline:
                     )
                     detected_faces = []
 
+                active_face_index = select_active_face_index(detected_faces)
                 public_faces: list[PublicFace] = []
+                public_faces_by_index: list[PublicFace | None] = [None] * len(detected_faces)
 
                 with self._lock:
                     # reload_people() reemplaza la lista completa,
@@ -467,7 +484,7 @@ class VisionPipeline:
                 # ------------------------------------------
                 # 3. Reconocimiento por rostro
                 # ------------------------------------------
-                for face in detected_faces:
+                for face_index, face in enumerate(detected_faces):
                     try:
                         started_at = perf_counter()
 
@@ -523,6 +540,7 @@ class VisionPipeline:
                         )
 
                         public_faces.append(public)
+                        public_faces_by_index[face_index] = public
 
                         color = (
                             (0, 255, 100)
@@ -581,6 +599,12 @@ class VisionPipeline:
 
                         continue
 
+                active_user = (
+                    public_faces_by_index[active_face_index]
+                    if active_face_index is not None
+                    else None
+                )
+
                 # ------------------------------------------
                 # 4. FPS + JPEG
                 # ------------------------------------------
@@ -615,6 +639,8 @@ class VisionPipeline:
                         buffer.tobytes(),
                         public_faces,
                         fps,
+                        active_face_index,
+                        active_user,
                     )
 
                     if not first_jpeg_logged:
