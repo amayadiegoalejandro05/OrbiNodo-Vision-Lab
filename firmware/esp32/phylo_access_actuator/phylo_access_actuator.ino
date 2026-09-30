@@ -1,11 +1,22 @@
 #include <WiFi.h>
 #include <WebServer.h>
+#include <ESP32Servo.h>
 
 #include "secrets.h"
 
 const char* HOSTNAME = "phylo-access-actuator";
+const int SERVO_PIN = 18;
+const int ANGULO_CERRADO = 0;
+const int ANGULO_ABIERTO = 90;
 
 WebServer server(80);
+Servo servo;
+int servoAngle = ANGULO_CERRADO;
+
+void commandServo(int angle) {
+  servo.write(angle);
+  servoAngle = angle;
+}
 
 enum ActuatorState {
   CLOSED,
@@ -61,6 +72,9 @@ void updateState() {
 
     stateStartedAt += duration;
     state = nextState;
+    if (state == CLOSING) {
+      commandServo(ANGULO_CERRADO);
+    }
   }
 }
 
@@ -73,7 +87,8 @@ void handleHealth() {
 }
 
 void handleStatus() {
-  server.send(200, "application/json", String("{\"state\":\"") + stateName() + "\"}");
+  server.send(200, "application/json", String("{\"state\":\"") + stateName() +
+    "\",\"servo_angle\":" + String(servoAngle) + "}");
 }
 
 void handleOpen() {
@@ -84,11 +99,14 @@ void handleOpen() {
 
   state = OPENING;
   stateStartedAt = millis();
+  commandServo(ANGULO_ABIERTO);
   server.send(202, "application/json", "{\"accepted\":true,\"state\":\"OPENING\"}");
 }
 
 void setup() {
   Serial.begin(115200);
+  servo.attach(SERVO_PIN);
+  commandServo(ANGULO_CERRADO);
 
   WiFi.setHostname(HOSTNAME);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
