@@ -14,8 +14,9 @@ from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
+from .actuator_client import ActuatorClient, ActuatorClientError
 from .config import VisionServiceConfig
 from .pipeline import VisionPipeline
 
@@ -23,9 +24,16 @@ from .pipeline import VisionPipeline
 def create_app(
     config: VisionServiceConfig | None = None,
     pipeline: VisionPipeline | Any | None = None,
+    actuator_client: ActuatorClient | None = None,
 ) -> FastAPI:
     active_config = config or VisionServiceConfig()
     active_pipeline = pipeline or VisionPipeline(active_config)
+    active_actuator = actuator_client
+    if active_actuator is None and active_config.actuator_url is not None:
+        active_actuator = ActuatorClient(
+            active_config.actuator_url,
+            active_config.actuator_timeout_seconds,
+        )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -47,6 +55,7 @@ def create_app(
     )
 
     app.state.vision_pipeline = active_pipeline
+    app.state.actuator_client = active_actuator
 
     app.add_middleware(
         CORSMiddleware,
@@ -74,6 +83,38 @@ def create_app(
     @app.get("/api/vision/status")
     def status() -> dict[str, Any]:
         return active_pipeline.status()
+
+    def actuator_unavailable(configured: bool, message: str) -> JSONResponse:
+        return JSONResponse(
+            status_code=503,
+            content={"configured": configured, "available": False, "error": message},
+        )
+
+    @app.get("/api/actuator/status")
+    def actuator_status() -> JSONResponse:
+        if active_actuator is None:
+            return actuator_unavailable(False, "Actuator is not configured.")
+        try:
+            result = active_actuator.status()
+        except ActuatorClientError as error:
+            return actuator_unavailable(True, str(error))
+        return JSONResponse(
+            status_code=200,
+            content={**result, "configured": True, "available": True},
+        )
+
+    @app.post("/api/actuator/open")
+    def actuator_open() -> JSONResponse:
+        if active_actuator is None:
+            return actuator_unavailable(False, "Actuator is not configured.")
+        try:
+            result = active_actuator.open()
+        except ActuatorClientError as error:
+            return actuator_unavailable(True, str(error))
+        return JSONResponse(
+            status_code=202 if result.get("accepted") is True else 409,
+            content={**result, "configured": True, "available": True},
+        )
 
     @app.post("/api/vision/start")
     def start() -> dict[str, Any]:
