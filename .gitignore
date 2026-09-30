@@ -29,6 +29,7 @@ vision-service/data/*.png
 vision-service/data/*.mp4
 vision-service/data/*.avi
 vision-service/models/*.onnx
+vision-service/models/*.task
 vision-service/**/__pycache__/
 vision-service/**/*.pyc
 .venv/
