@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+import math
 import os
 from urllib.parse import urlsplit
 
@@ -59,6 +60,46 @@ def configured_cors_origins() -> tuple[str, ...]:
     return origins
 
 
+def configured_actuator_url() -> str | None:
+    url = os.environ.get("VISION_ACTUATOR_URL", "").strip()
+    if not url:
+        return None
+
+    if any(character.isspace() for character in url):
+        raise ValueError("VISION_ACTUATOR_URL must be a valid HTTP or HTTPS base URL.")
+
+    try:
+        parsed = urlsplit(url)
+        parsed.port  # Reject malformed ports.
+    except ValueError as error:
+        raise ValueError("VISION_ACTUATOR_URL must be a valid HTTP or HTTPS base URL.") from error
+
+    if not (
+        parsed.scheme in ("http", "https")
+        and parsed.hostname
+        and parsed.username is None
+        and parsed.password is None
+        and parsed.path in ("", "/")
+        and "?" not in url
+        and "#" not in url
+    ):
+        raise ValueError("VISION_ACTUATOR_URL must be a valid HTTP or HTTPS base URL.")
+
+    return url.rstrip("/")
+
+
+def configured_actuator_timeout_seconds() -> float:
+    raw_timeout = os.environ.get("VISION_ACTUATOR_TIMEOUT_SECONDS", "2.0").strip()
+    try:
+        timeout = float(raw_timeout)
+    except ValueError as error:
+        raise ValueError("VISION_ACTUATOR_TIMEOUT_SECONDS must be greater than zero.") from error
+
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError("VISION_ACTUATOR_TIMEOUT_SECONDS must be greater than zero.")
+    return timeout
+
+
 @dataclass(frozen=True)
 class VisionServiceConfig:
     camera_index: int = int(os.environ.get("VISION_CAMERA_INDEX", "1"))
@@ -76,3 +117,5 @@ class VisionServiceConfig:
     # calibrated locally; it is not a production biometric decision threshold.
     cosine_match_threshold: float = 0.363
     cors_origins: tuple[str, ...] = field(default_factory=configured_cors_origins)
+    actuator_url: str | None = field(default_factory=configured_actuator_url)
+    actuator_timeout_seconds: float = field(default_factory=configured_actuator_timeout_seconds)
