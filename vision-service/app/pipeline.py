@@ -6,10 +6,12 @@ from time import perf_counter, sleep
 from typing import Any
 
 from .active_user import select_active_face_index
+from .blink_confirmation import BlinkConfirmationTracker
 from .camera import CameraCapture, FpsMeter
 from .config import VisionServiceConfig
 from .face_database import FaceDatabase
 from .face_detector import YuNetFaceDetector
+from .face_landmarker import FaceLandmarkerAdapter, FaceLandmarkerError
 from .face_recognizer import SFaceRecognizer
 
 logger = logging.getLogger(__name__)
@@ -55,6 +57,12 @@ class VisionPipeline:
         self._faces: list[PublicFace] = []
         self._active_face_index: int | None = None
         self._active_user: PublicFace | None = None
+        self._blink_tracker = BlinkConfirmationTracker(
+            config.blink_open_threshold,
+            config.blink_closed_threshold,
+            config.blink_target,
+        )
+        self._blink_person_id: int | None = None
         self._timestamp: str | None = None
         self._jpeg: bytes | None = None
         self._error: str | None = None
@@ -214,6 +222,8 @@ class VisionPipeline:
             self._faces = []
             self._active_face_index = None
             self._active_user = None
+            self._blink_tracker.reset()
+            self._blink_person_id = None
             self._timestamp = None
             self._jpeg = None
 
@@ -279,6 +289,9 @@ class VisionPipeline:
                     if self._active_user is not None
                     else None
                 ),
+                "blink_count": self._blink_tracker.reading.blink_count,
+                "blink_target": self._blink_tracker.reading.target_blinks,
+                "blink_confirmed": self._blink_tracker.reading.confirmed,
                 "timestamp": self._timestamp,
                 "error": self._error,
             }
@@ -361,6 +374,7 @@ class VisionPipeline:
 
     def _run(self) -> None:
         camera: CameraCapture | None = None
+        landmarker: FaceLandmarkerAdapter | None = None
 
         try:
             import cv2
@@ -373,6 +387,11 @@ class VisionPipeline:
                 raise RuntimeError(
                     "Vision engine is not prepared."
                 )
+
+            try:
+                landmarker = FaceLandmarkerAdapter(self.config.face_landmarker_model)
+            except FaceLandmarkerError:
+                logger.warning("Face Landmarker unavailable; blink confirmation disabled.")
 
             fps_meter = FpsMeter()
 
@@ -472,6 +491,12 @@ class VisionPipeline:
                     detected_faces = []
 
                 active_face_index = select_active_face_index(detected_faces)
+                # Recognition draws on frame; keep a clean full-frame image for MediaPipe.
+                landmarker_frame = (
+                    frame.copy()
+                    if len(detected_faces) == 1 and landmarker is not None
+                    else None
+                )
                 public_faces: list[PublicFace] = []
                 public_faces_by_index: list[PublicFace | None] = [None] * len(detected_faces)
 
@@ -605,6 +630,42 @@ class VisionPipeline:
                     else None
                 )
 
+                eligible_for_blink = (
+                    len(detected_faces) == 1
+                    and active_user is not None
+                    and active_user.status == "AUTHORIZED"
+                    and active_user.person_id is not None
+                    and landmarker is not None
+                )
+                if not eligible_for_blink:
+                    with self._lock:
+                        self._blink_tracker.reset()
+                        self._blink_person_id = None
+                else:
+                    person_id = active_user.person_id
+                    with self._lock:
+                        if person_id != self._blink_person_id:
+                            self._blink_tracker.reset()
+                            self._blink_person_id = person_id
+
+                    try:
+                        reading = landmarker.detect(landmarker_frame)
+                        with self._lock:
+                            if (
+                                reading is not None
+                                and reading.eye_blink_left is not None
+                                and reading.eye_blink_right is not None
+                            ):
+                                score = min(reading.eye_blink_left, reading.eye_blink_right)
+                                self._blink_tracker.update(score)
+                            else:
+                                self._blink_tracker.update(None)
+                    except FaceLandmarkerError:
+                        logger.warning("Face Landmarker inference failed; blink progress reset.")
+                        with self._lock:
+                            self._blink_tracker.reset()
+                            self._blink_person_id = person_id
+
                 # ------------------------------------------
                 # 4. FPS + JPEG
                 # ------------------------------------------
@@ -674,6 +735,12 @@ class VisionPipeline:
                 self._state = "ERROR"
 
         finally:
+            if landmarker is not None:
+                try:
+                    landmarker.close()
+                except FaceLandmarkerError:
+                    logger.warning("Face Landmarker could not be closed cleanly.")
+
             if camera is not None:
                 try:
                     camera.release()
@@ -684,6 +751,8 @@ class VisionPipeline:
                     )
 
             with self._lock:
+                self._blink_tracker.reset()
+                self._blink_person_id = None
                 self._running = False
 
                 if (

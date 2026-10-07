@@ -107,6 +107,7 @@ class VisionServiceConfig:
     port: int = int(os.environ.get("VISION_SERVICE_PORT", "8765"))
     detector_model: Path = SERVICE_ROOT / "models" / "face_detection_yunet_2023mar.onnx"
     recognizer_model: Path = SERVICE_ROOT / "models" / "face_recognition_sface_2021dec.onnx"
+    face_landmarker_model: Path = SERVICE_ROOT / "models" / "face_landmarker.task"
     database_path: Path = SERVICE_ROOT / "data" / "vision_faces.db"
     detector_score_threshold: float = 0.8
     detector_nms_threshold: float = 0.3
@@ -116,6 +117,9 @@ class VisionServiceConfig:
     # Experimental starting point from OpenCV SFace documentation. It must be
     # calibrated locally; it is not a production biometric decision threshold.
     cosine_match_threshold: float = 0.363
+    blink_open_threshold: float = 0.20
+    blink_closed_threshold: float = 0.60
+    blink_target: int = 3
     cors_origins: tuple[str, ...] = field(default_factory=configured_cors_origins)
     actuator_url: str | None = field(default_factory=configured_actuator_url)
     actuator_timeout_seconds: float = field(default_factory=configured_actuator_timeout_seconds)

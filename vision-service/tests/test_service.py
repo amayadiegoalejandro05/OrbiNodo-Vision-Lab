@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT))
 from app.actuator_client import ActuatorClientError
 from app.config import VisionServiceConfig, configured_cors_origins
 from app.face_detector import FaceDetection
+from app.face_landmarker import FaceLandmarkerError, FaceLandmarkerReading
 from app.face_recognizer import FaceMatch
 from app.pipeline import VisionPipeline
 from app.service import create_app
@@ -237,6 +238,46 @@ class ServiceTests(unittest.TestCase):
         client_type.return_value.open.assert_not_called()
 
 
+    def test_blink_confirmation_opens_actuator_once(self) -> None:
+        class BlinkPipeline(FakePipeline):
+            def __init__(self) -> None:
+                super().__init__()
+                self.confirmed = False
+
+            def status(self):
+                result = super().status()
+                result["active_user"] = {
+                    "status": "AUTHORIZED",
+                    "person_id": 1,
+                    "name": "Diego",
+                    "similarity": 0.82,
+                }
+                result["blink_confirmed"] = self.confirmed
+                return result
+
+        pipeline = BlinkPipeline()
+        actuator = FakeActuator()
+        app = create_app(
+            VisionServiceConfig(camera_index=1),
+            pipeline,
+            actuator,
+        )
+
+        async def run_lifespan():
+            async with app.router.lifespan_context(app):
+                self.assertEqual(actuator.open_calls, 0)
+
+                pipeline.confirmed = True
+                await asyncio.sleep(0.20)
+
+                self.assertEqual(actuator.open_calls, 1)
+
+                await asyncio.sleep(0.20)
+                self.assertEqual(actuator.open_calls, 1)
+
+        asyncio.run(run_lifespan())
+
+
 class PipelineActiveUserTests(unittest.TestCase):
     def run_frame(self, faces: list[FaceDetection], matches: dict[int, FaceMatch]):
         pipeline = VisionPipeline(VisionServiceConfig(camera_index=1))
@@ -250,7 +291,7 @@ class PipelineActiveUserTests(unittest.TestCase):
         pipeline._recognizer = recognizer
 
         camera = MagicMock()
-        camera.read.return_value = object()
+        camera.read.return_value = MagicMock()
 
         def encode(*_args):
             pipeline._stop_event.set()
@@ -268,6 +309,7 @@ class PipelineActiveUserTests(unittest.TestCase):
         with (
             patch("app.pipeline.CameraCapture", return_value=camera),
             patch("app.pipeline.FpsMeter") as fps_meter,
+            patch("app.pipeline.FaceLandmarkerAdapter"),
             patch.dict(sys.modules, {"cv2": fake_cv2}),
         ):
             fps_meter.return_value.tick.return_value = 30.0
@@ -330,6 +372,153 @@ class PipelineActiveUserTests(unittest.TestCase):
             status["active_user"],
             {"status": "UNKNOWN", "person_id": None, "name": None, "similarity": 0.1},
         )
+
+
+class PipelineBlinkTests(unittest.TestCase):
+    @staticmethod
+    def face(person_id: int) -> FaceDetection:
+        return FaceDetection(0, 0, 20, 20, 0.9, person_id)
+
+    def run_frames(self, face_batches, readings, *, model_error=False):
+        pipeline = VisionPipeline(VisionServiceConfig(camera_index=1))
+        pipeline._prepared = True
+        detector = MagicMock()
+        detector.detect.side_effect = face_batches
+        recognizer = MagicMock()
+        recognizer.embedding.side_effect = lambda _frame, raw: raw
+        recognizer.best_candidate.side_effect = lambda raw, _candidates: (
+            FaceMatch(raw, f"Person {raw}", 0.9) if raw > 0 else None
+        )
+        pipeline._detector = detector
+        pipeline._recognizer = recognizer
+
+        camera = MagicMock()
+        camera.read.return_value = MagicMock()
+        snapshots = []
+        publish = pipeline._publish
+
+        def capture(*args):
+            publish(*args)
+            snapshots.append(pipeline.status())
+
+        pipeline._publish = capture
+
+        def encode(*_args):
+            if len(snapshots) + 1 == len(face_batches):
+                pipeline._stop_event.set()
+            return True, SimpleNamespace(tobytes=lambda: b"jpeg")
+
+        fake_cv2 = SimpleNamespace(
+            rectangle=lambda *_args: None,
+            putText=lambda *_args: None,
+            imencode=encode,
+            FONT_HERSHEY_SIMPLEX=0,
+            LINE_AA=0,
+            IMWRITE_JPEG_QUALITY=0,
+        )
+        landmarker = MagicMock()
+        landmarker.detect.side_effect = readings
+        landmarker_type = MagicMock(return_value=landmarker)
+        if model_error:
+            landmarker_type.side_effect = FaceLandmarkerError("model unavailable")
+
+        with (
+            patch("app.pipeline.CameraCapture", return_value=camera),
+            patch("app.pipeline.FpsMeter") as fps_meter,
+            patch("app.pipeline.FaceLandmarkerAdapter", landmarker_type),
+            patch.dict(sys.modules, {"cv2": fake_cv2}),
+        ):
+            fps_meter.return_value.tick.return_value = 30.0
+            pipeline._run()
+
+        self.assertIsNone(pipeline.status()["error"])
+        self.assertEqual(pipeline.status()["blink_count"], 0)
+        self.assertFalse(pipeline.status()["blink_confirmed"])
+        camera.release.assert_called_once()
+        if not model_error:
+            landmarker.close.assert_called_once()
+        return pipeline, snapshots, landmarker
+
+    @staticmethod
+    def reading(score):
+        return FaceLandmarkerReading(478, score, score)
+
+    def test_initial_blink_status(self) -> None:
+        pipeline = VisionPipeline(VisionServiceConfig())
+        self.assertEqual(
+            {key: pipeline.status()[key] for key in ("blink_count", "blink_target", "blink_confirmed")},
+            {"blink_count": 0, "blink_target": 3, "blink_confirmed": False},
+        )
+
+    def test_single_authorized_face_counts_one_blink(self) -> None:
+        faces = [[self.face(1)]] * 3
+        _, snapshots, landmarker = self.run_frames(
+            faces, [self.reading(score) for score in (0.10, 0.70, 0.10)]
+        )
+        self.assertEqual([item["blink_count"] for item in snapshots], [0, 0, 1])
+        self.assertEqual(landmarker.detect.call_count, 3)
+
+    def test_three_cycles_confirm(self) -> None:
+        scores = [0.10, 0.70, 0.10, 0.70, 0.10, 0.70, 0.10]
+        _, snapshots, _ = self.run_frames(
+            [[self.face(1)]] * len(scores), [self.reading(score) for score in scores]
+        )
+        self.assertEqual(snapshots[-1]["blink_count"], 3)
+        self.assertEqual(snapshots[-1]["blink_target"], 3)
+        self.assertTrue(snapshots[-1]["blink_confirmed"])
+
+    def test_unknown_resets_progress(self) -> None:
+        _, snapshots, landmarker = self.run_frames(
+            [[self.face(1)]] * 3 + [[self.face(0)]],
+            [self.reading(score) for score in (0.10, 0.70, 0.10)],
+        )
+        self.assertEqual([item["blink_count"] for item in snapshots], [0, 0, 1, 0])
+        self.assertEqual(landmarker.detect.call_count, 3)
+
+    def test_no_face_resets_progress(self) -> None:
+        _, snapshots, landmarker = self.run_frames(
+            [[self.face(1)]] * 3 + [[]],
+            [self.reading(score) for score in (0.10, 0.70, 0.10)],
+        )
+        self.assertEqual(snapshots[-1]["blink_count"], 0)
+        self.assertEqual(landmarker.detect.call_count, 3)
+
+    def test_multiple_faces_reset_progress(self) -> None:
+        _, snapshots, landmarker = self.run_frames(
+            [[self.face(1)]] * 3 + [[self.face(1), self.face(2)]],
+            [self.reading(score) for score in (0.10, 0.70, 0.10)],
+        )
+        self.assertEqual(snapshots[-1]["blink_count"], 0)
+        self.assertEqual(landmarker.detect.call_count, 3)
+
+    def test_person_change_resets_before_new_scores(self) -> None:
+        _, snapshots, _ = self.run_frames(
+            [[self.face(1)]] * 3 + [[self.face(2)]],
+            [self.reading(score) for score in (0.10, 0.70, 0.10, 0.70)],
+        )
+        self.assertEqual(snapshots[2]["blink_count"], 1)
+        self.assertEqual(snapshots[3]["blink_count"], 0)
+
+    def test_missing_landmarker_reading_does_not_invent_blink(self) -> None:
+        _, snapshots, _ = self.run_frames(
+            [[self.face(1)]] * 4,
+            [self.reading(0.10), None, self.reading(0.70), self.reading(0.10)],
+        )
+        self.assertEqual([item["blink_count"] for item in snapshots], [0, 0, 0, 1])
+
+    def test_landmarker_error_resets_but_pipeline_continues(self) -> None:
+        _, snapshots, landmarker = self.run_frames(
+            [[self.face(1)]] * 5,
+            [self.reading(0.10), self.reading(0.70), self.reading(0.10),
+             FaceLandmarkerError("inference failed"), self.reading(0.10)],
+        )
+        self.assertEqual([item["blink_count"] for item in snapshots], [0, 0, 1, 0, 0])
+        self.assertEqual(landmarker.detect.call_count, 5)
+
+    def test_landmarker_initialization_failure_keeps_recognition_running(self) -> None:
+        _, snapshots, _ = self.run_frames([[self.face(1)]], [], model_error=True)
+        self.assertEqual(snapshots[0]["active_user"]["status"], "AUTHORIZED")
+        self.assertEqual(snapshots[0]["blink_count"], 0)
 
 
 if __name__ == "__main__":

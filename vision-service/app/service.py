@@ -35,6 +35,38 @@ def create_app(
             active_config.actuator_timeout_seconds,
         )
 
+    async def monitor_blink_confirmation() -> None:
+        confirmation_latched = False
+
+        while True:
+            snapshot = active_pipeline.status()
+            active_user = snapshot.get("active_user")
+
+            authorized = (
+                isinstance(active_user, dict)
+                and active_user.get("status") == "AUTHORIZED"
+            )
+
+            confirmed = bool(snapshot.get("blink_confirmed"))
+            eligible = authorized and confirmed
+
+            # Flanco False -> True:
+            # una confirmación produce como máximo un intento de apertura.
+            if eligible and not confirmation_latched:
+                confirmation_latched = True
+
+                if active_actuator is not None:
+                    try:
+                        await asyncio.to_thread(active_actuator.open)
+                    except ActuatorClientError:
+                        pass
+
+            # Cuando desaparece la confirmación se rearma el sistema.
+            elif not eligible:
+                confirmation_latched = False
+
+            await asyncio.sleep(0.05)
+
     @asynccontextmanager
     async def lifespan(_: FastAPI):
         # Precarga una sola vez:
@@ -44,9 +76,21 @@ def create_app(
         # - SFace
         await asyncio.to_thread(active_pipeline.prepare)
 
-        yield
+        monitor_task = asyncio.create_task(
+            monitor_blink_confirmation()
+        )
 
-        active_pipeline.stop()
+        try:
+            yield
+        finally:
+            monitor_task.cancel()
+
+            try:
+                await monitor_task
+            except asyncio.CancelledError:
+                pass
+
+            active_pipeline.stop()
 
     app = FastAPI(
         title="OrbiNodo Vision Service",
