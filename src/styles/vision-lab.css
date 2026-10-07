@@ -1,0 +1,29 @@
+#vision-lab-workspace { width: min(66rem, 100%); margin: 0 auto; padding: clamp(1.25rem, 4vw, 3rem); align-self: center; }
+.vision-lab-home { display: grid; gap: 1.8rem; }
+.vision-lab-intro { max-width: 44rem; }
+.vision-lab-intro h2 { margin-bottom: 0.8rem; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+.vision-lab-intro p:last-child { margin: 0; color: var(--brand-text-muted, #aebed0); line-height: 1.7; }
+.vision-lab-asset { display: grid; grid-template-columns: 1.15fr 1fr; padding: 0; overflow: hidden; text-align: left; color: var(--brand-text, #f5f7fb); background: var(--brand-surface, #0d1a2a); border-radius: 1.3rem; transition: border-color 150ms, box-shadow 150ms; }
+.vision-lab-asset:hover:not(:disabled), .vision-lab-asset:focus-visible { outline: 2px solid var(--brand-primary, #75d9c5); outline-offset: 4px; box-shadow: 0 1rem 3rem #00000030; }
+.vision-lab-scene { display: grid; min-height: 18rem; place-items: center; background: radial-gradient(ellipse at center, #75d9c515, transparent 70%), #081522; }
+.vision-lab-scene svg { width: min(100%, 26rem); }
+.vision-lab-guide { stroke: #ffffff25; stroke-width: 2; stroke-dasharray: 5 7; }
+.vision-lab-machine { fill: #152c40; stroke: var(--brand-primary, #75d9c5); stroke-width: 3; }
+.vision-lab-lens { fill: #081522; stroke: var(--brand-primary, #75d9c5); stroke-width: 4; }
+.vision-lab-lens-center, .vision-lab-indicator { fill: var(--brand-primary, #75d9c5); }
+.vision-lab-asset-info { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 0.8rem; padding: clamp(1.5rem, 4vw, 2.5rem); }
+.vision-lab-asset-info strong { font-size: clamp(1.5rem, 3vw, 2rem); }
+.vision-lab-asset-info > span:not(.eyebrow):not(.vision-lab-open) { color: var(--brand-text-muted, #aebed0); }
+.vision-lab-operational { padding: 0.35rem 0.7rem; border: 1px solid #ffffff30; border-radius: 2rem; font-size: 0.85rem; }
+.vision-lab-open { margin-top: 0.5rem; color: var(--brand-primary, #75d9c5); }
+#vision-lab-workspace > .status { margin: 1.4rem 0 0; }
+[data-experience="vision-lab"] .topbar { grid-template-columns: 1fr auto; }
+[data-experience="vision-lab"] .manager-control-host { display: none; }
+[data-experience="vision-lab"] .current-profile { margin: 0; color: var(--brand-text-muted, #aebed0); }
+@media (max-width: 650px) {
+  .vision-lab-asset { grid-template-columns: 1fr; }
+  .vision-lab-scene { min-height: 12rem; }
+  .vision-lab-scene svg { max-height: 12rem; }
+  [data-experience="vision-lab"] .topbar { grid-template-columns: 1fr; }
+  [data-experience="vision-lab"] .topbar-actions { justify-self: start; flex-wrap: wrap; }
+}

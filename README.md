@@ -30,6 +30,20 @@ Consumo remoto temporal mediante Cloudflare Tunnel.
 
 Integración visual con CAM-ROBOT-01 en OrbiNodo Vision Lab.
 
+Supervisión web del demo de acceso experimental:
+
+Ejecutar npm run dev:vision-lab y acceder con la autenticación existente. Después del login, el perfil vision-lab muestra una pantalla de laboratorio con el activo interactivo CAM-ROBOT-01. Seleccionarlo abre directamente Robot Vision. No monta visor panorámico, minimapa ni mapa de cámaras; orbinodo-demo conserva su experiencia panorámica. La representación técnica del activo es ilustrativa y no es vídeo en vivo.
+
+En Robot Vision, activar la cámara muestra el stream, el usuario activo seleccionado por Vision Service, AUTHORIZED/UNKNOWN, el progreso de parpadeos y la confirmación PENDIENTE/CONFIRMADA. El actuador se consulta mediante GET /api/actuator/status del mismo Vision Service y muestra CLOSED, OPENING, OPEN_HOLD o CLOSING, o NO CONFIGURADO/NO DISPONIBLE cuando corresponde.
+
+El polling de visión conserva su intervalo de 400 ms. La consulta del actuador no bloquea visión, permite una sola petición pendiente y se cancela después de 3 segundos sin respuesta. Los estados breves pueden ocurrir entre lecturas. Al detener o cerrar, se limpian las lecturas de supervisión y se descartan respuestas pendientes.
+
+La web supervisa; Vision Service conserva la decisión de apertura automática tras la confirmación de parpadeos y se comunica con el ESP32 mediante ActuatorClient. Esta confirmación no constituye liveness ni anti-spoofing; el demo no es un sistema certificado de control de acceso.
+
+Pruebas de supervisión con respuestas simuladas: npx vitest run src/api/vision-service-api.test.ts src/ui/robot-vision.test.ts. La prueba de navegador usa Playwright y Edge ya disponibles; ROBOT_VISION_BROWSER_PATH permite indicar otro ejecutable Chromium. No realiza una prueba física.
+
+Checkpoint de la versión pública validada: [Vision Lab Public E2E, 2026-10-06](CHECKPOINT_VISION_LAB_PUBLIC_E2E_2026-10-06.md).
+
 No debe interpretarse todavía como un subsistema de producción ni como una capacidad consolidada de OrbiNodo Core.
 
 2. Arquitectura

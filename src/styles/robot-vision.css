@@ -9,6 +9,8 @@
 .robot-vision-status-grid div, .robot-vision-recognition { padding: 0.8rem; border: 1px solid #ffffff1f; border-radius: 0.7rem; background: var(--brand-surface, #0d1a2a); }
 .robot-vision-status-grid dt { color: var(--brand-text-muted, #aebed0); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .robot-vision-status-grid dd { margin: 0.3rem 0 0; font-weight: 700; }
+.robot-vision-supervision dd { overflow-wrap: anywhere; }
+.robot-vision-stream[hidden], .robot-vision-video-placeholder[hidden] { display: none; }
 .robot-vision-video-shell { position: relative; min-height: 15rem; overflow: hidden; border: 1px solid #ffffff24; border-radius: 0.75rem; background: #02070d; }
 .robot-vision-stream { display: block; width: 100%; min-height: 15rem; object-fit: contain; }
 .robot-vision-faces { display: grid; gap: 0.35rem; margin: 0.6rem 0 0; padding-left: 1.2rem; color: var(--brand-text-muted, #aebed0); }

@@ -1,4 +1,4 @@
-/* global console, process, document, getComputedStyle, setTimeout */
+/* global console, process, setTimeout */
 import { spawn } from 'node:child_process';
 import { createServer as createNetServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -49,6 +49,8 @@ try {
   process.env.ORBINODO_API_TARGET = apiUrl;
   server = await createServer({
     mode: 'vision-lab',
+    // This check verifies composition/authentication, never physical hardware.
+    define: { 'import.meta.env.VITE_VISION_SERVICE_URL': JSON.stringify('http://vision.test') },
     server: { host: '127.0.0.1', port: 4176, strictPort: true },
   });
   await server.listen();
@@ -59,6 +61,17 @@ try {
   });
   const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
   const errors = [];
+  await page.route('http://vision.test/**', async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const responses = {
+      '/health': { status: 'ok', models: 'ready', state: 'READY' },
+      '/api/vision/people': [],
+      '/api/vision/stop': { running: false },
+      '/api/actuator/status': { configured: true, available: true, state: 'CLOSED', servo_angle: 0 },
+    };
+    assert(path in responses, 'Peticion de hardware no permitida: ' + path);
+    await route.fulfill({ json: responses[path] });
+  });
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('requestfailed', (request) => errors.push(request.url() + ': ' + request.failure()?.errorText));
 
@@ -66,9 +79,11 @@ try {
     await page.locator('#demo-username').fill(account.username);
     await page.locator('#demo-password').fill(account.password);
     await page.getByRole('button', { name: 'Entrar a Vision Lab' }).click();
-    await page.waitForSelector('.psv-container');
-    await page.waitForFunction(() => document.querySelector('#current-location')?.textContent?.includes('Robot Simulation'));
+    await page.waitForSelector('#app[data-ready="true"] [data-vision-lab-robot]');
     assert(await page.locator('#app').getAttribute('data-role') === account.role, 'No se aplico el rol Vision Lab.');
+    assert(await page.locator('#tour-workspace').isHidden(), 'Vision Lab monto el recorrido.');
+    assert(await page.locator('.psv-container').count() === 0, 'Vision Lab monto el visor panoramico.');
+    assert(await page.locator('#tour-minimap').isHidden(), 'Vision Lab muestra el minimapa.');
   }
 
   async function logout() {
@@ -77,64 +92,25 @@ try {
   }
 
   async function openRobotCamera() {
-    await page.locator('.camera-map-node[data-camera-id="' + camera.id + '"]').click();
-    await page.waitForSelector('.camera-information');
-    assert((await page.locator('.camera-information').textContent())?.includes(camera.assetCode), 'No se abrio CAM-ROBOT-01.');
+    await page.locator('[data-vision-lab-robot]').click();
+    await page.waitForSelector('.robot-vision-dialog[open]');
+    assert(await page.locator('[data-robot-camera-code]').textContent() === camera.assetCode, 'No se abrio CAM-ROBOT-01.');
   }
 
   await page.goto('http://127.0.0.1:4176/', { waitUntil: 'domcontentloaded' });
   assert(await page.locator('#login-screen').isVisible(), 'No aparecio el formulario Vision Lab.');
 
-  await login(accounts.programmer);
-  assert(await page.locator('.calibration-toolbar').isVisible(), 'Vision Admin no ve el calibrador.');
-  assert(await page.locator('.camera-map-node').count() === 1, 'Vision Lab no tiene exactamente un activo inicial.');
-  assert(await page.locator('.manager-audit-tools').isHidden(), 'Vision Admin ve auditoria reservada.');
-  await openRobotCamera();
-  assert(await page.locator('.camera-edit-form').count() === 0, 'Vision Admin pudo editar el activo.');
-  await logout();
-
-  await login(accounts.engineer1);
-  await openRobotCamera();
-  const firstForm = page.locator('.camera-edit-form');
-  assert(await firstForm.isVisible(), 'Vision Operator 1 no puede editar.');
-  await firstForm.locator('[name="status"]').selectOption('En mantenimiento');
-  await firstForm.locator('[name="lastMaintenanceOn"]').fill('2026-09-04');
-  await firstForm.locator('[name="nextMaintenanceOn"]').fill('2026-12-04');
-  await firstForm.locator('[name="responsibleArea"]').fill('Vision Lab');
-  await firstForm.locator('[name="notes"]').fill('Vision Operator 1 completed the stationary simulation review.');
-  await firstForm.getByRole('button', { name: 'Guardar cambios operativos' }).click();
-  await page.waitForFunction(() => document.querySelector('.camera-edit-status')?.textContent?.includes('historial'));
-  await logout();
-
-  await login(accounts.engineer2);
-  await openRobotCamera();
-  const secondForm = page.locator('.camera-edit-form');
-  assert((await secondForm.locator('[name="notes"]').inputValue()).includes('Vision Operator 1'), 'La actualizacion no persistio entre operadores.');
-  await secondForm.locator('[name="status"]').selectOption('Operativa');
-  await secondForm.locator('[name="lastMaintenanceOn"]').fill('2026-09-05');
-  await secondForm.locator('[name="nextMaintenanceOn"]').fill('2026-12-05');
-  await secondForm.locator('[name="responsibleArea"]').fill('Vision Lab');
-  await secondForm.locator('[name="notes"]').fill('Vision Operator 2 confirmed the stationary simulation state.');
-  await secondForm.getByRole('button', { name: 'Guardar cambios operativos' }).click();
-  await page.waitForFunction(() => document.querySelector('.camera-edit-status')?.textContent?.includes('historial'));
-  await logout();
-
-  await login(accounts.manager);
-  assert(await page.locator('.calibration-toolbar').isHidden(), 'Vision Supervisor ve el calibrador.');
-  assert(await page.locator('.manager-audit-tools').isVisible(), 'Vision Supervisor no ve auditoria.');
-  await openRobotCamera();
-  assert(await page.locator('.camera-edit-form').count() === 0, 'Vision Supervisor pudo editar el activo.');
-  assert((await page.locator('.camera-information').textContent())?.includes('Vision Operator 2'), 'El supervisor no ve el ultimo cambio.');
-  await page.getByRole('button', { name: 'Control del jefe' }).click();
-  await page.waitForSelector('.audit-tabs [role="tab"]');
-  assert(await page.locator('.audit-tabs [role="tab"]').count() === 4, 'Faltan roles internos en la auditoria.');
-  for (const label of ['Vision Admin', 'Vision Supervisor', 'Vision Operator 1', 'Vision Operator 2']) {
-    assert(await page.getByRole('tab', { name: label }).isVisible(), 'Falta la pestana ' + label + '.');
+  for (const account of [accounts.programmer, accounts.engineer1, accounts.engineer2, accounts.manager]) {
+    await login(account);
+    await openRobotCamera();
+    await page.locator('.robot-vision-close').click();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#app[data-ready="true"] [data-vision-lab-robot]');
+    assert(await page.locator('#app').getAttribute('data-role') === account.role, 'La sesion no sobrevivio la recarga.');
+    await logout();
   }
+  await login(accounts.programmer);
   await page.screenshot({ path: join(tmpdir(), 'vision-lab-browser-verification.png'), fullPage: true });
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.psv-container');
-  assert(await page.locator('#app').getAttribute('data-role') === 'manager', 'La sesion del supervisor no sobrevivio la recarga.');
   await logout();
   const status = await page.evaluate(async () => (await fetch('/api/auth/me', { credentials: 'include' })).status);
   assert(status === 401, 'Cerrar sesion no invalido la cookie.');
@@ -143,8 +119,10 @@ try {
     profile: 'vision-lab',
     camera: camera.assetCode,
     roles: ['programmer', 'manager', 'engineer1', 'engineer2'],
-    postgresqlCameraChanges: true,
-    managerSessionRefresh: true,
+    standaloneLab: true,
+    directRobotVision: true,
+    panoramaMounted: false,
+    sessionRefresh: true,
   }, null, 2));
 } finally {
   await browser?.close();

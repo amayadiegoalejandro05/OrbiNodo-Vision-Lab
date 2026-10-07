@@ -6,6 +6,7 @@ import './styles/calibration.css';
 import './styles/minimap.css';
 import './styles/operational-tools.css';
 import './styles/robot-vision.css';
+import './styles/vision-lab.css';
 import { getAuditFromApi } from './api/audit-api';
 import { getCamerasFromApi, updateCameraOperations } from './api/camera-api';
 import {
@@ -23,6 +24,7 @@ import { createCoordinateCalibrator } from './ui/coordinate-calibrator';
 import { createLocationMenu, type LocationMenuApi } from './ui/location-menu';
 import { createManagerAuditView, type ProfileTab } from './ui/manager-audit-view';
 import { createRobotVision } from './ui/robot-vision';
+import { createVisionLab, type VisionLabApi } from './ui/vision-lab';
 import { createTourMinimap, type TourMinimapApi } from './ui/tour-minimap';
 import type { PanoramaViewerApi, PanoramaViewerStatus } from './viewer/panorama-viewer';
 
@@ -50,6 +52,17 @@ const statusElement = required<HTMLParagraphElement>('#app-status');
 const locationElement = required<HTMLParagraphElement>('#current-location');
 const progressElement = required<HTMLParagraphElement>('#tour-progress');
 const retryButton = required<HTMLButtonElement>('#retry-panorama');
+const labHost = required<HTMLElement>('#vision-lab-workspace');
+const tourWorkspace = required<HTMLElement>('#tour-workspace');
+const isVisionLab = activeClientProfile.id === 'vision-lab';
+app.dataset.experience = isVisionLab ? 'vision-lab' : 'panorama';
+tourWorkspace.hidden = isVisionLab;
+menuButton.hidden = isVisionLab;
+required<HTMLElement>('.location-summary').hidden = isVisionLab;
+if (isVisionLab) {
+  required<HTMLElement>('[data-client="tour-title"]').textContent = activeClientProfile.branding.productName;
+  labHost.append(statusElement);
+}
 const calibrator = createCoordinateCalibrator(app);
 const auditProfileTabs: ProfileTab[] = [
   { role: 'programmer', label: activeClientProfile.roleLabels.programmer },
@@ -62,7 +75,8 @@ const robotVision = createRobotVision();
 const profileElement = document.createElement('p');
 profileElement.className = 'current-profile';
 profileElement.setAttribute('aria-live', 'polite');
-progressElement.after(profileElement);
+if (isVisionLab) logoutButton.before(profileElement);
+else progressElement.after(profileElement);
 const roomEntries = clientTour.floors.flatMap((floor) =>
   floor.rooms.map((room) => ({ id: room.entryPanoramaId, panoramaIds: room.panoramas.map((item) => item.id) })),
 );
@@ -71,6 +85,7 @@ let panoramaViewer: PanoramaViewerApi | undefined;
 let locationMenu: LocationMenuApi | undefined;
 let tourMinimap: TourMinimapApi | undefined;
 let cameraMap: CameraMapApi | undefined;
+let visionLab: VisionLabApi | undefined;
 let cameraRecords: SecurityCameraRecord[] = [];
 let mountVersion = 0;
 
@@ -119,16 +134,20 @@ function renderLocation(location: PanoramaLocation): void {
   progressElement.textContent = 'Ubicación ' + (index + 1) + ' de ' + roomEntries.length;
 }
 
-async function mountTour(session: DemoSession): Promise<void> {
-  if (panoramaViewer) return;
+async function mountExperience(session: DemoSession): Promise<void> {
+  if (panoramaViewer || visionLab) return;
   const currentMount = ++mountVersion;
   const permissions = getRolePermissions(session.role);
-  calibrator.setAvailable(permissions.calibrator);
-  managerAudit.setAvailable(permissions.viewAuditHistory);
+  calibrator.setAvailable(!isVisionLab && permissions.calibrator);
+  managerAudit.setAvailable(!isVisionLab && permissions.viewAuditHistory);
   profileElement.textContent = 'Perfil: ' + session.displayName;
   app.dataset.role = session.role;
   loginView.hide();
   app.hidden = false;
+  if (isVisionLab) {
+    labHost.hidden = false;
+    visionLab = createVisionLab(labHost, [], (camera) => robotVision.open(camera));
+  }
   renderStatus({ kind: 'loading', message: 'Consultando cámaras en PostgreSQL…' });
   try {
     cameraRecords = await getCamerasFromApi();
@@ -140,6 +159,17 @@ async function mountTour(session: DemoSession): Promise<void> {
     return;
   }
   if (currentMount !== mountVersion || app.hidden) return;
+  if (isVisionLab) {
+    visionLab?.refresh(cameraRecords);
+    renderStatus({ kind: 'ready', message: 'Selecciona el robot para abrir Robot Vision.' });
+    app.dataset.ready = 'true';
+    return;
+  }
+  await mountTour(session, currentMount);
+}
+
+async function mountTour(session: DemoSession, currentMount: number): Promise<void> {
+  const permissions = getRolePermissions(session.role);
   renderStatus({ kind: 'loading', message: 'Descargando el visor 360°…' });
   const { createPanoramaViewer } = await import('./viewer/panorama-viewer');
   if (currentMount !== mountVersion || app.hidden) return;
@@ -173,12 +203,15 @@ async function mountTour(session: DemoSession): Promise<void> {
   app.dataset.ready = 'true';
 }
 
-function unmountTour(): void {
+function unmountExperience(): void {
   mountVersion += 1;
   locationMenu?.destroy();
   tourMinimap?.destroy();
   cameraMap?.destroy();
   panoramaViewer?.destroy();
+  visionLab?.destroy();
+  visionLab = undefined;
+  labHost.hidden = true;
   locationMenu = undefined;
   tourMinimap = undefined;
   cameraMap = undefined;
@@ -198,12 +231,14 @@ function unmountTour(): void {
 
 let refreshingCameras = false;
 async function refreshCamerasFromApi(): Promise<void> {
-  if (!panoramaViewer || refreshingCameras) return;
+  if ((!panoramaViewer && !visionLab) || refreshingCameras) return;
   refreshingCameras = true;
   try {
     cameraRecords = await getCamerasFromApi();
     cameraMap?.refresh(cameraRecords);
-    panoramaViewer.refreshCameras(cameraRecords);
+    panoramaViewer?.refreshCameras(cameraRecords);
+    visionLab?.refresh(cameraRecords);
+    for (const camera of cameraRecords) robotVision.updateCamera(camera);
   } catch (error) {
     renderStatus({
       kind: 'error',
@@ -215,7 +250,7 @@ async function refreshCamerasFromApi(): Promise<void> {
 }
 
 const loginView = createLoginView(loginScreen, (session) => {
-  void mountTour(session);
+  void mountExperience(session);
 });
 homeButton.addEventListener('click', () => void navigateTo(clientTour.startPanoramaId));
 retryButton.addEventListener('click', () => void panoramaViewer?.retry());
@@ -229,7 +264,7 @@ logoutButton.addEventListener('click', async () => {
   logoutButton.disabled = true;
   try {
     await endApiSession();
-    unmountTour();
+    unmountExperience();
     loginView.show();
   } catch {
     renderStatus({
@@ -243,7 +278,7 @@ logoutButton.addEventListener('click', async () => {
 async function restoreSession(): Promise<void> {
   try {
     const session = await getActiveApiSession();
-    if (session) await mountTour(session);
+    if (session) await mountExperience(session);
     else loginView.show();
   } catch {
     loginView.show();
@@ -252,4 +287,4 @@ async function restoreSession(): Promise<void> {
 
 void restoreSession();
 window.addEventListener('focus', () => void refreshCamerasFromApi());
-window.addEventListener('beforeunload', unmountTour, { once: true });
+window.addEventListener('beforeunload', unmountExperience, { once: true });

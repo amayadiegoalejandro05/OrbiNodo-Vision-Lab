@@ -4,7 +4,7 @@ import {
   createUnknownAlertConfirmation,
   resolveVisionServiceConfiguration,
 } from '../config/vision-service';
-import { getVisionServiceHealth, getVisionServiceStatus, startVisionService, stopVisionService } from './vision-service-api';
+import { getActuatorStatus, getVisionServiceHealth, getVisionServiceStatus, startVisionService, stopVisionService } from './vision-service-api';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -39,8 +39,47 @@ describe('cliente de Vision Service', () => {
         { status: 'AUTHORIZED', person_id: 1, name: 'Diego', similarity: 0.82 },
         { status: 'UNKNOWN', person_id: null, name: null, similarity: 0.21 },
       ],
+      active_face_index: 0,
+      active_user: { status: 'AUTHORIZED', person_id: 1, name: 'Diego', similarity: 0.82 },
+      blink_count: 2, blink_target: 3, blink_confirmed: false,
     }), { status: 200 })));
     await expect(getVisionServiceStatus()).resolves.toMatchObject({ faces: expect.arrayContaining([expect.objectContaining({ status: 'AUTHORIZED' }), expect.objectContaining({ status: 'UNKNOWN' })]) });
+    await expect(getVisionServiceStatus()).resolves.toMatchObject({
+      active_face_index: 0, active_user: expect.objectContaining({ name: 'Diego' }),
+      blink_count: 2, blink_target: 3, blink_confirmed: false,
+    });
+  });
+
+  it.each(['CLOSED', 'OPENING', 'OPEN_HOLD', 'CLOSING'])('consulta %s únicamente a través de Vision Service', async (state) => {
+    const status = { state, servo_angle: 0, configured: true, available: true };
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(status), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(getActuatorStatus()).resolves.toEqual(status);
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith('http://127.0.0.1:8765/api/actuator/status', undefined);
+  });
+
+  it.each([false, true])('conserva el diagnóstico HTTP 503 con configured=%s', async (configured) => {
+    const status = { configured, available: false, error: 'Actuator unavailable.' };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(status), { status: 503 })));
+    await expect(getActuatorStatus()).resolves.toEqual(status);
+  });
+
+  it('no oculta errores HTTP inesperados del actuador', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 500 })));
+    await expect(getActuatorStatus()).rejects.toThrow('500');
+  });
+
+  it('rechaza un 503 sin el diagnóstico esperado', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 503 })));
+    await expect(getActuatorStatus()).rejects.toThrow('503');
+  });
+
+  it('propaga fallos de red y permite cancelar la consulta del actuador', async () => {
+    const fetchMock = vi.fn(async () => { throw new TypeError('Network unavailable'); });
+    vi.stubGlobal('fetch', fetchMock);
+    const controller = new AbortController();
+    await expect(getActuatorStatus({ signal: controller.signal })).rejects.toThrow('Network unavailable');
+    expect(fetchMock).toHaveBeenCalledWith('http://127.0.0.1:8765/api/actuator/status', { signal: controller.signal });
   });
 
   it('bloquea start cuando el estado operacional no es Operativa', () => {

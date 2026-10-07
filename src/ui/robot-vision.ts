@@ -1,5 +1,5 @@
 import {
-  getVisionPeople, getVisionServiceHealth, getVisionServiceStatus, getVisionStreamUrl, startVisionService, stopVisionService,
+  getActuatorStatus, getVisionPeople, getVisionServiceHealth, getVisionServiceStatus, getVisionStreamUrl, startVisionService, stopVisionService,
   type VisionFace, type VisionStatus,
 } from '../api/vision-service-api';
 import {
@@ -31,6 +31,13 @@ export function createRobotVision(parent: HTMLElement = document.body): RobotVis
       <header class="robot-vision-header"><div><p class="robot-vision-eyebrow">ROBOT-01 · percepción local experimental</p><h2 id="robot-vision-title">Robot Vision</h2></div><button type="button" class="robot-vision-close" aria-label="Cerrar Robot Vision">×</button></header>
       <dl class="robot-vision-status-grid"><div><dt>Cámara</dt><dd data-robot-camera-code></dd></div><div><dt>Estado operacional</dt><dd data-robot-operational-status></dd></div><div><dt>Vision Service</dt><dd data-robot-service-status>CONECTANDO</dd></div><div><dt>Video</dt><dd data-robot-video-status>INACTIVO</dd></div><div><dt>Percepción</dt><dd data-robot-perception-status>INACTIVA</dd></div><div><dt>FPS / último frame</dt><dd data-robot-stream-metrics>—</dd></div></dl>
       <div class="robot-vision-video-shell"><img class="robot-vision-stream" alt="Stream anotado de CAM-ROBOT-01" hidden><p class="robot-vision-video-placeholder">Activa la cámara para recibir el stream anotado del nodo Vision Service.</p></div>
+      <dl class="robot-vision-status-grid robot-vision-supervision" aria-label="Supervisión de acceso experimental">
+        <div><dt>Usuario activo</dt><dd data-robot-active-user>Sin usuario activo</dd></div>
+        <div><dt>Reconocimiento</dt><dd data-robot-recognition>INACTIVO</dd></div>
+        <div><dt>Parpadeos</dt><dd data-robot-blinks>— / —</dd></div>
+        <div><dt>Confirmación</dt><dd data-robot-confirmation>PENDIENTE</dd></div>
+        <div><dt>Actuador</dt><dd data-robot-actuator>SIN LECTURA</dd></div>
+      </dl>
       <p class="robot-vision-message" role="status" aria-live="polite"></p>
       <section class="robot-vision-recognition" aria-label="Estado de reconocimiento facial"><h3>Rostros actuales</h3><p data-robot-people-count>Personas autorizadas: —</p><ul class="robot-vision-faces" data-robot-faces><li>Sin lecturas actuales.</li></ul><p class="robot-vision-alert" data-robot-alert hidden>ALERTA · PERSONA NO RECONOCIDA · CAM-ROBOT-01 · <span data-robot-alert-time></span></p></section>
       <footer class="robot-vision-actions"><button type="button" data-robot-activate>Activar cámara</button><button type="button" data-robot-stop disabled>Detener cámara</button></footer>
@@ -42,6 +49,11 @@ export function createRobotVision(parent: HTMLElement = document.body): RobotVis
   const videoStatus = dialog.querySelector<HTMLElement>('[data-robot-video-status]')!;
   const perceptionStatus = dialog.querySelector<HTMLElement>('[data-robot-perception-status]')!;
   const streamMetrics = dialog.querySelector<HTMLElement>('[data-robot-stream-metrics]')!;
+  const activeUser = dialog.querySelector<HTMLElement>('[data-robot-active-user]')!;
+  const recognition = dialog.querySelector<HTMLElement>('[data-robot-recognition]')!;
+  const blinks = dialog.querySelector<HTMLElement>('[data-robot-blinks]')!;
+  const confirmation = dialog.querySelector<HTMLElement>('[data-robot-confirmation]')!;
+  const actuator = dialog.querySelector<HTMLElement>('[data-robot-actuator]')!;
   const peopleCount = dialog.querySelector<HTMLElement>('[data-robot-people-count]')!;
   const facesHost = dialog.querySelector<HTMLUListElement>('[data-robot-faces]')!;
   const alert = dialog.querySelector<HTMLElement>('[data-robot-alert]')!;
@@ -58,6 +70,8 @@ export function createRobotVision(parent: HTMLElement = document.body): RobotVis
   let pollTimer: number | undefined;
   let stopping: Promise<void> | undefined;
   let lastFacesKey = '';
+  let session = 0;
+  let actuatorRequest: AbortController | undefined;
 
   function setText(element: HTMLElement, value: string): void { if (element.textContent !== value) element.textContent = value; }
   function stopPolling(): void { if (pollTimer !== undefined) window.clearTimeout(pollTimer); pollTimer = undefined; }
@@ -68,6 +82,12 @@ export function createRobotVision(parent: HTMLElement = document.body): RobotVis
     setText(videoStatus, 'INACTIVO');
     setText(perceptionStatus, 'INACTIVA');
     setText(streamMetrics, '—');
+    setText(activeUser, 'Sin usuario activo');
+    setText(recognition, 'INACTIVO');
+    setText(blinks, '— / —');
+    setText(confirmation, 'PENDIENTE');
+    setText(actuator, 'SIN LECTURA');
+    setFaces([]);
   }
   function setFaces(faces: VisionFace[]): void {
     const key = JSON.stringify(faces);
@@ -88,22 +108,56 @@ export function createRobotVision(parent: HTMLElement = document.body): RobotVis
     setText(streamMetrics, status.timestamp ? `${status.fps.toFixed(1)} FPS · ${new Date(status.timestamp).toLocaleTimeString()}` : 'Esperando primer frame');
     if (status.error) message.textContent = status.error;
     setFaces(status.faces);
+    const user = status.running ? status.active_user : null;
+    setText(activeUser, user ? user.name ?? 'Persona no reconocida' : 'Sin usuario activo');
+    setText(recognition, user?.status ?? (status.running ? 'SIN ROSTRO ACTIVO' : 'INACTIVO'));
+    setText(blinks, status.running ? `${status.blink_count} / ${status.blink_target}` : '— / —');
+    setText(confirmation, status.running && status.blink_confirmed ? 'CONFIRMADA' : 'PENDIENTE');
     const alertNow = unknownConfirmation.observe(status.faces.some((face) => face.status === 'UNKNOWN'), Date.now());
     if (alertNow) { alert.hidden = false; alertTime.textContent = new Date().toLocaleTimeString(); }
     if (!status.faces.some((face) => face.status === 'UNKNOWN')) alert.hidden = true;
   }
-  async function pollStatus(): Promise<void> {
-    if (!serviceStarted) return;
-    try { updateStatus(await getVisionServiceStatus()); }
+  async function refreshActuator(currentSession: number): Promise<void> {
+    if (actuatorRequest || currentSession !== session) return;
+    const controller = new AbortController();
+    actuatorRequest = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 3000);
+    try {
+      const status = await getActuatorStatus({ signal: controller.signal });
+      if (currentSession !== session) return;
+      setText(actuator, !status.configured ? 'NO CONFIGURADO' : !status.available ? 'NO DISPONIBLE' : status.state);
+    } catch {
+      if (currentSession === session) setText(actuator, 'NO DISPONIBLE');
+    } finally {
+      window.clearTimeout(timeout);
+      if (actuatorRequest === controller) actuatorRequest = undefined;
+    }
+  }
+  async function pollStatus(currentSession: number): Promise<void> {
+    if (!serviceStarted || currentSession !== session) return;
+    void refreshActuator(currentSession);
+    try {
+      const status = await getVisionServiceStatus();
+      if (!serviceStarted || currentSession !== session) return;
+      updateStatus(status);
+    }
     catch {
+      if (!serviceStarted || currentSession !== session) return;
       serviceStarted = false;
       serviceReady = false;
+      session += 1;
+      actuatorRequest?.abort();
+      actuatorRequest = undefined;
       setText(serviceStatus, 'ERROR');
       message.textContent = 'Vision Service no disponible. Inicia o revisa el nodo remoto de percepción.';
       clearStream();
+      unknownConfirmation.reset();
+      alert.hidden = true;
+      stop.disabled = true;
+      activate.disabled = !camera || !canStartVisionService(camera.status);
       return;
     }
-    pollTimer = window.setTimeout(() => void pollStatus(), VISION_STATUS_POLL_MS);
+    pollTimer = window.setTimeout(() => void pollStatus(currentSession), VISION_STATUS_POLL_MS);
   }
   async function checkHealth(): Promise<void> {
     if (VISION_SERVICE_CONFIGURATION.error) {
@@ -132,28 +186,36 @@ export function createRobotVision(parent: HTMLElement = document.body): RobotVis
   }
   async function startCamera(): Promise<void> {
     if (!camera || !canStartVisionService(camera.status)) { message.textContent = camera ? operationalMessage(camera.status) : 'No hay una cámara seleccionada.'; return; }
+    const currentSession = session;
+    await stopping;
+    if (currentSession !== session || !canStartVisionService(camera.status)) return;
     if (!serviceReady) await checkHealth();
-    if (!serviceReady) return;
+    if (!serviceReady || currentSession !== session) return;
     activate.disabled = true;
     setText(videoStatus, 'INICIANDO');
     message.textContent = 'Iniciando Vision Service…';
     try {
-      updateStatus(await startVisionService());
+      const status = await startVisionService();
+      if (currentSession !== session) return;
+      updateStatus(status);
       serviceStarted = true;
       stream.src = getVisionStreamUrl();
       stream.hidden = false;
       placeholder.hidden = true;
       stop.disabled = false;
       message.textContent = 'Vision Service iniciando; esperando el primer frame anotado.';
-      void pollStatus();
+      void pollStatus(currentSession);
     } catch {
+      if (currentSession !== session) return;
       setText(serviceStatus, 'ERROR');
       message.textContent = 'No se pudo iniciar Vision Service.';
       activate.disabled = false;
     }
   }
   async function stopCamera(): Promise<void> {
-    if (stopping) return stopping;
+    session += 1;
+    actuatorRequest?.abort();
+    actuatorRequest = undefined;
     stopPolling();
     clearStream();
     serviceStarted = false;
@@ -161,6 +223,7 @@ export function createRobotVision(parent: HTMLElement = document.body): RobotVis
     alert.hidden = true;
     stop.disabled = true;
     activate.disabled = !camera || !canStartVisionService(camera.status);
+    if (stopping) return stopping;
     stopping = (async () => {
       try { await stopVisionService(); }
       catch { if (serviceReady) message.textContent = 'No se pudo confirmar la detención de Vision Service.'; }
@@ -179,6 +242,7 @@ export function createRobotVision(parent: HTMLElement = document.body): RobotVis
     dialog.showModal();
     void checkHealth();
     void refreshPeople();
+    void refreshActuator(session);
   }
   function updateCamera(updatedCamera: SecurityCameraRecord): void {
     if (camera?.id !== updatedCamera.id) return;
